@@ -20,30 +20,34 @@
  *
  */
 
-#ifndef UNARY_MX_HPP
-#define UNARY_MX_HPP
+#ifndef SET_SPARSE_HPP
+#define SET_SPARSE_HPP
 
 #include "mx_node.hpp"
 
 namespace CasADi{
-  /** \brief Represents a general unary operation on an MX
-      \author Joel Andersson 
-      \date 2010
+  /** \brief Change the sparsity of an expression
+      \author Joel Andersson
+      \date 2011-2013
   */
-  class UnaryMX : public MXNode{
+  class SetSparse : public MXNode{
   public:
-    
-    /** \brief  Constructor is private, use "create" below */
-    UnaryMX(Operation op, MX x);
+
+    /** \brief  Constructor */
+    SetSparse(const MX& x, const CRSSparsity& sp);
 
     /** \brief  Destructor */
-    virtual ~UnaryMX(){}
+    virtual ~SetSparse(){}
 
     /** \brief  Clone function */
-    virtual UnaryMX * clone() const;
+    virtual SetSparse * clone() const;
 
     /** \brief  Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
+
+    /** \brief  Evaluate the function (template) */
+    template<typename T, typename MatV, typename MatVV> 
+    void evaluateGen(const MatV& input, MatV& output, const MatVV& fwdSeed, MatVV& fwdSens, const MatVV& adjSeed, MatVV& adjSens);
 
     /** \brief  Evaluate the function numerically */
     virtual void evaluateD(const DMatrixPtrV& input, DMatrixPtrV& output, const DMatrixPtrVV& fwdSeed, DMatrixPtrVV& fwdSens, const DMatrixPtrVV& adjSeed, DMatrixPtrVV& adjSens);
@@ -57,29 +61,11 @@ namespace CasADi{
     /** \brief  Propagate sparsity */
     virtual void propagateSparsity(DMatrixPtrV& input, DMatrixPtrV& output, bool fwd);
 
-    /** \brief Check if unary operation */
-    virtual bool isUnaryOp() const { return true;}
-
     /** \brief Get the operation */
-    virtual int getOp() const{ return op_;}
-    
-    /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg, const std::vector<std::string>& res, CodeGenerator& gen) const;
-
-    /// Can the operation be performed inplace (i.e. overwrite the result)
-    virtual int numInplace() const{ return 1;}
-
-    /// Get a unary operation
-    virtual MX getUnary(int op) const;
-
-    /// Get a binary operation operation
-    virtual MX getBinary(int op, const MX& y) const;
-
-    //! \brief operation
-    Operation op_;
+    virtual int getOp() const{ return OP_SET_SPARSE;}
   };
 
 } // namespace CasADi
 
 
-#endif // UNARY_MX_HPP
+#endif // SET_SPARSE_HPP
