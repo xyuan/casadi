@@ -265,11 +265,11 @@ void IpoptInternal::evaluate(int nfdir, int nadir){
 
   // Set the static parameter
   if (parametric_) {
-    if (!F_.isNull()) F_.setInput(input(NLP_P),F_.getNumInputs()-1);
-    if (!G_.isNull()) G_.setInput(input(NLP_P),G_.getNumInputs()-1);
-    if (!H_.isNull()) H_.setInput(input(NLP_P),H_.getNumInputs()-1);
-    if (!J_.isNull()) J_.setInput(input(NLP_P),J_.getNumInputs()-1);
-    if (!GF_.isNull()) GF_.setInput(input(NLP_P),GF_.getNumInputs()-1);
+    if (!F_.isNull()) F_.setInput(input(NLP_SOLVER_P),F_.getNumInputs()-1);
+    if (!G_.isNull()) G_.setInput(input(NLP_SOLVER_P),G_.getNumInputs()-1);
+    if (!H_.isNull()) H_.setInput(input(NLP_SOLVER_P),H_.getNumInputs()-1);
+    if (!J_.isNull()) J_.setInput(input(NLP_SOLVER_P),J_.getNumInputs()-1);
+    if (!GF_.isNull()) GF_.setInput(input(NLP_SOLVER_P),GF_.getNumInputs()-1);
   }
 
   // Reset the counters
@@ -372,21 +372,21 @@ bool IpoptInternal::intermediate_callback(const double* x, const double* z_L, co
     double time1 = clock();
     if (!callback_.isNull()) {
       if(full_callback) {
-        copy(x,x+nx_,callback_.input(NLP_X_OPT).begin());
+        copy(x,x+nx_,callback_.input(NLP_SOLVER_X).begin());
         
-        vector<double>& lambda_x = callback_.input(NLP_LAMBDA_X).data();
+        vector<double>& lambda_x = callback_.input(NLP_SOLVER_LAM_X).data();
         for(int i=0; i<lambda_x.size(); ++i){
           lambda_x[i] = z_U[i]-z_L[i];
         }
-        copy(lambda,lambda+ng_,callback_.input(NLP_LAMBDA_G).begin());
-        copy(g,g+ng_,callback_.input(NLP_G).begin());
+        copy(lambda,lambda+ng_,callback_.input(NLP_SOLVER_LAM_G).begin());
+        copy(g,g+ng_,callback_.input(NLP_SOLVER_G).begin());
       } else {
          if (iter==0) {
             cerr << "Warning: intermediate_callback is disfunctional in your installation. You will only be able to use getStats(). See https://github.com/casadi/casadi/wiki/enableIpoptCallback to enable it." << endl;
          }
       }
 
-      callback_.input(NLP_COST).at(0) = obj_value;
+      callback_.input(NLP_SOLVER_F).at(0) = obj_value;
       callback_->stats_["iter"] = iter;
       callback_->stats_["inf_pr"] = inf_pr;
       callback_->stats_["inf_du"] = inf_du;
@@ -416,22 +416,22 @@ bool IpoptInternal::intermediate_callback(const double* x, const double* z_L, co
 void IpoptInternal::finalize_solution(const double* x, const double* z_L, const double* z_U, const double* g, const double* lambda, double obj_value, int iter_count){
   try {
     // Get primal solution
-    copy(x,x+nx_,output(NLP_X_OPT).begin());
+    copy(x,x+nx_,output(NLP_SOLVER_X).begin());
 
     // Get optimal cost
-    output(NLP_COST).at(0) = obj_value;
+    output(NLP_SOLVER_F).at(0) = obj_value;
 
     // Get dual solution (simple bounds)
-    vector<double>& lambda_x = output(NLP_LAMBDA_X).data();
+    vector<double>& lambda_x = output(NLP_SOLVER_LAM_X).data();
     for(int i=0; i<lambda_x.size(); ++i){
       lambda_x[i] = z_U[i]-z_L[i];
     }
 
     // Get dual solution (nonlinear bounds)
-    copy(lambda,lambda+ng_,output(NLP_LAMBDA_G).begin());
+    copy(lambda,lambda+ng_,output(NLP_SOLVER_LAM_G).begin());
     
     // Get the constraints
-    copy(g,g+ng_,output(NLP_G).begin());
+    copy(g,g+ng_,output(NLP_SOLVER_G).begin());
     
     // Get statistics
     stats_["iter_count"] = iter_count;
@@ -687,10 +687,10 @@ bool IpoptInternal::get_bounds_info(int n, double* x_l, double* x_u,
   try {
     casadi_assert(n == nx_);
     casadi_assert(m == ng_);
-    input(NLP_LBX).getArray(x_l,n);
-    input(NLP_UBX).getArray(x_u,n);
-    input(NLP_LBG).getArray(g_l,m);
-    input(NLP_UBG).getArray(g_u,m);
+    input(NLP_SOLVER_LBX).getArray(x_l,n);
+    input(NLP_SOLVER_UBX).getArray(x_u,n);
+    input(NLP_SOLVER_LBG).getArray(g_l,m);
+    input(NLP_SOLVER_UBG).getArray(g_u,m);
     return true;
   } catch (exception& ex){
     cerr << "get_bounds_info failed: " << ex.what() << endl;
@@ -712,11 +712,11 @@ bool IpoptInternal::get_starting_point(int n, bool init_x, double* x,
     }
       
     if(init_x) 
-      input(NLP_X_INIT).getArray(x,n);
+      input(NLP_SOLVER_X0).getArray(x,n);
     
     if (init_z) {
       // Get dual solution (simple bounds)
-      vector<double>& lambda_x = output(NLP_LAMBDA_X).data();
+      vector<double>& lambda_x = output(NLP_SOLVER_LAM_X).data();
       for(int i=0; i<lambda_x.size(); ++i){
         z_L[i] = max(0.,-lambda_x[i]);
         z_U[i] = max(0., lambda_x[i]);
@@ -724,7 +724,7 @@ bool IpoptInternal::get_starting_point(int n, bool init_x, double* x,
     }
     
     if (init_lambda)
-      input(NLP_LAMBDA_INIT).getArray(lambda,m);
+      input(NLP_SOLVER_LAM_G0).getArray(lambda,m);
     
     return true;
   } catch (exception& ex){

@@ -53,25 +53,25 @@ void NLPQPInternal::evaluate(int nfdir, int nadir) {
   
  // Pass inputs of QP to NLP form 
   
-  std::copy(input(QP_H).data().begin(),input(QP_H).data().end(),nlpsolver_.input(NLP_P).data().begin()+k); k+= input(QP_H).size();
-  std::copy(input(QP_G).data().begin(),input(QP_G).data().end(),nlpsolver_.input(NLP_P).data().begin()+k); k+= input(QP_G).size();
-  std::copy(input(QP_A).data().begin(),input(QP_A).data().end(),nlpsolver_.input(NLP_P).data().begin()+k);
+  std::copy(input(QP_H).data().begin(),input(QP_H).data().end(),nlpsolver_.input(NLP_SOLVER_P).data().begin()+k); k+= input(QP_H).size();
+  std::copy(input(QP_G).data().begin(),input(QP_G).data().end(),nlpsolver_.input(NLP_SOLVER_P).data().begin()+k); k+= input(QP_G).size();
+  std::copy(input(QP_A).data().begin(),input(QP_A).data().end(),nlpsolver_.input(NLP_SOLVER_P).data().begin()+k);
   
 
-  nlpsolver_.input(NLP_LBX).set(input(QP_LBX));
-  nlpsolver_.input(NLP_UBX).set(input(QP_UBX));
+  nlpsolver_.input(NLP_SOLVER_LBX).set(input(QP_LBX));
+  nlpsolver_.input(NLP_SOLVER_UBX).set(input(QP_UBX));
   
-  nlpsolver_.input(NLP_LBG).set(input(QP_LBA));
-  nlpsolver_.input(NLP_UBG).set(input(QP_UBA));
+  nlpsolver_.input(NLP_SOLVER_LBG).set(input(QP_LBA));
+  nlpsolver_.input(NLP_SOLVER_UBG).set(input(QP_UBA));
   
   // Delegate computation to NLP Solver
   nlpsolver_.evaluate();
   
   // Read the outputs from Ipopt
-  output(QP_PRIMAL).set(nlpsolver_.output(NLP_X_OPT));
-  output(QP_COST).set(nlpsolver_.output(NLP_COST));
-  output(QP_LAMBDA_A).set(nlpsolver_.output(NLP_LAMBDA_G));
-  output(QP_LAMBDA_X).set(nlpsolver_.output(NLP_LAMBDA_X));
+  output(QP_PRIMAL).set(nlpsolver_.output(NLP_SOLVER_X));
+  output(QP_COST).set(nlpsolver_.output(NLP_SOLVER_F));
+  output(QP_LAMBDA_A).set(nlpsolver_.output(NLP_SOLVER_LAM_G));
+  output(QP_LAMBDA_X).set(nlpsolver_.output(NLP_SOLVER_LAM_X));
 }
 
 void NLPQPInternal::init(){

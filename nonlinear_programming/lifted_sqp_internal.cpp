@@ -330,11 +330,11 @@ void LiftedSQPInternal::init(){
   }
   
   // Current guess for the primal solution
-  DMatrix &x_k = output(NLP_X_OPT);
+  DMatrix &x_k = output(NLP_SOLVER_X);
   
   // Current guess for the dual solution
-  DMatrix &lam_x_k = output(NLP_LAMBDA_X);
-  DMatrix &lam_g_k = output(NLP_LAMBDA_G);
+  DMatrix &lam_x_k = output(NLP_SOLVER_LAM_X);
+  DMatrix &lam_g_k = output(NLP_SOLVER_LAM_G);
 
   // Allocate a QP solver
   QPSolverCreator qp_solver_creator = getOption("qp_solver");
@@ -372,20 +372,20 @@ void LiftedSQPInternal::evaluate(int nfdir, int nadir){
   double f_k = numeric_limits<double>::quiet_NaN();
   
   // Current guess for the primal solution
-  DMatrix &x_k = output(NLP_X_OPT);
-  const DMatrix &x_init = input(NLP_X_INIT);
+  DMatrix &x_k = output(NLP_SOLVER_X);
+  const DMatrix &x_init = input(NLP_SOLVER_X0);
   copy(x_init.begin(),x_init.end(),x_k.begin());
   
   // Current guess for the dual solution
-  DMatrix &lam_x_k = output(NLP_LAMBDA_X);
-  DMatrix &lam_g_k = output(NLP_LAMBDA_G);
+  DMatrix &lam_x_k = output(NLP_SOLVER_LAM_X);
+  DMatrix &lam_g_k = output(NLP_SOLVER_LAM_G);
 
   // Bounds
-  const DMatrix &x_min = input(NLP_LBX);
-  const DMatrix &x_max = input(NLP_UBX);
+  const DMatrix &x_min = input(NLP_SOLVER_LBX);
+  const DMatrix &x_max = input(NLP_SOLVER_UBX);
   
-  const DMatrix &g_min = input(NLP_LBG);
-  const DMatrix &g_max = input(NLP_UBG);
+  const DMatrix &g_min = input(NLP_SOLVER_LBG);
+  const DMatrix &g_max = input(NLP_SOLVER_UBG);
   int k=0;
   
   // Does G depend on the multipliers?
@@ -526,7 +526,7 @@ void LiftedSQPInternal::evaluate(int nfdir, int nadir){
   }
   
   // Store optimal value
-  output(NLP_COST).set(f_k);
+  output(NLP_SOLVER_F).set(f_k);
   
   // Save statistics
   stats_["iter_count"] = k;

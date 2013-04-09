@@ -45,7 +45,7 @@ class MyCallback:
     self.iter = 0 
   def __call__(self,f,*args):
     print "====Hey, I'm an iteration===="
-    print "X_OPT = ", f.input("x_opt")
+    print "X_OPT = ", f.input("x")
     print f.getStats()
     self.iter = self.iter + 1
     if self.iter > 5:
@@ -60,7 +60,7 @@ nd = 2 # Number of decision variables
 nc = 1 # number of constraints
 np = 0 # number of parameters
 
-c = PyFunction( mycallback, nlpsolverOut(x_opt=sp_dense(nd,1), cost=sp_dense(1,1), lambda_x=sp_dense(nd,1), lambda_g = sp_dense(nc,1), lambda_p = sp_dense(np,1), g = sp_dense(nc,1) ), [sp_dense(1,1)] )
+c = PyFunction( mycallback, nlpsolverOut(x=sp_dense(nd,1), f=sp_dense(1,1), lam_x=sp_dense(nd,1), lam_g = sp_dense(nc,1), lam_p = sp_dense(np,1), g = sp_dense(nc,1) ), [sp_dense(1,1)] )
 c.init()
 
 
@@ -107,7 +107,7 @@ class MyCallback:
     self.y_sols = []
     
   def __call__(self,f,*args):
-    sol = f.input("x_opt")
+    sol = f.input("x")
     self.x_sols.append(float(sol[0]))
     self.y_sols.append(float(sol[1]))
     subplot(111)
@@ -124,7 +124,7 @@ mycallback = MyCallback()
 
 #! We create a casadi function out of this callable object.
 #! The sparsities given here as input must match the sparsities of the outputs of our NLP Solver
-c = PyFunction( mycallback, nlpsolverOut(x_opt=sp_dense(nd,1), cost=sp_dense(1,1), lambda_x=sp_dense(nd,1), lambda_g = sp_dense(nc,1), lambda_p = sp_dense(np,1), g = sp_dense(nc,1) ), [sp_dense(1,1)] )
+c = PyFunction( mycallback, nlpsolverOut(x=sp_dense(nd,1), f=sp_dense(1,1), lam_x=sp_dense(nd,1), lam_g = sp_dense(nc,1), lam_p = sp_dense(np,1), g = sp_dense(nc,1) ), [sp_dense(1,1)] )
 c.init()
 
 

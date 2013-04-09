@@ -51,20 +51,20 @@ NLPImplicitInternal::~NLPImplicitInternal(){
 
 void NLPImplicitInternal::evaluate(int nfdir, int nadir) {
   // Obtain initial guess
-  nlp_solver_.input(NLP_X_INIT).set(output(0));
+  nlp_solver_.input(NLP_SOLVER_X0).set(output(0));
   
   // Add other arguments
   int k = 0;
   
   for (int i=1;i<f_.getNumInputs();++i) {
-    std::copy(input(i-1).data().begin(),input(i-1).data().end(),nlp_solver_.input(NLP_P).data().begin()+k); k+= input(i-1).size();
+    std::copy(input(i-1).data().begin(),input(i-1).data().end(),nlp_solver_.input(NLP_SOLVER_P).data().begin()+k); k+= input(i-1).size();
   }
   
   // Solve NLP
   nlp_solver_.evaluate();
 
   // Copy the outputs
-  output(0).set(nlp_solver_.output(NLP_X_OPT));
+  output(0).set(nlp_solver_.output(NLP_SOLVER_X));
   
   // Save auxillary outputs
   for(int i=1; i<getNumOutputs(); ++i){
@@ -123,8 +123,8 @@ void NLPImplicitInternal::init(){
   nlp_solver_.init();
   
   
-  nlp_solver_.input(NLP_LBG).setAll(0);
-  nlp_solver_.input(NLP_UBG).setAll(0);
+  nlp_solver_.input(NLP_SOLVER_LBG).setAll(0);
+  nlp_solver_.input(NLP_SOLVER_UBG).setAll(0);
   
 }
 

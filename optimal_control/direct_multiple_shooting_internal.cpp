@@ -320,20 +320,20 @@ void DirectMultipleShootingInternal::setOptimalSolution(const vector<double> &V_
 
 void DirectMultipleShootingInternal::evaluate(int nfdir, int nadir){
   // get NLP variable bounds and initial guess
-  getGuess(nlp_solver_.input(NLP_X_INIT).data());
-  getVariableBounds(nlp_solver_.input(NLP_LBX).data(),nlp_solver_.input(NLP_UBX).data());
+  getGuess(nlp_solver_.input(NLP_SOLVER_X0).data());
+  getVariableBounds(nlp_solver_.input(NLP_SOLVER_LBX).data(),nlp_solver_.input(NLP_SOLVER_UBX).data());
        
   // get NLP constraint bounds
-  getConstraintBounds(nlp_solver_.input(NLP_LBG).data(), nlp_solver_.input(NLP_UBG).data());
+  getConstraintBounds(nlp_solver_.input(NLP_SOLVER_LBG).data(), nlp_solver_.input(NLP_SOLVER_UBG).data());
        
   //Solve the problem
   nlp_solver_.solve();
   
   // Save the optimal solution
-  setOptimalSolution(nlp_solver_.output(NLP_X_OPT).data());
+  setOptimalSolution(nlp_solver_.output(NLP_SOLVER_X).data());
 
   // Save the optimal cost
-  output(OCP_COST).set(nlp_solver_.output(NLP_COST));
+  output(OCP_COST).set(nlp_solver_.output(NLP_SOLVER_F));
 }
 
 
