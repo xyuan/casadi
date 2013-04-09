@@ -56,17 +56,14 @@ public:
   void printIteration(std::ostream &stream, int iter, double obj, double pr_inf, double du_inf, 
                       double reg, int ls_trials, bool ls_success);
 
-  // Evaluate jacobian of the constraints
-  void eval_jac();
+  // Evaluate the matrices in the condensed QP
+  void eval_mat();
 
-  // Evaluate Hessian of the Lagrangian
-  void eval_hess();
+  // Evaluate the vectors in the condensed QP
+  void eval_vec();
 
   // Evaluate the residual function
   void eval_res();
-
-  // Form the condensed QP
-  void eval_tan();
 
   // Regularize the condensed QP
   void regularize();
@@ -81,7 +78,7 @@ public:
   void eval_exp();
   
   // Timings
-  double t_eval_hes_, t_eval_jac_, t_eval_res_, t_eval_tan_, t_eval_exp_, t_solve_qp_, t_mainloop_;
+  double t_eval_mat_, t_eval_res_, t_eval_vec_, t_eval_exp_, t_solve_qp_, t_mainloop_;
   
   /// QP solver for the subproblems
   QPSolver qp_solver_;
@@ -139,23 +136,20 @@ public:
   /// Residual function
   FX res_fcn_;
  
-  // Hessian function
-  FX hes_fcn_;
-
-  // Jacobian function
-  FX jac_fcn_;
+  // Function to calculate the matrices in the reduced QP
+  FX mat_fcn_;
+  int mat_jac_, mat_hes_;
 
   /// Quadratic approximation
-  FX tan_fcn_;
+  FX vec_fcn_;
+  int vec_gf_, vec_g_;
 
   /// Step expansion
   FX exp_fcn_;
   
-  /// Dimensions
-  int ngL_;
-
   // Objective value
-  double obj_k_;
+  double f_;
+  std::vector<double> gf_, gL_, b_gn_;
 
   // Nonlifted variables with bound
   std::vector<double> x_lb_, x_ub_, x_init_, x_opt_, x_step_, x_lam_, x_dlam_;
@@ -165,19 +159,16 @@ public:
   MX p_;
 
   // Nonlinear bounds
-  std::vector<double> g_, g_lb_, g_ub_, g_lam_, g_dlam_, gL_;
+  std::vector<double> g_, g_lb_, g_ub_, g_lam_, g_dlam_;
 
   // Residual function io indices
-  int res_x_, res_p_, res_x_lam_, res_g_lam_, res_p_lam_, res_p_d_;
-  int res_obj_, res_gl_, res_g_;
+  int res_x_, res_p_, res_g_lam_, res_p_lam_, res_p_d_;
+  int res_f_, res_gl_, res_g_;
 
   // Modifier function io indices
-  int mod_x_, mod_p_, mod_x_lam_, mod_g_lam_;
-  int mod_obj_, mod_gl_, mod_g_;
+  int mod_x_, mod_p_, mod_g_lam_;
+  int mod_f_, mod_gl_, mod_g_;
   int mod_du_, mod_dlam_g_;
-
-  // Tangental function
-  int tan_b_obj_, tan_b_g_;
 
   struct Var{
     int n;
@@ -187,7 +178,6 @@ public:
     // Indices of function inputs and outputs
     int res_var, res_lam, res_d, res_lam_d;
     int mod_var, mod_lam, mod_def, mod_defL;
-    int tan_lin, tan_linL;
     int exp_def, exp_defL;
 
     std::vector<double> step, init, opt, lam, dlam;
@@ -220,7 +210,7 @@ public:
   
   // QP
   DMatrix qpH_, qpA_;
-  std::vector<double> qpG_, qpB_;
+  std::vector<double> qpB_;
 
   // Hessian times a step
   std::vector<double> qpH_times_du_;
