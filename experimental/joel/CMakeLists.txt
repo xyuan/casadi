@@ -1,3 +1,8 @@
+# Add IPOPT link directories
+if(IPOPT_FOUND)
+  link_directories(${IPOPT_LIBRARY_DIRS})
+endif()
+
 # Exaple 10.1 from Biegler
 if(IPOPT_FOUND)
   add_executable(biegler_10_1 biegler_10_1.cpp)
@@ -108,4 +113,8 @@ if(WITH_QPOASES AND WITH_IPOPT)
   add_executable(nmpc_example nmpc_example.cpp)
   target_link_libraries(nmpc_example casadi_qpoases_interface casadi_nonlinear_programming casadi_ipopt_interface casadi ${QPOASES_LIBRARIES} ${CASADI_DEPENDENCIES} ${IPOPT_LIBRARIES})
 endif()
+
+add_executable(alt_codegen alt_codegen.cpp)
+target_link_libraries(alt_codegen )
+
 
