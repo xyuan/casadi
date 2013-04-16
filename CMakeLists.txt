@@ -18,6 +18,11 @@ if(COMMAND cmake_policy)
 cmake_policy(SET CMP0011 OLD)
 endif()
 
+# cmake_policy avoid escaping in add_definitions
+if(COMMAND cmake_policy)
+cmake_policy(SET CMP0005 OLD)
+endif()
+
 # We use the FeatureSummary module to get a more readable CMake output
 include(FeatureSummary)
 if (NOT COMMAND add_feature_info)
@@ -98,7 +103,7 @@ SET(${MYPATH} ${MYPATH_NEW} PARENT_SCOPE)
 endfunction() 
 
 # Check if the compiler supports C++11
-foreach(CXX11FLAG_TEST "" "-std=c++11" "-std=c++0x" "-std=gnu++0x" "-std=c++11 --DUSE_TR1_HASHMAP" "-std=c++0x -DUSE_TR1_HASHMAP")
+foreach(CXX11FLAG_TEST "" "-std=gnu++11" "-std=c++11" "-std=gnu++0x" "-std=c++0x" "-std=c++11 --DUSE_TR1_HASHMAP" "-std=c++0x -DUSE_TR1_HASHMAP")
   if(NOT USE_CXX11)
     # Try to compile test with the proposed flag
     try_compile(USE_CXX11
@@ -263,7 +268,6 @@ add_subdirectory(symbolic)
 add_subdirectory(optimal_control)
 add_subdirectory(nonlinear_programming)
 add_subdirectory(integration)
-add_subdirectory(toolboxes)
 add_subdirectory(examples)
 add_subdirectory(external_packages)
 add_subdirectory(interfaces)
@@ -274,13 +278,6 @@ add_subdirectory(experimental/joel EXCLUDE_FROM_ALL)
 find_package(SWIG)
   if(SWIG_FOUND)
     add_subdirectory(swig EXCLUDE_FROM_ALL) # the swig interfaces are not compiled when typing "make"
-    if(WITH_SWIG_SPLIT)
-      add_custom_target(python DEPENDS _casadi_main _casadi_primitive _casadi_primitive_tools _casadi_noncore) # the python interface is created with the command "make python"
-      add_custom_target(octave DEPENDS casadi_main_octave casadi_primitive_octave casadi_primitive_tools_octave casadi_noncore_octave) # the octave interface is created with the command "make octave"
-    else(WITH_SWIG_SPLIT)
-      add_custom_target(python DEPENDS _casadi) # the python interface is created with the command "make python"
-      add_custom_target(octave DEPENDS casadi_octave ) # the octave interface is created with the command "make octave"
-  endif(WITH_SWIG_SPLIT)
 endif(SWIG_FOUND)
 
 add_subdirectory(documentation/tutorials EXCLUDE_FROM_ALL)
