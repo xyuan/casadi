@@ -26,3 +26,7 @@ install(DIRECTORY ./
    PATTERN ".svn" EXCLUDE
 )
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+set_target_properties(casadi_worhp_interface PROPERTIES COMPILE_FLAGS "-Wno-unused-function")
+endif()
+
