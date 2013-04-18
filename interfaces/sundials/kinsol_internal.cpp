@@ -234,13 +234,13 @@ namespace CasADi{
     }
   }
 
-  void KinsolInternal::evaluate(int nfdir, int nadir){
+  void KinsolInternal::solveNonLinear(){
     // Reset the counters
     t_func_ = 0;
     t_jac_ = 0;
 
     if(verbose()){
-      cout << "KinsolInternal::evaluate: Initial guess = " << output(0).data() << endl;
+      cout << "KinsolInternal::solveNonLinear: Initial guess = " << output(0).data() << endl;
     }
   
     // Get the initial guess
@@ -248,32 +248,20 @@ namespace CasADi{
   
     // Solve the nonlinear system of equations
     int flag = KINSol(mem_, u_, strategy_, u_scale_, f_scale_);
-    if (flag<KIN_SUCCESS) kinsol_error("evaluate",flag);
+    if (flag<KIN_SUCCESS) kinsol_error("KINSol",flag);
   
     // Warn if not successful return
     if(verbose()){
-      if(flag!=KIN_SUCCESS) kinsol_error("evaluate",flag,false);
+      if(flag!=KIN_SUCCESS) kinsol_error("KINSol",flag,false);
     }
   
     // Save the solution
     output(0).set(NV_DATA_S(u_));
 
-    // Save auxillary outputs
-    for(int i=1; i<getNumOutputs(); ++i){
-      output(i).set(f_.output(i));
-    }
-  
     // Print solution
     if(verbose()){
-      cout << "KinsolInternal::evaluate: solution = " << output(0).data() << endl;
-    }
-  
-    // End of function if no sensitivities
-    if(nfdir==0 && nadir==0)
-      return;
-  
-    evaluate_sens(nfdir,nadir);
-  
+      cout << "KinsolInternal::solveNonLinear: solution = " << output(0).data() << endl;
+    }  
   }
 
   void KinsolInternal::func(N_Vector u, N_Vector fval){

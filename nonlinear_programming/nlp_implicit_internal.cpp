@@ -41,7 +41,7 @@ namespace CasADi {
     nlp_solver_ = deepcopy(nlp_solver_,already_copied);
   }
 
-  void NLPImplicitInternal::evaluate(int nfdir, int nadir) {
+  void NLPImplicitInternal::solveNonLinear() {
     // Obtain initial guess
     nlp_solver_.input(NLP_SOLVER_X0).set(output(0));
   
@@ -57,18 +57,6 @@ namespace CasADi {
 
     // Copy the outputs
     output(0).set(nlp_solver_.output(NLP_SOLVER_X));
-  
-    // Save auxillary outputs
-    for(int i=1; i<getNumOutputs(); ++i){
-      output(i).set(f_.output(i));
-    }
-    
-    // End of function if no sensitivities
-    if(nfdir==0 && nadir==0)
-      return;
-  
-    evaluate_sens(nfdir,nadir);
-  
   }
 
   void NLPImplicitInternal::init(){

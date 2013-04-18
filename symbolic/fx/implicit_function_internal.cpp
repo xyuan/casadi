@@ -44,27 +44,25 @@ namespace CasADi{
     // Initialize the residual function
     if(!f_.isInit()) f_.init();
   
+    // Get the number of equations and check consistency
+    casadi_assert_message(f_.output().dense() && f_.output().size2()==1, "Residual must be a dense vector");
+    casadi_assert_message(f_.input().dense() && f_.input().size2()==1, "Unknown must be a dense vector");
+    n_ = f_.output().size();
+    casadi_assert_message(n_ == f_.input().size(), "Dimension mismatch");
+    casadi_assert_message(f_.getNumOutputs()==1, "Auxiliary outputs of ImplicitFunctions are no longer allowed, cf. #669");
+
     // Allocate inputs
     setNumInputs(f_.getNumInputs()-1);
     for(int i=0; i<getNumInputs(); ++i){
       input(i) = f_.input(i+1);
     }
   
-    // Allocate outputs
-    setNumOutputs(f_.getNumOutputs());
+    // Allocate output
+    setNumOutputs(1);
     output(0) = f_.input(0);
-    for(int i=1; i<getNumOutputs(); ++i){
-      output(i) = f_.output(i);
-    }
-
+  
     // Call the base class initializer
     FXInternal::init();
-
-    // Number of equations
-    casadi_assert_message(f_.output().dense() && f_.output().size2()==1, "Residual must be a dense vector");
-    casadi_assert_message(f_.input().dense() && f_.input().size2()==1, "Unknown must be a dense vector");
-    n_ = f_.output().size();
-    casadi_assert_message(n_ == f_.input().size(), "Dimension mismatch");
 
     // Generate Jacobian if not provided
     if(jac_.isNull()) jac_ = f_.jacobian(0,0);
@@ -95,7 +93,9 @@ namespace CasADi{
     
     // Allocate memory for directional derivatives
     ImplicitFunctionInternal::updateNumSens(false);
-
+    
+    // No factorization yet;
+    fact_up_to_date_ = false;
   }
 
   void ImplicitFunctionInternal::updateNumSens(bool recursive){
@@ -106,25 +106,22 @@ namespace CasADi{
     f_.requestNumSens(nfdir_,nadir_);
   }
 
-  void ImplicitFunctionInternal::evaluate_sens(int nfdir, int nadir, bool linsol_prepared) {
+  void ImplicitFunctionInternal::evaluate(int nfdir, int nadir){
+    // Mark factorization as out-of-date. TODO: make this conditional
+    fact_up_to_date_ = false;
+
+    // Solve the nonlinear system of equations
+    solveNonLinear();
+
+    // Quick return if no sensitivities
+    if(nfdir==0 && nadir==0) return;
+
     // Make sure that a linear solver has been provided
     casadi_assert_message(!linsol_.isNull(),"Sensitivities of an implicit function requires a provided linear solver");
     casadi_assert_message(!jac_.isNull(),"Sensitivities of an implicit function requires an exact Jacobian");
   
-  
-    // General scheme:  f(z,x_i) = 0
-    //
-    //  Forward sensitivities:
-    //     dot(f(z,x_i)) = 0
-    //     df/dz dot(z) + Sum_i df/dx_i dot(x_i) = 0
-    //
-    //     dot(z) = [df/dz]^(-1) [ Sum_i df/dx_i dot(x_i) ] 
-    //
-    //     dot(y_i) = dy_i/dz dot(z) + Sum_j dy_i/dx_i dot(x_i)
-    //
-    //  Adjoint sensitivitites:
-
-    if (!linsol_prepared) {
+    // Evaluate and factorize the Jacobian
+    if (!fact_up_to_date_) {
       // Pass inputs
       jac_.setInput(output(),0);
       for(int i=0; i<getNumInputs(); ++i)
@@ -138,7 +135,22 @@ namespace CasADi{
 
       // Prepare the solution of the linear system (e.g. factorize)
       linsol_.prepare();
+      fact_up_to_date_ = true;
     }
+
+  
+    // General scheme:  f(z,x_i) = 0
+    //
+    //  Forward sensitivities:
+    //     dot(f(z,x_i)) = 0
+    //     df/dz dot(z) + Sum_i df/dx_i dot(x_i) = 0
+    //
+    //     dot(z) = [df/dz]^(-1) [ Sum_i df/dx_i dot(x_i) ] 
+    //
+    //     dot(y_i) = dy_i/dz dot(z) + Sum_j dy_i/dx_i dot(x_i)
+    //
+    //  Adjoint sensitivitites:
+
   
     // Pass inputs to function
     f_.setInput(output(0),0);
@@ -164,11 +176,6 @@ namespace CasADi{
     
       // Solve the transposed linear system
       linsol_.solve(&faseed.front(),1,true);
-
-      // Set auxillary adjoint seeds
-      for(int oind=1; oind<getNumOutputs(); ++oind){
-	f_.adjSeed(oind,dir).set(adjSeed(oind,dir));
-      }
     }
   
     // Evaluate
@@ -185,24 +192,6 @@ namespace CasADi{
     
       // Solve the linear system
       linsol_.solve(&fsens.front());
-    }
-  
-    // Get auxillary forward sensitivities
-    if(getNumOutputs()>1){
-      // Pass the seeds to the implicitly defined variables
-      for(int dir=0; dir<nfdir; ++dir){
-	f_.fwdSeed(0,dir).set(fwdSens(0,dir));
-      }
-    
-      // Evaluate
-      f_.evaluate(nfdir);
-  
-      // Get the sensitivities
-      for(int dir=0; dir<nfdir; ++dir){
-	for(int oind=1; oind<getNumOutputs(); ++oind){
-	  fwdSens(oind,dir).set(f_.fwdSens(oind,dir));
-	}
-      }
     }
   
     // Get the adjoint sensitivities
