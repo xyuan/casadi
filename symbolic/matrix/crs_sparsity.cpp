@@ -30,12 +30,15 @@ using namespace std;
 
 namespace CasADi{
 
-  CRSSparsity::CRSSparsity(){
+  CRSSparsity::CRSSparsity(int dummy){
+    casadi_assert(dummy==0);
   }
   
-  CRSSparsity::CRSSparsity(CRSSparsityInternal *node){
-    assignNode(node);
-  }  
+  CRSSparsity CRSSparsity::create(CRSSparsityInternal *node){
+    CRSSparsity ret;
+    ret.assignNode(node);
+    return ret;
+  }
 
   CRSSparsity::CRSSparsity(int nrow, int ncol, bool dense){
     vector<int> col, rowind(nrow+1,0);
