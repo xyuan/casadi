@@ -25,37 +25,33 @@
 using namespace std;
 namespace CasADi{
 
-LinearSolverInternal* LinearSolver::operator->(){
-  return static_cast<LinearSolverInternal*>(FX::operator->());
-}
+  LinearSolverInternal* LinearSolver::operator->(){
+    return static_cast<LinearSolverInternal*>(FX::operator->());
+  }
 
-const LinearSolverInternal* LinearSolver::operator->() const{
+  const LinearSolverInternal* LinearSolver::operator->() const{
     return static_cast<const LinearSolverInternal*>(FX::operator->());
-}
+  }
+ 
+  void LinearSolver::prepare(){
+    (*this)->prepare();
+  }
 
-void LinearSolver::setSparsity(const CRSSparsity& sparsity){
-  (*this)->sparsity_ = sparsity;
-}
+  void LinearSolver::solve(double* x, int nrhs, bool transpose){
+    (*this)->solve(x,nrhs,transpose);
+  }
  
-void LinearSolver::prepare(){
-  (*this)->prepare();
-}
-
-void LinearSolver::solve(double* x, int nrhs, bool transpose){
-  (*this)->solve(x,nrhs,transpose);
-}
+  void LinearSolver::solve(){
+    (*this)->solve();
+  }
  
-void LinearSolver::solve(){
-  (*this)->solve();
-}
+  bool LinearSolver::prepared() const{
+    return (*this)->prepared_;
+  }
  
-bool LinearSolver::prepared() const{
-  return (*this)->prepared_;
-}
- 
-bool LinearSolver::checkNode() const{
-  return dynamic_cast<const LinearSolverInternal*>(get())!=0;
-}
+  bool LinearSolver::checkNode() const{
+    return dynamic_cast<const LinearSolverInternal*>(get())!=0;
+  }
 
 } // namespace CasADi
 

@@ -26,51 +26,48 @@
 #include "fx.hpp"
 
 /** \defgroup LinearSolver_doc 
-* 
-* Solves the linear system A.x = b for x
-*  with A square and non-singular
-*
-*  If A is structurally singular, an error will be thrown during init.
-*  If A is numerically singular, the prepare step will fail.
-*/
+ * 
+ * Solves the linear system A.x = b for x
+ *  with A square and non-singular
+ *
+ *  If A is structurally singular, an error will be thrown during init.
+ *  If A is numerically singular, the prepare step will fail.
+ */
 
 namespace CasADi{
   
-// Forward declaration of internal class
-class LinearSolverInternal;
+  // Forward declaration of internal class
+  class LinearSolverInternal;
 
-/** Abstract base class for the linear solver classes
-*  @copydoc LinearSolver_doc
-\author Joel Andersson
-\date 2010
-*/
-class LinearSolver : public FX{
-public:
+  /** Abstract base class for the linear solver classes
+   *  @copydoc LinearSolver_doc
+   \author Joel Andersson
+   \date 2010
+  */
+  class LinearSolver : public FX{
+  public:
   
-  /// Access functions of the node
-  LinearSolverInternal* operator->();
+    /// Access functions of the node
+    LinearSolverInternal* operator->();
 
-  /// Const access functions of the node
-  const LinearSolverInternal* operator->() const;
+    /// Const access functions of the node
+    const LinearSolverInternal* operator->() const;
 
-  /// Set sparsity (before initialization)
-  void setSparsity(const CRSSparsity& sparsity);
+    /// Factorize the matrix
+    void prepare();
+
+    /// Solve the system of equations, internal vector
+    void solve();
+
+    /// Solve the factorized system of equations
+    void solve(double* x, int nrhs=1, bool transpose=false);
+
+    /// Check if prepared
+    bool prepared() const;
   
-  /// Factorize the matrix
-  void prepare();
-
-  /// Solve the system of equations, internal vector
-  void solve();
-
-  /// Solve the factorized system of equations
-  void solve(double* x, int nrhs=1, bool transpose=false);
-
-  /// Check if prepared
-  bool prepared() const;
-  
-  /// Check if the node is pointing to the right type of object
-  virtual bool checkNode() const;
-};
+    /// Check if the node is pointing to the right type of object
+    virtual bool checkNode() const;
+  };
 
 } // namespace CasADi
 
