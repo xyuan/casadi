@@ -402,7 +402,7 @@ namespace CasADi{
   MX MXNode::getUnary(int op) const{
     if(operation_checker<F0XChecker>(op) && isZero()){
       // If identically zero
-      return MX::sparse(size1(),size2());
+      return MX::zeros(sparsity());
     } else {
       // Create a new node
       return MX::create(new UnaryMX(Operation(op),shared_from_this<MX>()));
@@ -411,16 +411,11 @@ namespace CasADi{
 
   MX MXNode::getBinarySwitch(int op, const MX& y) const{
     // Make sure that dimensions match
-    casadi_assert_message((sparsity().scalar() || y.scalar() || (sparsity().size1()==y.size1() && size2()==y.size2())),"Dimension mismatch." << "lhs is " << sparsity().dimString() << ", while rhs is " << y.dimString());
-  
-    // Quick return if zero
-    if((operation_checker<F0XChecker>(op) && isZero()) || 
-       (operation_checker<FX0Checker>(op) && y->isZero())){
-      return MX::sparse(std::max(size1(),y.size1()),std::max(size2(),y.size2()));
-    }
-    
+    casadi_assert_message((sparsity().scalar(false) || y.scalar() || (sparsity().size1()==y.size1() && size2()==y.size2())),
+			  "Dimension mismatch." << "lhs is " << sparsity().dimString() << ", while rhs is " << y.dimString());
+      
     // Create binary node
-    if(sparsity().scalar()){
+    if(sparsity().scalar(false)){
       if(size()==0){
 	return toMatrix(MX(0)->getBinary(op,y,true,false),y.sparsity());
       } else {
@@ -451,17 +446,60 @@ namespace CasADi{
     }
   }
 
-  MX MXNode::getBinary(int op, const MX& y, bool ScX, bool ScY) const{
-    // Handle special cases for the second argument
-    if(y.isConstant()){
-      // Make the constant the first argument, if possible
-      if(getOp()!=OP_CONST && operation_checker<CommChecker>(op))
-	return y->getBinary(op,shared_from_this<MX>(),ScY,ScX);
-      else if(op==OP_CONSTPOW && y->isValue(2))
-	return getUnary(OP_SQ);
+  MX MXNode::getBinary(int op, const MX& y, bool scX, bool scY) const{
+    // If identically zero due to one argumebt being zero
+    if((operation_checker<F0XChecker>(op) && isZero()) ||(operation_checker<FX0Checker>(op) && y->isZero())){
+      return MX::zeros(sparsity());
     }
 
-    if(ScX){
+    // Handle special operations (independent of type)
+    switch(op){
+    case OP_SUB:
+    case OP_NE:
+    case OP_LT:
+      if(y.isEqual(this,maxDepth())) return MX::zeros(sparsity());
+      break;
+    case OP_DIV:
+    case OP_EQ:
+    case OP_LE:
+      if(y.isEqual(this,maxDepth())) return MX::ones(sparsity());
+      break;
+    case OP_MUL:
+      if(y.isEqual(this,maxDepth())) return getUnary(OP_SQ);
+      break;
+    default: break; // no rule
+    }
+
+    // Handle special cases for the second argument
+    switch(y->getOp()){
+    case OP_CONST:
+      // Make the constant the first argument, if possible
+      if(getOp()!=OP_CONST && operation_checker<CommChecker>(op)){
+    	return y->getBinary(op,shared_from_this<MX>(),scY,scX);
+      } else if(op==OP_CONSTPOW && y->isValue(2)){
+    	return getUnary(OP_SQ);
+      } else if(((op==OP_ADD || op==OP_SUB) && y->isZero()) || ((op==OP_MUL || op==OP_DIV) && y->isValue(1))){
+    	return shared_from_this<MX>();
+      }
+      break;
+    case OP_NEG:
+      if(op==OP_ADD){
+    	return getBinary(OP_SUB,y->dep(),scX,scY);
+      } else if(op==OP_SUB){
+    	return getBinary(OP_ADD,y->dep(),scX,scY);
+      }
+      break;
+    case OP_INV:
+      if(op==OP_MUL){
+    	return getBinary(OP_DIV,y->dep(),scX,scY);
+      } else if(op==OP_DIV){
+    	return getBinary(OP_MUL,y->dep(),scX,scY);
+      }
+      break;
+    default: break; // no rule
+    }
+
+    if(scX){
       // Check if it is ok to loop over nonzeros only
       if(y.dense() || operation_checker<FX0Checker>(op)){
 	// Loop over nonzeros
@@ -470,7 +508,7 @@ namespace CasADi{
 	// Put a densification node in between
 	return getBinary(op,densify(y),true,false);
       }
-    } else if(ScY){
+    } else if(scY){
       // Check if it is ok to loop over nonzeros only
       if(sparsity().dense() || operation_checker<F0XChecker>(op)){
 	// Loop over nonzeros
@@ -496,6 +534,16 @@ namespace CasADi{
 
   Matrix<int> MXNode::mapping() const{
     throw CasadiException(string("MXNode::mapping not defined for class ") + typeid(*this).name());
+  }
+
+  bool MXNode::sameOpAndDeps(const MXNode* node, int depth) const{
+    if(getOp()!=node->getOp() || ndep()!=node->ndep())
+      return false;
+    for(int i=0; i<ndep(); ++i){
+      if(!dep(i).isEqual(node->dep(i),depth-1))
+	return false;
+    }
+    return true;
   }
 
 } // namespace CasADi
