@@ -137,7 +137,7 @@ namespace CasADi{
   }
 
   bool isMinusOne(const MX& ex){
-    return !ex.isNull() && ex->isMinusOne();
+    return !ex.isNull() && ex->isValue(-1);
   }
 
   bool isIdentity(const MX& ex){
@@ -216,7 +216,11 @@ namespace CasADi{
   }
 
   MX vecNZ(const MX& x) {
-    return reshape(trans(x),sp_dense(x.size(),1));
+    if(x.dense()){
+      return flatten(trans(x));
+    } else {
+      return trans(x)->getGetNonzeros(sp_dense(x.size()),range(x.size()));
+    }
   }
 
   MX if_else(const MX &cond, const MX &if_true, const MX &if_false){

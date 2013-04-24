@@ -431,23 +431,11 @@ namespace CasADi{
   }
 
   MX MX::binary(int op, const MX &x, const MX &y){
-    return x->getBinary(op,y);
+    return x->getBinarySwitch(op,y);
   }
 
   MX MX::unary(int op, const MX &x){
     return x->getUnary(Operation(op));
-  }
-
-  MX MX::scalar_matrix(int op, const MX &x, const MX &y){
-    return x->getScalarMatrix(op,y);
-  }
-
-  MX MX::matrix_scalar(int op, const MX &x, const MX &y){
-    return x->getMatrixScalar(op,y);
-  }
-
-  MX MX::matrix_matrix(int op, const MX &x, const MX &y){
-    return x->getMatrixMatrix(op,y);
   }
 
   MXNode* MX::operator->(){
@@ -771,19 +759,7 @@ namespace CasADi{
   }
 
   MX MX::__mul__(const MX& y) const{
-    const MX& x = *this;
-    bool samesp = x.sparsity()==y.sparsity();
-    if((samesp || x.scalar()) && isOne(x)){
-      return y;
-    } else if((samesp || x.scalar()) && isMinusOne(x)){
-      return -y;
-    } else if((samesp || y.scalar()) && isOne(y)){
-      return x;
-    } else if((samesp || y.scalar()) && isMinusOne(y)){
-      return -x;
-    } else {
-      return MX::binary(OP_MUL,x,y);
-    }
+    return MX::binary(OP_MUL,*this,y);
   }
 
   MX MX::__div__(const MX& y) const{
