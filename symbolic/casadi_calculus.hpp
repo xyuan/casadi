@@ -454,6 +454,8 @@ namespace CasADi{
   template<>      struct F0XChecker<OP_MUL>{ static const bool check=true;};
   template<>      struct F0XChecker<OP_DIV>{ static const bool check=true;};
   template<>      struct F0XChecker<OP_NEG>{ static const bool check=true;};
+  template<>      struct F0XChecker<OP_POW>{ static const bool check=true;};
+  template<>      struct F0XChecker<OP_CONSTPOW>{ static const bool check=true;};
   template<>      struct F0XChecker<OP_SQRT>{ static const bool check=true;};
   template<>      struct F0XChecker<OP_SQ>{ static const bool check=true;};
   template<>      struct F0XChecker<OP_SIN>{ static const bool check=true;};
@@ -501,6 +503,21 @@ namespace CasADi{
   template<>      struct CommChecker<OP_NE>{ static const bool check=true;};
   template<>      struct CommChecker<OP_AND>{ static const bool check=true;};
   template<>      struct CommChecker<OP_OR>{ static const bool check=true;};
+  //@}
+
+  //@{
+  /// Always non-negative (false by default)
+  template<int I> struct NonnegativeChecker{ static const bool check=false;};
+  template<>      struct NonnegativeChecker<OP_SQRT>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_SQ>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_EXP>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_LT>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_LE>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_EQ>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_NE>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_NOT>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_AND>{ static const bool check=true;};
+  template<>      struct NonnegativeChecker<OP_OR>{ static const bool check=true;};
   //@}
 
   //@{
