@@ -213,10 +213,9 @@ class Sparsitytests(casadiTestCase):
     
     
   def test_refcount(self):
-      return #Ticket 147
       x = DMatrix(sp_tril(4),5)
       s = mul(x,x).sparsity()
-      self.assertEqual(s.numel(),10)
+      self.assertEqual(s.numel(),16)
       
   def test_splower(self):
     sp = CRSSparsity(3,4,[1,2,1],[0,2,2,3])
@@ -227,13 +226,13 @@ class Sparsitytests(casadiTestCase):
     
   def test_diag(self):
     self.message("diag")
-    mapping = IVector()
     A = CRSSparsity(5,5)
     A.getNZ(1,1)
     A.getNZ(2,4)
     A.getNZ(3,3)
     
-    B = DMatrix(A.diag(mapping),1)
+    sp, mapping = A.diag()
+    B = DMatrix(sp,1)
     
     self.checkarray(array([[0],[1],[0],[1],[0]]),B,"diag(matrix)")
     self.checkarray(array([0,2]),array(list(mapping)),"diag(vector)")
@@ -245,7 +244,8 @@ class Sparsitytests(casadiTestCase):
     A.getNZ(2,0)
     A.getNZ(4,0)
     
-    B = DMatrix(A.diag(mapping),1)
+    sp, mapping = A.diag()
+    B = DMatrix(sp,1)
     
     self.checkarray(array([[0,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,1]]),B,"diag(vector)")
     
@@ -256,7 +256,8 @@ class Sparsitytests(casadiTestCase):
     A.getNZ(0,2)
     A.getNZ(0,4)
     
-    B = DMatrix(A.diag(mapping),1)
+    sp, mapping = A.diag()
+    B = DMatrix(sp,1)
     
     self.checkarray(array([[0,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,1]]),B,"diag(vector)")
     
@@ -378,14 +379,9 @@ class Sparsitytests(casadiTestCase):
     for i in nza:
       a.getNZ(i[0],i[1])
       
+    A1, B1= a.getSparsityCCS()
     
-    A1 = IVector()
-    B1 = IVector()
-    a.getSparsityCCS(A1,B1)
-    
-    A2 = IVector()
-    B2 = IVector()
-    (a.T).getSparsityCRS(A2,B2)
+    A2, B2 = (a.T).getSparsityCRS()
     
     print A1, B1
     print A2, B2
@@ -404,14 +400,7 @@ class Sparsitytests(casadiTestCase):
       AP = A[perm,perm]
       #AP.sparsity().spy()
 
-      rowperm = IVector()
-      colperm = IVector()
-      rowblock = IVector()
-      colblock = IVector()
-      coarse_rowblock = IVector()
-      coarse_colblock = IVector()
-
-      AP.sparsity().dulmageMendelsohn 	( rowperm, colperm, rowblock,	colblock,	coarse_rowblock, coarse_colblock)
+      ret, rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock = AP.sparsity().dulmageMendelsohn()
 
       Ar = AP[rowperm,colperm]
       
@@ -447,13 +436,6 @@ class Sparsitytests(casadiTestCase):
       
       AP = A[perm,perm]
       #AP.sparsity().spy()
-
-      rowperm = IVector()
-      colperm = IVector()
-      rowblock = IVector()
-      colblock = IVector()
-      coarse_rowblock = IVector()
-      coarse_colblock = IVector()
 
       n,p,r = AP.sparsity().stronglyConnectedComponents()
       
