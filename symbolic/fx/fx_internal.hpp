@@ -59,8 +59,8 @@ namespace CasADi{
     void evaluateCompressed(int nfdir, int nadir);
 
     /** \brief Initialize
-	Initialize and make the object ready for setting arguments and evaluation. This method is typically called after setting options but before evaluating. 
-	If passed to another class (in the constructor), this class should invoke this function when initialized. */
+        Initialize and make the object ready for setting arguments and evaluation. This method is typically called after setting options but before evaluating. 
+        If passed to another class (in the constructor), this class should invoke this function when initialized. */
     virtual void init();
 
     /** \brief  Update the number of sensitivity directions during or after initialization, 
@@ -79,30 +79,33 @@ namespace CasADi{
     /** \brief  Reset the sparsity propagation */
     virtual void spInit(bool fwd){}
     
-    /** \brief  Evaluate symbolically, SX type */
+    /** \brief  Evaluate symbolically, SX type, possibly nonmatching sparsity patterns */
     virtual void evalSX(const std::vector<SXMatrix>& arg, std::vector<SXMatrix>& res, 
                         const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
-                        const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens,
-                        bool output_given);
+                        const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens);
 
     /** \brief  Evaluate symbolically, MX type */
     virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res, 
                         const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
-                        const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens,
-                        bool output_given);
+                        const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens);
+
+    /** \brief  Evaluate symbolically, SX type, matching sparsity patterns */
+    virtual void evalSXsparse(const std::vector<SXMatrix>& arg, std::vector<SXMatrix>& res, 
+                              const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
+                              const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens);
     
     /** \brief Call a function, MX type (overloaded) */
     void call(const MXVector& arg, MXVector& res, 
               const MXVectorVector& fseed, MXVectorVector& fsens, 
               const MXVectorVector& aseed, MXVectorVector& asens,
-              bool output_given, bool always_inline, bool never_inline);
+              bool always_inline, bool never_inline);
     
     /** \brief Call a function, SX type (overloaded) */
     void call(const std::vector<SXMatrix>& arg, std::vector<SXMatrix>& res, 
               const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
               const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens,
-              bool output_given, bool always_inline, bool never_inline);
-    
+              bool always_inline, bool never_inline);
+        
     //@{
     /** \brief Return Hessian function */
     FX hessian(int iind, int oind);

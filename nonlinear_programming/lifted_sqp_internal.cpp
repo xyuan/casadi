@@ -269,7 +269,7 @@ void LiftedSQPInternal::init(){
     Z_fwdSeed[1][Z_LAM_X].setZero();
     Z_fwdSeed[1][Z_LAM_F2] = dlam_f2;
     
-    zfcn.eval(zfcn_in,zfcn_out,Z_fwdSeed,Z_fwdSens,Z_adjSeed,Z_adjSens,true);
+    zfcn.eval(zfcn_in,zfcn_out,Z_fwdSeed,Z_fwdSens,Z_adjSeed,Z_adjSens);
     
     b1 += Z_fwdSens[0][Z_F12](Slice(0,nf1));
     b2 += Z_fwdSens[0][Z_F12](Slice(nf1,B.size1()));
@@ -430,18 +430,18 @@ void LiftedSQPInternal::evaluate(int nfdir, int nadir){
       
       // Make sure symmetric
       if(b!=c){
-	casadi_assert_warning(fabs(b-c)<1e-10,"Hessian is not symmetric: " << b << " != " << c);
-	B1_k.elem(1,0) = c = b;
+        casadi_assert_warning(fabs(b-c)<1e-10,"Hessian is not symmetric: " << b << " != " << c);
+        B1_k.elem(1,0) = c = b;
       }
       
       double eig_smallest = (a+d)/2 - std::sqrt(4*b*c + (a-d)*(a-d))/2;
       double threshold = 1e-8;
       if(eig_smallest<threshold){
-	// Regularization
-	reg = threshold-eig_smallest;
-	std::cerr << "Regularization with " << reg << " to ensure positive definite Hessian." << endl;
-	B1_k(0,0) += reg;
-	B1_k(1,1) += reg;
+        // Regularization
+        reg = threshold-eig_smallest;
+        std::cerr << "Regularization with " << reg << " to ensure positive definite Hessian." << endl;
+        B1_k(0,0) += reg;
+        B1_k(1,1) += reg;
       }
     }
     

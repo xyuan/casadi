@@ -65,8 +65,8 @@ namespace CasADi{
   }
 
   void FX::call(const MXVector& arg, MXVector& res,  const MXVectorVector& fseed, MXVectorVector& fsens, 
-		const MXVectorVector& aseed, MXVectorVector& asens, bool output_given){
-    (*this)->call(arg,res,fseed,fsens,aseed,asens,output_given,false,true);
+                const MXVectorVector& aseed, MXVectorVector& asens){
+    (*this)->call(arg,res,fseed,fsens,aseed,asens,false,true);
   }
 
   vector<vector<MX> > FX::call(const vector<vector<MX> > &x, const Dictionary& paropt){
@@ -82,7 +82,7 @@ namespace CasADi{
     Dictionary::const_iterator ii=paropt.find("parallelization");
     if(ii!=paropt.end() && ii->second=="expand"){
       for(int i=0; i<x.size(); ++i){
-	ret[i] = call(x[i]);
+        ret[i] = call(x[i]);
       }
       return ret;
     }
@@ -248,68 +248,41 @@ namespace CasADi{
   }
 
   vector<SXMatrix> FX::evalSX(const vector<SXMatrix>& arg){
-    casadi_assert_message(isInit(),"Function has not been initialized");
-  
-    // Copy the arguments into a new vector with the right sparsity
-    casadi_assert_message(arg.size()<=getNumInputs(), "FX::evalSX: number of passed-in dependencies (" << arg.size() << ") should not exceed the number of inputs of the function (" << getNumInputs() << ").");
-    vector<SXMatrix> arg2 = arg;
-    arg2.resize(getNumInputs());
-    for(int iind=0; iind<arg.size(); ++iind){
-      // If sparsities do not match, we need to map the nonzeros onto the new pattern
-      if(!(arg2[iind].sparsity()==input(iind).sparsity())){
-	arg2[iind] = project(arg2[iind],input(iind).sparsity());
-      }
-    }
-
-    // Create result vector with correct sparsity for the result
-    vector<SXMatrix> res(getNumOutputs());
-    for(int i=0; i<res.size(); ++i){
-      res[i] = SXMatrix(output(i).sparsity());
-    }
-  
-    // No sensitivities
+    vector<SXMatrix> res;
     vector<vector<SXMatrix> > dummy;
-  
-    // Evaluate the algorithm
-    (*this)->evalSX(arg2,res,dummy,dummy,dummy,dummy,false);
-  
-    // Return the result
+    (*this)->evalSX(arg,res,dummy,dummy,dummy,dummy);
     return res;
   }
 
   vector<MX> FX::evalMX(const vector<MX>& arg){
     vector<MX> res;
     vector<vector<MX> > dummy;
-    (*this)->evalMX(arg,res,dummy,dummy,dummy,dummy,false);
+    (*this)->evalMX(arg,res,dummy,dummy,dummy,dummy);
     return res;
   }
 
   void FX::evalSX(const std::vector<SXMatrix>& arg, std::vector<SXMatrix>& res, 
-		  const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
-		  const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens,
-		  bool output_given){
-    (*this)->evalSX(arg,res,fseed,fsens,aseed,asens,output_given);
+                  const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
+                  const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens){
+    (*this)->evalSX(arg,res,fseed,fsens,aseed,asens);
   }
 
   void FX::evalMX(const std::vector<MX>& arg, std::vector<MX>& res, 
-		  const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
-		  const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens,
-		  bool output_given){
-    (*this)->evalMX(arg,res,fseed,fsens,aseed,asens,output_given);
+                  const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
+                  const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens){
+    (*this)->evalMX(arg,res,fseed,fsens,aseed,asens);
   }
                         
   void FX::eval(const std::vector<SXMatrix>& arg, std::vector<SXMatrix>& res, 
-		const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
-		const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens,
-		bool output_given){
-    (*this)->evalSX(arg,res,fseed,fsens,aseed,asens,output_given);
+                const std::vector<std::vector<SXMatrix> >& fseed, std::vector<std::vector<SXMatrix> >& fsens, 
+                const std::vector<std::vector<SXMatrix> >& aseed, std::vector<std::vector<SXMatrix> >& asens){
+    (*this)->evalSX(arg,res,fseed,fsens,aseed,asens);
   }
 
   void FX::eval(const std::vector<MX>& arg, std::vector<MX>& res, 
-		const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
-		const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens,
-		bool output_given){
-    (*this)->evalMX(arg,res,fseed,fsens,aseed,asens,output_given);
+                const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
+                const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens){
+    (*this)->evalMX(arg,res,fseed,fsens,aseed,asens);
   }
 
   void FX::spEvaluate(bool fwd){

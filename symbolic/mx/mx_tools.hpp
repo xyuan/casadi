@@ -35,6 +35,9 @@ namespace CasADi{
 
   /** \brief  concatenate horizontally */
   MX horzcat(const std::vector<MX>& comp);
+  
+  /** \brief Construct a matrix from a list of list of blocks.*/
+  MX blockcat(const std::vector< std::vector<MX > > &v);
 
   /** \brief  concatenate vertically while vectorizing all arguments with vec */
   MX veccat(const std::vector<MX>& comp);
@@ -302,8 +305,8 @@ namespace CasADi{
 
   /** \brief Extract shared subexpressions from an set of expressions */
   void extractShared(std::vector<MX>& ex, 
-		     std::vector<MX>& v, std::vector<MX>& vdef, 
-		     const std::string& v_prefix="v_", const std::string& v_suffix="");
+                     std::vector<MX>& v, std::vector<MX>& vdef, 
+                     const std::string& v_prefix="v_", const std::string& v_suffix="");
 
   /** \brief Print compact, introducing new variables for shared subexpressions */
   void printCompact(const MX& ex, std::ostream &stream=std::cout);

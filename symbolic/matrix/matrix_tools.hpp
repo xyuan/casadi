@@ -137,13 +137,20 @@ Matrix<T> flatten(const Matrix<T>& a);
 template<class T>
 Matrix<T> vecNZ(const Matrix<T>& a);
 
-
+/** \brief Construct a matrix from a list of list of blocks.
+*/
 template<class T>
 Matrix<T> blockcat(const std::vector< std::vector<Matrix<T> > > &v);
 
+/** \brief Concatenate a list of matrices vertically
+* Alternative terminology: vertical stack, vstack, vertical append, [a;b]
+*/
 template<class T>
 Matrix<T> vertcat(const std::vector<Matrix<T> > &v);
 
+/** \brief Concatenate a list of matrices horizontally
+* Alternative terminology: horizontal stack, hstack, horizontal append, [a b]
+*/
 template<class T>
 Matrix<T> horzcat(const std::vector<Matrix<T> > &v);
 
@@ -1175,8 +1182,8 @@ void addMultiple(const Matrix<T>& A, const std::vector<T>& v, std::vector<T>& re
     // Check dimensions
     if(!(A.empty() && sparsity.numel()==0)){
       casadi_assert_message(A.size1()==sparsity.size1() && A.size2()==sparsity.size2(),
-			    "Shape mismatch. Expecting " << A.dimString() << ", but got " << 
-			    sparsity.dimString() << " instead.");
+                            "Shape mismatch. Expecting " << A.dimString() << ", but got " << 
+                            sparsity.dimString() << " instead.");
     }
     
     // Return value
@@ -1193,7 +1200,7 @@ void addMultiple(const Matrix<T>& A, const std::vector<T>& v, std::vector<T>& re
     std::vector<T>& ret_data = ret.data();
     for(int k=0; k<known_ind.size(); ++k){
       if(known_ind[k]!=-1){
-	ret_data[known_ind[k]] = A_data[k];
+        ret_data[known_ind[k]] = A_data[k];
       }
     }
     return ret;
