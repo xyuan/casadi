@@ -167,6 +167,7 @@ namespace CasADi{
       if(op==OP_NEG) return dep();
       else if(op==OP_SQ) return dep()->getUnary(OP_SQ);
       else if(op==OP_FABS) return dep()->getUnary(OP_FABS);
+      else if(op==OP_COS) return dep()->getUnary(OP_COS);
       break;
     case OP_SQRT:
       if(op==OP_SQ) return dep();
@@ -186,6 +187,7 @@ namespace CasADi{
     case OP_FABS:
       if(op==OP_FABS) return shared_from_this<MX>();
       else if(op==OP_SQ) return dep()->getUnary(OP_SQ);
+      else if(op==OP_COS) return dep()->getUnary(OP_COS);
       break;
     case OP_INV:
       if(op==OP_INV) return dep();
@@ -201,6 +203,17 @@ namespace CasADi{
     switch(op_){
     case OP_NEG:
       if(op==OP_ADD) return y->getBinary(OP_SUB,dep(),scY,scX);
+      else if(op==OP_MUL) return -dep()->getBinary(OP_MUL,y,scY,scX);
+      else if(op==OP_DIV) return -dep()->getBinary(OP_DIV,y,scY,scX);
+      break;
+    case OP_TWICE:
+      if(op==OP_SUB && y.isEqual(dep(),maxDepth())) return dep();
+      break;
+    case OP_SQ:
+      if(op==OP_ADD && y.getOp()==OP_SQ) /*sum of squares:*/ 
+        if((dep().getOp()==OP_SIN && y->dep().getOp()==OP_COS) || (dep().getOp()==OP_COS && y->dep()->getOp()==OP_SIN)) /* sin^2(x)+sin^2(y) */
+          if(dep()->dep().isEqual(y->dep()->dep(),maxDepth())) /*sin^2(x) + cos^2(x) */
+            return MX::ones(y.sparsity());
       break;
     default: break; // no rule
     }
