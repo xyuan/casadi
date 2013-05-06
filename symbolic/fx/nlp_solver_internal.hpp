@@ -32,15 +32,49 @@ namespace CasADi{
 
   @copydoc NLPSolver_doc
   \author Joel Andersson 
-  \date 2010
+  \date 2010-2013
 */
 class NLPSolverInternal : public FXInternal{
 
 public:
-  explicit NLPSolverInternal(const FX& F, const FX& G, const FX& H, const FX& J, const FX& GF=FX());
+  /// Constructor
+  NLPSolverInternal(const FX& nlp, const FX& F, const FX& G, const FX& H, const FX& J, const FX& GF);
+
+  /// Destructor
   virtual ~NLPSolverInternal() = 0;
 
+  /// Initialize
   virtual void init();
+
+  /// Prints out a human readable report about possible constraint violations - all constraints
+  void reportConstraints(std::ostream &stream=std::cout);
+  
+  /// Warns the user about inital bounds, if option 'warn_initial_bounds' is true
+  virtual void checkInitialBounds();
+  
+  /// Set options that make the NLP solver more suitable for solving QPs
+  virtual void setQPOptions() { };
+
+  /// The NLP
+  FX nlp_;
+
+  /// Number of variables
+  int nx_;
+  
+  /// Number of constraints
+  int ng_;
+  
+  /// Number of parameters
+  int np_;
+  
+  /// callback function, executed at each iteration
+  FX callback_;
+  
+  /// Execute the callback function only after this amount of iterations
+  int callback_step_;
+
+  /// --- From here on legacy syntax, #566
+  bool legacy_syntax_;
 
   /// objective function
   FX F_;
@@ -60,32 +94,7 @@ public:
   bool gauss_newton_; 
   
   /// use parametric NLP formulation
-  bool parametric_; 
-
-  /// Number of variables
-  int nx_;
-  
-  /// Number of constraints
-  int ng_;
-  
-  /// Number of parameters
-  int np_;
-  
-  /// callback function, executed at each iteration
-  FX callback_;
-  
-  /// Execute the callback function only after this amount of iterations
-  int callback_step_;
-  
-  /// Prints out a human readable report about possible constraint violations - all constraints
-  void reportConstraints(std::ostream &stream=std::cout);
-  
-  /// Warns the user about inital bounds, if option 'warn_initial_bounds' is true
-  virtual void checkInitialBounds();
-  
-  /// Set options that make the NLP solver more suitable for solving QPs
-  virtual void setQPOptions() { };
-    
+  bool parametric_;       
 };
 
 } // namespace CasADi
