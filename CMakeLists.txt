@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 2.0)
+cmake_minimum_required(VERSION 2.6)
 project(casadi C CXX)
 set(PACKAGE_NAME "CasADi")
 set(PACKAGE_VERSION "1.6.0+")
 
-# For systems with git insatlled, find out revsion and description.
+# For systems with git installed, find out revsion and description.
 execute_process(COMMAND git rev-parse HEAD
 OUTPUT_VARIABLE git_revision
 OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -15,6 +15,15 @@ OUTPUT_VARIABLE git_describe
 OUTPUT_STRIP_TRAILING_WHITESPACE
 ERROR_QUIET
 )
+
+#begin workaround for http://public.kitware.com/Bug/print_bug_page.php?bug_id=9220
+SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
+include(language_support)
+workaround_9220(Fortran Fortran_language_works)
+if(Fortran_language_works)
+  enable_language(Fortran OPTIONAL)
+endif()
+#end workaround
 
 # find the macports python libs if they exist
 if(APPLE)
@@ -28,7 +37,9 @@ endif()
 
 # cmake_policy propagation rules
 if(COMMAND cmake_policy)
+if(POLICY CMP0011)
 cmake_policy(SET CMP0011 OLD)
+endif()
 endif()
 
 # cmake_policy avoid escaping in add_definitions
@@ -110,7 +121,19 @@ function(canonicalize_paths MYPATH)
 set(MYPATH_NEW "") 
  
 foreach(arg ${${MYPATH}}) 
-  get_filename_component(CANONICAL_PATH ${arg} REALPATH) 
+  # get_filename_component(CANONICAL_PATH ${arg} REALPATH) 
+  #  REALPATH is not defined in cmake 2.6.0
+  # 
+  # The following is a workaround:
+  set(CANONICAL_PATH "${arg}")
+  foreach(i RANGE 10)
+    string(REGEX REPLACE "/([^/]*)/\\.\\./" "/" CANONICAL_PATH "${CANONICAL_PATH}")
+  endforeach()
+  string(REGEX REPLACE "/([^/]*)/\\.\\.$" "" CANONICAL_PATH "${CANONICAL_PATH}")
+  foreach(i RANGE 10)
+    string(REGEX REPLACE "\\\\([^\\\\]*)\\\\\\.\\.\\\\" "\\\\" CANONICAL_PATH "${CANONICAL_PATH}")
+  endforeach()
+  string(REGEX REPLACE "\\\\([^\\\\]*)\\\\\\.\\.$" ""  CANONICAL_PATH "${CANONICAL_PATH}")
   SET(MYPATH_NEW ${MYPATH_NEW} "${CANONICAL_PATH}") 
 endforeach() 
 SET(${MYPATH} ${MYPATH_NEW} PARENT_SCOPE) 
@@ -184,7 +207,6 @@ if(WITH_OPENMP)
 endif()
 
 #SET(LIBRARY_OUTPUT_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib/)
 
