@@ -413,7 +413,9 @@ bool isSymbolicSparse(const SXMatrix& ex) {
 }
 
 SXMatrix gradient(const SXMatrix& ex, const SXMatrix &arg) {
-  return trans(jacobian(ex,arg));
+  SXFunction temp(arg,ex); // make a runtime
+  temp.init();
+  return temp.grad();
 }
   
 SXMatrix jacobian(const SXMatrix& ex, const SXMatrix &arg) {
@@ -423,9 +425,11 @@ SXMatrix jacobian(const SXMatrix& ex, const SXMatrix &arg) {
 }
 
 void hessian(const SXMatrix& ex, const SXMatrix &arg, SXMatrix &H, SXMatrix &g) {
-  // this algorithm is _NOT_ linear time (but very easy to implement).. Change to higher order AD!
   g = gradient(ex,arg);  
-  H = gradient(g,arg);
+
+  SXFunction temp(arg,g); // make a runtime
+  temp.init();
+  H = temp.jac(0,0,false,true);
 }
 
 SXMatrix hessian(const SXMatrix& ex, const SXMatrix &arg) {
