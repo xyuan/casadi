@@ -40,6 +40,7 @@
 #include "determinant.hpp"
 #include "inverse.hpp"
 #include "inner_prod.hpp"
+#include "norm.hpp"
 
 // Template implementations
 #include "setnonzeros_impl.hpp"
@@ -271,6 +272,12 @@ namespace CasADi{
   void MXNode::evaluateMX(const MXPtrV& input, MXPtrV& output){
     MXPtrVV fwdSeed, fwdSens, adjSeed, adjSens;
     evaluateMX(input,output,fwdSeed, fwdSens, adjSeed, adjSens,false);
+  }
+
+  void MXNode::evaluateMX(const MXPtrV& input, MXPtrV& output, 
+                          const MXPtrVV& fwdSeed, MXPtrVV& fwdSens, 
+                          const MXPtrVV& adjSeed, MXPtrVV& adjSens, bool output_given){
+    throw CasadiException(string("MXNode::evaluateMX not defined for class ") + typeid(*this).name());
   }
 
   void MXNode::propagateSparsity(DMatrixPtrV& input, DMatrixPtrV& output, bool fwd){
@@ -626,7 +633,37 @@ namespace CasADi{
 
 
   MX MXNode::getInnerProd(const MX& y) const{
-    return MX::create(new InnerProd(shared_from_this<MX>(),y));
+    if(sparsity()==y.sparsity()){
+      if(sparsity().size()==0){
+        return 0;
+      } else if(sparsity().scalar()){
+        return getBinarySwitch(OP_MUL, y);
+      } else {
+        return MX::create(new InnerProd(shared_from_this<MX>(),y));
+      }
+    } else {
+      // Project to pattern intersection
+      CRSSparsity sp = sparsity().patternIntersection(y.sparsity());
+      MX xx = shared_from_this<MX>().setSparse(sp);
+      MX yy = y.setSparse(sp);
+      return xx->getInnerProd(yy);
+    }
+  }
+
+  MX MXNode::getNormF() const{
+    return MX::create(new NormF(shared_from_this<MX>()));
+  }
+
+  MX MXNode::getNorm2() const{
+    return MX::create(new Norm2(shared_from_this<MX>()));
+  }
+
+  MX MXNode::getNormInf() const{
+    return MX::create(new NormInf(shared_from_this<MX>()));
+  }
+
+  MX MXNode::getNorm1() const{
+    return MX::create(new Norm1(shared_from_this<MX>()));
   }
 
 } // namespace CasADi
