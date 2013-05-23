@@ -93,42 +93,19 @@ void NLPQPInternal::init(){
   par.push_back(G.data());
   par.push_back(A.data());
 
-  // We're going to use two-argument objective and constraints to allow the use of parameters
-  std::vector< SXMatrix > args;
-  args.push_back(X);
-  args.push_back(vertcat(par));
-  
-  // The objective function looks exactly like a mathematical description of the NLP
-  SXFunction QP_f(args, mul(trans(G),X) + 0.5*mul(mul(trans(X),H),X));
-  QP_f.init();
+  // The nlp looks exactly like a mathematical description of the NLP
+  SXFunction QP_nlp(nlpIn("x",X,"p",vertcat(par)),
+		    nlpOut("f",mul(trans(G),X) + 0.5*mul(mul(trans(X),H),X),
+			   "g",mul(A,X)));
 
-  // So does the constraint function
-  SXFunction QP_g(args, mul(A,X));
-
-  // Jacobian of the constraints
-  SXFunction QP_j(args,A);
-  
-  // Gradient of the objective
-  SXFunction QP_gf(args,G+mul(H,X));
-  
-
-  SX sigma("sigma");
-  SXMatrix lambda = ssym("lambda",nc_,1);
-
-  args.insert(args.begin()+1, lambda);
-  args.insert(args.begin()+2, sigma);
-  
-  // Hessian of the Lagrangian
-  SXFunction QP_h(args,H*sigma);
-  
   // Create an nlpsolver instance
   NLPSolverCreator nlpsolver_creator = getOption("nlp_solver");
-  nlpsolver_ = nlpsolver_creator(QP_f,QP_g,QP_h,QP_j); // What to do with QP_gf?
+  nlpsolver_ = nlpsolver_creator(QP_nlp);
+
   nlpsolver_.setQPOptions();
   if(hasSetOption("nlp_solver_options")){
     nlpsolver_.setOption(getOption("nlp_solver_options"));
   }
-  nlpsolver_.setOption("parametric",true);
   
   // Initialize the NLP solver
   nlpsolver_.init();

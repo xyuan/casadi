@@ -104,16 +104,17 @@ int main(){
   }
 
   // Form the NLP
-  MXFunction ffcn(u,f);
-  MXFunction gfcn(u,g);
-  SCPgen solver(ffcn,gfcn);
+  MXFunction nlp(nlpIn("x",u),nlpOut("f",f,"g",g));
+  SCPgen solver(nlp);
 
   //solver.setOption("verbose",true);
-  solver.setOption("gauss_newton",gauss_newton);
   solver.setOption("regularize",false);
   solver.setOption("codegen",false);
-  solver.setOption("maxiter_ls",1);
-  solver.setOption("maxiter",100);
+  solver.setOption("max_iter_ls",1);
+  solver.setOption("max_iter",100);
+  if(gauss_newton){
+    solver.setOption("hessian_approximation","gauss-newton");
+  }
   
   // Print the variables
   solver.setOption("print_x",range(0,n,5));

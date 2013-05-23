@@ -35,13 +35,13 @@
 using namespace std;
 namespace CasADi{
 
-  SCPgenInternal::SCPgenInternal(const FX& F, const FX& G, const FX& H, const FX& J) : NLPSolverInternal(FX(),F,G,H,J,FX()){
+  SCPgenInternal::SCPgenInternal(const FX& nlp) : NLPSolverInternal(nlp){
     casadi_warning("SCPgen is under development");
     addOption("qp_solver",         OT_QPSOLVER,   GenericType(),    "The QP solver to be used by the SQP method");
     addOption("qp_solver_options", OT_DICTIONARY, GenericType(),    "Options to be passed to the QP solver");
-    addOption("hessian_approximation", OT_STRING, "limited-memory", "limited-memory|exact");
-    addOption("maxiter",           OT_INTEGER,      50,             "Maximum number of SQP iterations");
-    addOption("maxiter_ls",        OT_INTEGER,       1,             "Maximum number of linesearch iterations");
+    addOption("hessian_approximation", OT_STRING, "exact",          "gauss-newton|exact");
+    addOption("max_iter",          OT_INTEGER,      50,             "Maximum number of SQP iterations");
+    addOption("max_iter_ls",       OT_INTEGER,       1,             "Maximum number of linesearch iterations");
     addOption("tol_pr",            OT_REAL,       1e-6,             "Stopping criterion for primal infeasibility");
     addOption("tol_du",            OT_REAL,       1e-6,             "Stopping criterion for dual infeasability");
     addOption("tol_reg",           OT_REAL,       1e-11,            "Stopping criterion for regularization");
@@ -73,8 +73,8 @@ namespace CasADi{
     NLPSolverInternal::init();
     
     // Read options
-    maxiter_ = getOption("maxiter");
-    maxiter_ls_ = getOption("maxiter_ls");
+    max_iter_ = getOption("max_iter");
+    max_iter_ls_ = getOption("max_iter_ls");
     c1_ = getOption("c1");
     beta_ = getOption("beta");
     lbfgs_memory_ = getOption("lbfgs_memory");
@@ -89,6 +89,12 @@ namespace CasADi{
     merit_memsize_ = getOption("merit_memsize");
     merit_start_ = getOption("merit_start");
     string compiler = getOption("compiler");
+    gauss_newton_ = getOption("hessian_approximation") == "gauss-newton";
+    if(gauss_newton_){
+      casadi_assert(nlp_.output(NLP_F).size()>1);
+    } else {
+      casadi_assert(nlp_.output(NLP_F).size()==1);
+    }
 
     // Name the components
     if(hasSetOption("name_x")){
@@ -111,80 +117,14 @@ namespace CasADi{
       print_x_.resize(0);
     }
 
-    // Wrap non-MX in MX
-    if((!F_.isNull() && !is_a<MXFunction>(F_)) || (!G_.isNull() && !is_a<MXFunction>(G_))){
-      // Create variables for X and P
-      MX X = msym("X",input(NLP_SOLVER_X0).sparsity());
-      MX P = msym("P",input(NLP_SOLVER_P).sparsity());
-
-      // Wrap F if needed
-      if(!F_.isNull() && !is_a<MXFunction>(F_)){
-        vector<MX> F_in;
-        F_in.push_back(X);
-        if(F_.getNumInputs()==2){
-          F_in.push_back(P);
-        }
-        vector<MX> F_out = F_.call(F_in);
-        F_ = MXFunction(F_in,F_out);
-        F_.init();
-      }
-
-      // Wrap G if needed
-      if(!G_.isNull() && !is_a<MXFunction>(G_)){
-        vector<MX> G_in;
-        G_in.push_back(X);
-        if(G_.getNumInputs()==2){
-          G_in.push_back(P);
-        }
-        vector<MX> G_out = G_.call(G_in);
-        G_ = MXFunction(G_in,G_out);
-        G_.init();
-      }
+    MXFunction fg = shared_cast<MXFunction>(nlp_);
+    if(fg.isNull()){
+      vector<MX> nlp_in = nlp_.symbolicInput();
+      vector<MX> nlp_out = nlp_.call(nlp_in);
+      fg = MXFunction(nlp_in,nlp_out);
     }
-
-    // Form a function that calculates noth the objective and constraints
-    casadi_assert(F_.isNull() || is_a<MXFunction>(F_));
-    casadi_assert(G_.isNull() || is_a<MXFunction>(G_));
-    MXFunction F = shared_cast<MXFunction>(F_);
-    MXFunction G = shared_cast<MXFunction>(G_);
-  
-    // Get the expressions to be able to assemble the fg function below
-    MX nlp_x, nlp_p = msym("p",0,1), nlp_f, nlp_g;
-    if(F.isNull()){
-      // Root-finding problem
-      nlp_x = G.inputExpr(0);
-      nlp_g = G.outputExpr(0);
-      if(G.getNumInputs()>1){
-        nlp_p = G.inputExpr(1);
-      }
-    } else {
-      // Minimization problem
-      nlp_x = F.inputExpr(0);
-      nlp_f = F.outputExpr(0);
-      if(F.getNumInputs()>1){
-        nlp_p = F.inputExpr(1);
-      }
-      if(G.isNull()){
-        nlp_g = MX::sparse(0,1);
-      } else {
-        nlp_g = G.outputExpr(0);
-        if(G.getNumInputs()>F.getNumInputs()){
-          nlp_p = G.inputExpr(1);
-        }
-      }
-    }
-  
-    vector<MX> fg_in;
-    fg_in.push_back(nlp_x);
-    fg_in.push_back(nlp_p);
-
-    vector<MX> fg_out;
-    fg_out.push_back(nlp_f);
-    fg_out.push_back(nlp_g);
-
-    MXFunction fg(fg_in,fg_out);
     fg.init();
-  
+      
     if(codegen_){
 #ifdef WITH_DL 
       // Make sure that command processor is available
@@ -655,8 +595,8 @@ namespace CasADi{
       cout << endl;
       cout << "Iteration options:" << endl;
 
-      cout << "{ \"maxiter\":" << maxiter_ << ", ";
-      cout << "\"maxiter_ls\":" << maxiter_ls_ << ", ";
+      cout << "{ \"max_iter\":" << max_iter_ << ", ";
+      cout << "\"max_iter_ls\":" << max_iter_ls_ << ", ";
       cout << "\"c1\":" << c1_ << ", ";
       cout << "\"beta\":" << beta_ << ", ";
       cout << "\"merit_memsize\":" << merit_memsize_ << ", ";
@@ -780,7 +720,7 @@ namespace CasADi{
         break;
       }
     
-      if (iter >= maxiter_){
+      if (iter >= max_iter_){
         cout << endl;
         cout << "CasADi::SCPgen: Maximum number of iterations reached." << endl;
         break;
@@ -1212,7 +1152,7 @@ namespace CasADi{
       }
     
       // Line-search not successful, but we accept it.
-      if(ls_iter == maxiter_ls_){
+      if(ls_iter == max_iter_ls_){
         //log("Line-search completed, maximum number of iterations");
         break;
       }

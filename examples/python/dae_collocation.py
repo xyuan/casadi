@@ -346,13 +346,8 @@ g += [fck]
 lbg.append(fc_min)
 ubg.append(fc_max)
 
-
-# Nonlinear constraint function
-gfcn = MXFunction([V],[vertcat(g)])
-
-
 # Objective function of the NLP
-#Implment Mayer term
+#Implement Mayer term
 Obj = 0
 [obj] = MayerTerm.call([0., XD[k][i][j], XA[k][i][j-1], U[k], P])
 Obj += obj
@@ -374,22 +369,18 @@ for k in range(nk):
 
 Obj += lagrangeTerm        
 
-# objective function
-ofcn = MXFunction([V], [Obj])
-
+# NLP
+nlp = MXFunction(nlpIn(x=V),nlpOut(f=Obj,g=vertcat(g)))
 
 ## ----
 ## SOLVE THE NLP
 ## ----
   
-#assert(1==0)
 # Allocate an NLP solver
-solver = IpoptSolver(ofcn,gfcn)
+solver = IpoptSolver(nlp)
 
 # Set options
-solver.setOption("expand_f",True)
-solver.setOption("expand_g",True)
-solver.setOption("generate_hessian",True)
+solver.setOption("expand",True)
 solver.setOption("max_iter",1000)
 solver.setOption("tol",1e-4)
 

@@ -30,8 +30,7 @@ z = ssym("z")
 v = vertcat([x,y,z])
 
 # Form NLP functions
-f = SXFunction([v],[x**2 + 100*z**2])
-g = SXFunction([v],[z + (1-x)**2 - y])
+nlp = SXFunction(nlpIn(x=v),nlpOut(f=x**2 + 100*z**2, g=z + (1-x)**2 - y))
 
 # Choose NLP solver
 nlp_solver = IpoptSolver
@@ -50,17 +49,13 @@ nlp_solver = IpoptSolver
 #qp_solver_options = {}
 
 # Create solver
-solv = nlp_solver(f,g)
+solv = nlp_solver(nlp)
 
 # NLP solver options
-solv.setOption("generate_hessian",True)
 if nlp_solver in (SQPMethod, SCPgen):
   solv.setOption("qp_solver",qp_solver)
   solv.setOption("qp_solver_options",qp_solver_options)
-  solv.setOption("maxiter",5)
-if nlp_solver == SQPMethod:
-  #solv.setOption("monitor",['qp'])
-  solv.setOption("hessian_approximation","exact")
+  solv.setOption("max_iter",5)
   
 # Init solver  
 solv.init()

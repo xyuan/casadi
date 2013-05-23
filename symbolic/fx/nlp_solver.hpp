@@ -28,44 +28,120 @@
 
 /** \defgroup NLPSolver_doc
 
-  Solves the following nonlinear optimization problem:
+  Solves the following parametric nonlinear program (NLP):
   \verbatim
   min          F(x,p)
    x
   
   subject to
+              LBX <=   x    <= UBX
               LBG <= G(x,p) <= UBG
-              LBX <= x    <= UBX
+                         p  == P
               
-      n: number of decision variables (x)
-      m: number of constraints (A)
+      nx: number of decision variables
+      ng: number of constraints
+      np: number of parameters
   \endverbatim
 
 */
 
 namespace CasADi{
 
-  /// Input arguments of an NLP function [nlIn]
-  enum NLInput{
+  /// Input arguments of an NLP function [nlpIn]
+  enum NLPInput{
     /// Decision variable [x]
-    NL_X,
+    NLP_X,
     /// Fixed parameter [p]
-    NL_P, 
+    NLP_P, 
     /// Number of NLP inputs
-    NL_NUM_IN
+    NLP_NUM_IN
   };
 
-  /// Output arguments of an NLP function [nlOut]
-  enum NLOutput{ 
+  /// Output arguments of an NLP function [nlpOut]
+  enum NLPOutput{ 
     /// Objective function [f]
-    NL_F,
+    NLP_F,
     /// Constraint function [g]
-    NL_G,
+    NLP_G,
     /// Number of NLP outputs
-    NL_NUM_OUT
+    NLP_NUM_OUT
+  };
+
+  /// Input arguments of an NLP objective gradient function [gradFIn]
+  enum GradFInput{
+    /// Decision variable [x]
+    GRADF_X,
+    /// Fixed parameter [p]
+    GRADF_P, 
+    /// Number of inputs
+    GRADF_NUM_IN
+  };
+
+  /// Output arguments of an NLP objective gradient function [gradFOut]
+  enum GradFOutput{ 
+    /// Jacobian of the constraints [grad]
+    GRADF_GRAD,
+    /// Objective function [f]
+    GRADF_F,
+    /// Constraint function [g]
+    GRADF_G,
+    /// Number of outputs
+    GRADF_NUM_OUT
+  };
+
+  /// Input arguments of an NLP Jacobian function [jacGIn]
+  enum JacGInput{
+    /// Decision variable [x]
+    JACG_X,
+    /// Fixed parameter [p]
+    JACG_P, 
+    /// Number of inputs
+    JACG_NUM_IN
+  };
+
+  /// Output arguments of an NLP Jacobian function [jacGOut]
+  enum JacGOutput{ 
+    /// Jacobian of the constraints [jac]
+    JACG_JAC,
+    /// Objective function [f]
+    JACG_F,
+    /// Constraint function [g]
+    JACG_G,
+    /// Number of outputs
+    JACG_NUM_OUT
+  };
+
+  /// Input arguments of an NLP Hessian function [hessLagIn]
+  enum HessLagInput{
+    /// Decision variable [x]
+    HESSLAG_X,
+    /// Fixed parameter [p]
+    HESSLAG_P, 
+    /// Multiplier for f [lam_f]
+    HESSLAG_LAM_F,
+    /// Multiplier for g [lam_g]
+    HESSLAG_LAM_G,
+    /// Number of inputs
+    HESSLAG_NUM_IN
+  };
+
+  /// Output arguments of an NLP Hessian function [hessLagOut]
+  enum HessLagOutput{ 
+    /// Hessian of the Lagrangian [hess]
+    HESSLAG_HESS,
+    /// Objective function [f]
+    HESSLAG_F,
+    /// Constraint function [g]
+    HESSLAG_G,
+    /// Gradient of the Lagrangian with respect to x [grad_x]
+    HESSLAG_GRAD_X,
+    /// Gradient of the Lagrangian with respect to p [grad_p]
+    HESSLAG_GRAD_P,
+    /// Number of outputs
+    HESSLAG_NUM_OUT
   };
   
-  /// Input arguments of an NLP Solver [nlpsolverIn]
+  /// Input arguments of an NLP Solver [nlpSolverIn]
   enum NLPSolverInput{
     /// Decision variables, initial guess (nx x 1)  [x0]
     NLP_SOLVER_X0,
@@ -86,7 +162,7 @@ namespace CasADi{
     NLP_SOLVER_NUM_IN
   };
 
-  /// Output arguments of an NLP Solver [nlpsolverOut]
+  /// Output arguments of an NLP Solver [nlpSolverOut]
   enum NLPSolverOutput{
     /// Decision variables at the optimal solution (nx x 1) [x]
     NLP_SOLVER_X,
@@ -133,18 +209,20 @@ namespace CasADi{
     /// Set options that make the NLP solver more suitable for solving QPs
     void setQPOptions();
   
-    /// Access the objective function F
-    FX getF() const;
-  
-    /// Access the objective function G
-    FX getG() const;
+    /// Access the NLP
+    FX nlp();
 
-    /// Access the hessian of the Lagrangian function H
-    FX getH() const;
-  
-    /// Access the jacobian of the constraint function J
-    FX getJ() const;
-    
+    // Access the objective gradient function
+    FX gradF();
+
+    /// Access the Jacobian of the constraint function
+    FX jacG();
+
+    /// Access the Hessian of the Lagrangian function
+    FX hessLag();
+
+    /// Join F and G in old signature style to a common NLP function
+    static FX joinFG(FX F, FX G);
   };
 
 } // namespace CasADi

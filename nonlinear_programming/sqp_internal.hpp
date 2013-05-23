@@ -33,7 +33,7 @@ namespace CasADi{
 class SQPInternal : public NLPSolverInternal{
 
 public:
-  explicit SQPInternal(const FX& F, const FX& G, const FX& H, const FX& J);
+  explicit SQPInternal(const FX& nlp);
   virtual ~SQPInternal();
   virtual SQPInternal* clone() const{ return new SQPInternal(*this);}
   
@@ -43,8 +43,11 @@ public:
   /// QP solver for the subproblems
   QPSolver qp_solver_;
 
+  /// Exact Hessian?
+  bool exact_hessian_;
+
   /// maximum number of sqp iterations
-  int maxiter_; 
+  int max_iter_; 
 
   /// Memory size of L-BFGS method
   int lbfgs_memory_;
@@ -58,7 +61,7 @@ public:
   double sigma_;
   double c1_;
   double beta_;
-  int maxiter_ls_;
+  int max_iter_ls_;
   int merit_memsize_;
   //@}
 
@@ -90,12 +93,6 @@ public:
   enum BFGSMdoe{ BFGS_BK, BFGS_X, BFGS_X_OLD, BFGS_GLAG, BFGS_GLAG_OLD, BFGS_NUM_IN}; 
   FX bfgs_;
   
-  /// Supported Hessian modes
-  enum HessMode{ HESS_EXACT, HESS_BFGS};
-
-  /// Hessian mode
-  HessMode hess_mode_;
-
   /// Initial Hessian approximation (BFGS)
   DMatrix B_init_;
   

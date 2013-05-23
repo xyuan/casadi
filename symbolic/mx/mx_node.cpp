@@ -35,12 +35,14 @@
 #include "setnonzeros.hpp"
 #include "set_sparse.hpp"
 #include "solve.hpp"
+#include "nonlinear_solve.hpp"
 #include "unary_mx.hpp"
 #include "binary_mx.hpp"
 #include "determinant.hpp"
 #include "inverse.hpp"
 #include "inner_prod.hpp"
 #include "norm.hpp"
+#include "vertcat.hpp"
 
 // Template implementations
 #include "setnonzeros_impl.hpp"
@@ -372,12 +374,16 @@ namespace CasADi{
     }
   }
     
-  MX MXNode::getSolve(const MX& r, bool tr) const{
+  MX MXNode::getSolve(const MX& r, bool tr, const LinearSolver& linear_solver) const{
     if(tr){
-      return MX::create(new Solve<true>(r,shared_from_this<MX>()));
+      return MX::create(new Solve<true>(r,shared_from_this<MX>(),linear_solver));
     } else {
-      return MX::create(new Solve<false>(r,shared_from_this<MX>()));
+      return MX::create(new Solve<false>(r,shared_from_this<MX>(),linear_solver));
     }
+  }
+
+  MX MXNode::getNonlinearSolve(const std::vector<MX>& x, const ImplicitFunction& implicit_function){
+    return MX::create(new NonlinearSolve(x,implicit_function));
   }
 
   MX MXNode::getGetNonzeros(const CRSSparsity& sp, const std::vector<int>& nz) const{
@@ -665,6 +671,33 @@ namespace CasADi{
 
   MX MXNode::getNorm1() const{
     return MX::create(new Norm1(shared_from_this<MX>()));
+  }
+
+  MX MXNode::getVertcat(const std::vector<MX>& x){
+    // Remove nulls and empty matrices
+    vector<MX> c;
+    c.reserve(x.size());
+    for(vector<MX>::const_iterator it=x.begin(); it!=x.end(); ++it)
+      if(!it->isNull() && !it->empty())
+        c.push_back(*it);
+  
+    if(c.empty()){
+      return MX();
+    } else if(c.size()==1){
+      return c[0];
+    } else {
+      // Split up existing vertcats
+      vector<MX> c_split;
+      c_split.reserve(c.size());
+      for(vector<MX>::const_iterator i=c.begin(); i!=c.end(); ++i){
+        if(i->getOp()==OP_VERTCAT){        
+          c_split.insert(c_split.end(),(*i)->dep_.begin(),(*i)->dep_.end());
+        } else {
+          c_split.push_back(*i);
+        }
+      }
+      return MX::create(new Vertcat(c_split));
+    }
   }
 
 } // namespace CasADi

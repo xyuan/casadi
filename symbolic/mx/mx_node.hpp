@@ -27,6 +27,7 @@
 #include "../sx/sx.hpp"
 #include "../casadi_math.hpp"
 #include "../fx/code_generator.hpp"
+#include "../fx/linear_solver.hpp"
 #include <vector>
 #include <stack>
 
@@ -284,6 +285,9 @@ namespace CasADi{
     /// Get an IMatrix representation of a GetNonzeros or SetNonzeros node
     virtual Matrix<int> mapping() const;
 
+    /// Solve a system of nonlinear equations
+    static MX getVertcat(const std::vector<MX>& x);
+
     /// Transpose
     virtual MX getTranspose() const;
 
@@ -293,8 +297,11 @@ namespace CasADi{
     /// Matrix multiplcation
     virtual MX getMultiplication(const MX& y) const;
 
-    /// Solve for square linear system
-    virtual MX getSolve(const MX& r, bool tr) const;
+    /// Solve a system of linear equations
+    virtual MX getSolve(const MX& r, bool tr, const LinearSolver& linear_solver) const;
+
+    /// Solve a system of nonlinear equations
+    static MX getNonlinearSolve(const std::vector<MX>& x, const ImplicitFunction& implicit_function);
 
     /// Get the nonzeros of matrix
     virtual MX getGetNonzeros(const CRSSparsity& sp, const std::vector<int>& nz) const;

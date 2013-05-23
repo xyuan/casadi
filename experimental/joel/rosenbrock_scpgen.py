@@ -27,8 +27,7 @@ import matplotlib.pyplot as plt
 x = msym("x",3)
 
 # Form NLP functions
-f = MXFunction([x],[x[0]**2 + 100*x[2]**2])
-g = MXFunction([x],[x[2] + (1-x[0])**2 - x[1]])
+nlp = MXFunction(nlpIn(x=x),nlpOut(f=x[0]**2 + 100*x[2]**2, g=x[2] + (1-x[0])**2 - x[1]))
 
 # Choose NLP solver
 #nlp_solver = IpoptSolver
@@ -48,14 +47,14 @@ qp_solver_options = {"printLevel" : "none"}
 #qp_solver_options = {}
 
 # Create solver
-solv = nlp_solver(f,g)
+solv = nlp_solver(nlp)
 
 # NLP solver options
 solv.setOption("generate_hessian",True)
 if nlp_solver in (SQPMethod, LiftedSQP, SCPgen):
   solv.setOption("qp_solver",qp_solver)
   solv.setOption("qp_solver_options",qp_solver_options)
-  solv.setOption("maxiter",5)
+  solv.setOption("max_iter",5)
 if nlp_solver == SQPMethod:
   #solv.setOption("monitor",['qp'])
   solv.setOption("hessian_approximation","exact")

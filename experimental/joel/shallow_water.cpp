@@ -336,28 +336,24 @@ void Tester::transcribe(bool single_shooting, bool gauss_newton, bool codegen, b
   if(gauss_newton){
     nlp_f = flatten(nlp_f);
   }
- 
-  // Objective function
-  MXFunction ffcn(P,nlp_f);
 
-  // Constraints
-  MXFunction gfcn(P,nlp_g);
-
+  MXFunction nlp(nlpIn("x",P),nlpOut("f",nlp_f,"g",nlp_g));
   cout << "Generated single-shooting NLP" << endl;
   
   // NLP Solver
-  nlp_solver_ = SCPgen(ffcn,gfcn);
-
+  nlp_solver_ = SCPgen(nlp);
   nlp_solver_.setOption("verbose",true);
-  nlp_solver_.setOption("gauss_newton",gauss_newton);
   nlp_solver_.setOption("regularize",regularize);
   nlp_solver_.setOption("codegen",codegen);
   nlp_solver_.setOption("reg_threshold",reg_threshold);
-  nlp_solver_.setOption("maxiter_ls",3);
+  nlp_solver_.setOption("max_iter_ls",3);
   nlp_solver_.setOption("beta",0.5);
   //nlp_solver_.setOption("merit_memory",1);
-  nlp_solver_.setOption("maxiter",100);
+  nlp_solver_.setOption("max_iter",100);
   nlp_solver_.setOption("compiler","clang -fPIC -O2"); // Optimization
+  if(gauss_newton){
+    nlp_solver_.setOption("hessian_approximation","gauss-newton");
+  }
 
   // Name the variables
   vector<string> variable_name;

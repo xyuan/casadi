@@ -33,7 +33,7 @@ namespace CasADi{
 class SCPgenInternal : public NLPSolverInternal{
 
 public:
-  explicit SCPgenInternal(const FX& F, const FX& G, const FX& H, const FX& J);
+  explicit SCPgenInternal(const FX& nlp);
   virtual ~SCPgenInternal();
   virtual SCPgenInternal* clone() const{ return new SCPgenInternal(*this);}
   
@@ -80,8 +80,11 @@ public:
   /// QP solver for the subproblems
   QPSolver qp_solver_;
 
+  /// use Gauss-Newton Hessian
+  bool gauss_newton_; 
+
   /// maximum number of sqp iterations
-  int maxiter_; 
+  int max_iter_; 
 
   /// Memory size of L-BFGS method
   int lbfgs_memory_;
@@ -105,7 +108,7 @@ public:
   //@{
   double c1_;
   double beta_;
-  int maxiter_ls_;
+  int max_iter_ls_;
   std::vector<double> merit_mem_;
   int merit_memsize_;
   double merit_start_;

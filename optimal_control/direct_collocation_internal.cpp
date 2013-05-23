@@ -195,16 +195,13 @@ void DirectCollocationInternal::init(){
   nlp_j += Jk;
 
   // Objective function of the NLP
-  F_ = MXFunction(nlp_x, nlp_j);
-
-  // Nonlinear constraint function
-  G_ = MXFunction(nlp_x, vertcat(nlp_g));
+  nlp_ = MXFunction(nlpIn("x",nlp_x), nlpOut("f",nlp_j,"g",vertcat(nlp_g)));
 
   // Get the NLP creator function
   NLPSolverCreator nlp_solver_creator = getOption("nlp_solver");
   
   // Allocate an NLP solver
-  nlp_solver_ = nlp_solver_creator(F_,G_,FX(),FX());
+  nlp_solver_ = nlp_solver_creator(nlp_);
   
   // Pass options
   if(hasSetOption("nlp_solver_options")){

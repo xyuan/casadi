@@ -34,68 +34,90 @@ namespace CasADi{
   \author Joel Andersson 
   \date 2010-2013
 */
-class NLPSolverInternal : public FXInternal{
+  class NLPSolverInternal : public FXInternal{
 
-public:
-  /// Constructor
-  NLPSolverInternal(const FX& nlp, const FX& F, const FX& G, const FX& H, const FX& J, const FX& GF);
+  public:
+    /// Constructor
+    NLPSolverInternal(const FX& nlp);
 
-  /// Destructor
-  virtual ~NLPSolverInternal() = 0;
+    /// Destructor
+    virtual ~NLPSolverInternal() = 0;
 
-  /// Initialize
-  virtual void init();
+    /// Initialize
+    virtual void init();
 
-  /// Prints out a human readable report about possible constraint violations - all constraints
-  void reportConstraints(std::ostream &stream=std::cout);
+    /// Prints out a human readable report about possible constraint violations - all constraints
+    void reportConstraints(std::ostream &stream=std::cout);
   
-  /// Warns the user about inital bounds, if option 'warn_initial_bounds' is true
-  virtual void checkInitialBounds();
+    /// Warns the user about inital bounds, if option 'warn_initial_bounds' is true
+    virtual void checkInitialBounds();
   
-  /// Set options that make the NLP solver more suitable for solving QPs
-  virtual void setQPOptions() { };
+    /// Set options that make the NLP solver more suitable for solving QPs
+    virtual void setQPOptions() { };
 
-  /// The NLP
-  FX nlp_;
+    /// Get or generate a function to calculate the gradient of the objective function
+    virtual FX getGradF();
+  
+    /// Get or generate a function to calculate the Jacobian of the constraint function
+    virtual FX getJacG();
 
-  /// Number of variables
-  int nx_;
-  
-  /// Number of constraints
-  int ng_;
-  
-  /// Number of parameters
-  int np_;
-  
-  /// callback function, executed at each iteration
-  FX callback_;
-  
-  /// Execute the callback function only after this amount of iterations
-  int callback_step_;
+    /// Get or generate a function to calculate the gradient of the Lagrangian function
+    virtual FX getGradLag();
 
-  /// --- From here on legacy syntax, #566
-  bool legacy_syntax_;
+    /// Get or generate a function to calculate the Hessian of the Lagrangian function
+    virtual FX getHessLag();
 
-  /// objective function
-  FX F_;
-  /// Gradient of the objective function
-  FX GF_;
-  /// constraint function
-  FX G_;
-  /// Hessian of the Lagrangian function
-  FX H_;
-  /// Jacobian of the constraint function
-  FX J_; 
+    /// Get or generate the sparsity pattern of the Hessian of the Lagrangian
+    virtual CRSSparsity getSpHessLag();
+    
+    // Access the objective gradient function
+    FX& gradF();
 
-  /// use exact hessian
-  bool exact_hessian_; 
+    /// Access the Jacobian of the constraint function
+    FX& jacG();
+
+    /// Access the Hessian of the Lagrangian function
+    FX& hessLag();
+
+    /// Access the gradient of the Lagrangian function
+    FX& gradLag();
+
+    /// Get the sparsity pattern of the Hessian of the Lagrangian
+    CRSSparsity& spHessLag();
+
+    /// Number of variables
+    int nx_;
   
-  /// use Gauss-Newton Hessian
-  bool gauss_newton_; 
+    /// Number of constraints
+    int ng_;
   
-  /// use parametric NLP formulation
-  bool parametric_;       
-};
+    /// Number of parameters
+    int np_;
+  
+    /// callback function, executed at each iteration
+    FX callback_;
+  
+    /// Execute the callback function only after this amount of iterations
+    int callback_step_;
+  
+    /// The NLP
+    FX nlp_;
+
+    // Gradient of the objective
+    FX gradF_;
+    
+    // Jacobian of the constraints
+    FX jacG_;
+    
+    // Hessian of the Lagrangian
+    FX hessLag_;
+
+    // Gradient of the Lagrangian
+    FX gradLag_;
+
+    // Sparsity pattern of the Hessian of the Lagrangian
+    CRSSparsity spHessLag_;
+  };
 
 } // namespace CasADi
 
