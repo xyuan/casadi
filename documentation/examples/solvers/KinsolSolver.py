@@ -66,10 +66,10 @@ s.setOption("abstol",1e-14)
 #$ Require $a > 0$ and $\gamma < 0$
 s.setOption("constraints",[2,-2])
 s.init()
-s.input().set(params_)
+s.setInput(params_)
 
 #$ Initialize [$a$,$\gamma$] with a guess and solve
-s.output().set([1,-1])
+s.setOutput([1,-1])
 s.solve()
 
 #! Our output is:
@@ -81,11 +81,13 @@ x = [sqrt(4.0/3*sigma_/alpha_),-0.5*pi]
 print "Reference solution = ", x
 
 #! We show that the residual is indeed (close to) zero
-f.input(0).set(s.output())
-f.input(1).set(params_)
+f.setInput(s.output(),0)
+f.setInput(params_,1)
 f.evaluate()
 print "residual = ", f.output()
 
 for i in range(1):
   assert(abs(x_[i]-x[i])<1e-6)
 
+#! Solver statistics
+print s.getStats()

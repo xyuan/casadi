@@ -83,18 +83,18 @@ class FXtests(casadiTestCase):
       n2 = DMatrix([5,7])
       N2 = 8
       
-      p.input(0).set(n1)
-      p.input(1).set(N1)
-      p.input(2).set(n2)
-      p.input(3).set(N2)
+      p.setInput(n1,0)
+      p.setInput(N1,1)
+      p.setInput(n2,2)
+      p.setInput(N2,3)
       
       p.fwdSeed(0).setAll(0)
-      p.fwdSeed(1).set(1)
-      p.fwdSeed(2).set([1,0])
+      p.setFwdSeed(1,1)
+      p.setFwdSeed([1,0],2)
       p.fwdSeed(3).setAll(0)
       
-      p.adjSeed(0).set([1,0])
-      p.adjSeed(1).set([0,1])
+      p.setAdjSeed([1,0],0)
+      p.setAdjSeed([0,1],1)
       
       p.evaluate(1,1)
 
@@ -122,18 +122,18 @@ class FXtests(casadiTestCase):
     n2 = DMatrix([5,7])
     N2 = 8
     
-    p.input(0).set(n1)
-    p.input(1).set(N1)
-    p.input(2).set(n2)
-    p.input(3).set(N2)
+    p.setInput(n1,0)
+    p.setInput(N1,1)
+    p.setInput(n2,2)
+    p.setInput(N2,3)
     
     p.fwdSeed(0).setAll(0)
-    p.fwdSeed(1).set(1)
-    p.fwdSeed(2).set([1,0])
+    p.setFwdSeed(1,1)
+    p.setFwdSeed([1,0],2)
     p.fwdSeed(3).setAll(0)
     
-    p.adjSeed(0).set([1,0])
-    p.adjSeed(1).set([0,1])
+    p.setAdjSeed([1,0],0)
+    p.setAdjSeed([0,1],1)
     
     p.evaluate(1,1)
 
@@ -173,18 +173,18 @@ class FXtests(casadiTestCase):
       n2 = DMatrix([5,7])
       N2 = 8
       
-      p.input(0).set(n1)
-      p.input(1).set(N1)
-      p.input(2).set(n2)
-      p.input(3).set(N2)
+      p.setInput(n1,0)
+      p.setInput(N1,1)
+      p.setInput(n2,2)
+      p.setInput(N2,3)
       
       p.fwdSeed(0).setAll(0)
-      p.fwdSeed(1).set(1)
-      p.fwdSeed(2).set([1,0])
+      p.setFwdSeed(1,1)
+      p.setFwdSeed([1,0],2)
       p.fwdSeed(3).setAll(0)
       
-      p.adjSeed(0).set([1,0])
-      p.adjSeed(1).set([0,1])
+      p.setAdjSeed([1,0],0)
+      p.setAdjSeed([0,1],1)
       
       for i in range(4):
         p.adjSens(i).setAll(0)
@@ -224,18 +224,18 @@ class FXtests(casadiTestCase):
     n2 = DMatrix([5,7])
     N2 = 8
     
-    p.input(0).set(n1)
-    p.input(1).set(N1)
-    p.input(2).set(n2)
-    p.input(3).set(N2)
+    p.setInput(n1,0)
+    p.setInput(N1,1)
+    p.setInput(n2,2)
+    p.setInput(N2,3)
     
     p.fwdSeed(0).setAll(0)
-    p.fwdSeed(1).set(1)
-    p.fwdSeed(2).set([1,0])
+    p.setFwdSeed(1,1)
+    p.setFwdSeed([1,0],2)
     p.fwdSeed(3).setAll(0)
     
-    p.adjSeed(0).set([1,0])
-    p.adjSeed(1).set([0,1])
+    p.setAdjSeed([1,0],0)
+    p.setAdjSeed([0,1],1)
     
     p.evaluate(1,1)
 
@@ -256,8 +256,6 @@ class FXtests(casadiTestCase):
 
     f = SXFunction([x],[x])
     f.init()
-    A = DMatrix(1,1,4)
-    f.getFwdSeed(A,0)
     A = DMatrix(1,1)
     #self.assertRaises(RuntimeError,lambda : f.getFwdSeed(A,0)) # This is now o.k. syntax
     B = DMatrix(1,2,2)
@@ -298,8 +296,8 @@ class FXtests(casadiTestCase):
     f = SXFunction([x,y],[x**2,y,x*y[0]])
     f.init()
     
-    f.input(0).set([0.1,0.7,1.3])
-    f.input(1).set([7.1,2.9])
+    f.setInput([0.1,0.7,1.3],0)
+    f.setInput([7.1,2.9],1)
     
     X = msym("x",3,1)
     Y = msym("y",2,1)
@@ -307,8 +305,8 @@ class FXtests(casadiTestCase):
     F = MXFunction([X,Y],[X**2,Y,X*Y[0]])
     F.init()
     
-    F.input(0).set([0.1,0.7,1.3])
-    F.input(1).set([7.1,2.9])
+    F.setInput([0.1,0.7,1.3],0)
+    F.setInput([7.1,2.9],1)
     
     self.checkfx(f,F,sens_der=False)
     
@@ -497,7 +495,35 @@ class FXtests(casadiTestCase):
       d = vertcat(v)
       
       test(d.sparsity())
-        
+      
+  def test_getOutput(self):
+    x = ssym("x",2)
+    
+    f = SXFunction(daeIn(x=x),daeOut(ode=x))
+    f.init()
+    f.setInput([1,2])
+    f.evaluate()
+    a = f.getOutput()
+    b = f.getOutput(0)
+    c = f.getOutput("ode")
+    ar = f.output()
+    br = f.output(0)
+    cr = f.output("ode")
+    self.checkarray(a,DMatrix([1,2]))
+    self.checkarray(b,DMatrix([1,2]))
+    self.checkarray(c,DMatrix([1,2]))
+    self.checkarray(ar,DMatrix([1,2]))
+    self.checkarray(br,DMatrix([1,2]))
+    self.checkarray(cr,DMatrix([1,2]))
+    f.setInput([3,4])
+    f.evaluate()
+    self.checkarray(a,DMatrix([1,2]))
+    self.checkarray(b,DMatrix([1,2]))
+    self.checkarray(c,DMatrix([1,2]))
+    self.checkarray(ar,DMatrix([3,4]))
+    self.checkarray(br,DMatrix([3,4]))
+    self.checkarray(cr,DMatrix([3,4]))
+    
 if __name__ == '__main__':
     unittest.main()
 

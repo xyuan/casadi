@@ -40,11 +40,11 @@ for f,sym,Function in [(fun,msym,MXFunction),(fun.expand(),ssym,SXFunction)]:
   vf.init()
 
   for i in range(vf.getNumInputs()):
-    vf.input(i).set(DMatrix(vf.input(i).sparsity(),range(vf.input(i).size())))
+    vf.setInput(DMatrix(vf.input(i).sparsity(),range(vf.input(i).size())),i)
 
   vf.evaluate()
 
-  storage.append([DMatrix(vf.output(i)) for i in range(vf.getNumOutputs())])
+  storage.append([vf.getOutput(i) for i in range(vf.getNumOutputs())])
 
   inputss2 = [sym("i",vf.input(i).sparsity()) for i in range(vf.getNumInputs()) ]
   fseeds2 = [[ sym("f",vf.input(i).sparsity()) for i in range(vf.getNumInputs())] for d in range(ndir)]
@@ -56,12 +56,12 @@ for f,sym,Function in [(fun,msym,MXFunction),(fun.expand(),ssym,SXFunction)]:
 
   offset = 0
   for i in range(vf2.getNumInputs()):
-    vf2.input(i).set(DMatrix(vf2.input(i).sparsity(),range(offset,offset+vf2.input(i).size())))
+    vf2.setInput(DMatrix(vf2.input(i).sparsity(),range(offset,offset+vf2.input(i).size())),i)
     offset+=vf2.input(i).size()
 
   vf2.evaluate()
 
-  storage2.append([DMatrix(vf2.output(i)) for i in range(vf2.getNumOutputs())])
+  storage2.append([vf2.getOutput(i) for i in range(vf2.getNumOutputs())])
 
   #print vf2.output(24)
 

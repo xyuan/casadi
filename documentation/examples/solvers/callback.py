@@ -49,7 +49,7 @@ class MyCallback:
     self.iter = self.iter + 1
     if self.iter > 5:
       print "5 Iterations, that is quite enough!"
-      f.output(0).set(1) # With this statement you can halt the iterations
+      f.setOutput(1,0) # With this statement you can halt the iterations
 
 mycallback = MyCallback()
 
@@ -68,10 +68,10 @@ solver.setOption("iteration_callback",c)
 solver.setOption("tol",1e-8)
 solver.setOption("max_iter",20)
 solver.init()
-solver.input("lbx").set([-10]*2)
-solver.input("ubx").set([10]*2)
-solver.input("lbg").set([-10])
-solver.input("ubg").set([10])
+solver.setInput([-10]*2,"lbx")
+solver.setInput([10]*2,"ubx")
+solver.setInput([-10],"lbg")
+solver.setInput([10],"ubg")
 solver.solve()
 
 #! Matplotlib callback
@@ -94,7 +94,7 @@ class MyCallback:
     
     for i in range(x_.shape[0]):
       for j in range(x_.shape[1]):
-        nlp.input("x").set([x_[i,j],y_[i,j]])
+        nlp.setInput([x_[i,j],y_[i,j]],"x")
         nlp.evaluate()
         z_[i,j] = float(nlp.output("f"))
     contourf(x_,y_,z_)
@@ -132,10 +132,10 @@ solver.setOption("iteration_callback",c)
 solver.setOption("tol",1e-8)
 solver.setOption("max_iter",50)
 solver.init()
-solver.input("lbx").set([-10]*2)
-solver.input("ubx").set([10]*2)
-solver.input("lbg").set([-10])
-solver.input("ubg").set([10])
+solver.setInput([-10]*2,"lbx")
+solver.setInput([10]*2,"ubx")
+solver.setInput([-10],"lbg")
+solver.setInput([10],"ubg")
 solver.solve()
 
 #! By setting matplotlib interactivity off, we can inspect the figure at ease
