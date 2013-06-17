@@ -22,8 +22,12 @@
 
 %{
 #include "convex_programming/qp_lp_solver.hpp"
+#include "convex_programming/qcqp_qp_solver.hpp"
+#include "convex_programming/socp_qcqp_solver.hpp"
 #include "convex_programming/sdp_socp_solver.hpp"
 %}
 
 %include "convex_programming/qp_lp_solver.hpp"
+%include "convex_programming/qcqp_qp_solver.hpp"
+%include "convex_programming/socp_qcqp_solver.hpp"
 %include "convex_programming/sdp_socp_solver.hpp"
