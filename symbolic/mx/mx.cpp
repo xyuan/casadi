@@ -24,7 +24,7 @@
 #include "mx_node.hpp"
 #include "mx_tools.hpp"
 #include "../fx/sx_function.hpp"
-#include "evaluation_mx.hpp"
+#include "call_fx.hpp"
 #include "symbolic_mx.hpp"
 #include "constant_mx.hpp"
 #include "mx_tools.hpp"
@@ -95,7 +95,9 @@ namespace CasADi{
     std::vector<MX> ret(x->getNumOutputs());
     for(int i=0; i<ret.size(); ++i){
       ret[i] = MX::create(new OutputNode(x, i));
-      if(ret[i].size()==0){
+      if(ret[i].numel()==0){
+        ret[i] = MX();
+      } else if(ret[i].size()==0){
         ret[i] = MX::sparse(ret[i].shape());
       }
     }

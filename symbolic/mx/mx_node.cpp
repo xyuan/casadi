@@ -35,7 +35,6 @@
 #include "setnonzeros.hpp"
 #include "set_sparse.hpp"
 #include "solve.hpp"
-#include "nonlinear_solve.hpp"
 #include "unary_mx.hpp"
 #include "binary_mx.hpp"
 #include "determinant.hpp"
@@ -377,14 +376,10 @@ namespace CasADi{
     
   MX MXNode::getSolve(const MX& r, bool tr, const LinearSolver& linear_solver) const{
     if(tr){
-      return MX::create(new Solve<true>(r,shared_from_this<MX>(),linear_solver));
+      return MX::create(new Solve<true>(densify(r),shared_from_this<MX>(),linear_solver));
     } else {
-      return MX::create(new Solve<false>(r,shared_from_this<MX>(),linear_solver));
+      return MX::create(new Solve<false>(densify(r),shared_from_this<MX>(),linear_solver));
     }
-  }
-
-  MX MXNode::getNonlinearSolve(const std::vector<MX>& x, const ImplicitFunction& implicit_function){
-    return MX::create(new NonlinearSolve(x,implicit_function));
   }
 
   MX MXNode::getGetNonzeros(const CRSSparsity& sp, const std::vector<int>& nz) const{
@@ -709,6 +704,17 @@ namespace CasADi{
   std::vector<MX> MXNode::getVertsplit(const std::vector<int>& output_offset) const{
     return MX::createMultipleOutput(new Vertsplit(shared_from_this<MX>(),output_offset));
   }
+
+  void MXNode::clearVector(const std::vector<std::vector<MX*> > v){
+    for(int i=0; i<v.size(); ++i){
+      for(int j=0; j<v[i].size(); ++j){
+        if(v[i][j]!= 0){
+          *v[i][j] = MX();
+        }
+      }
+    }
+  }
+
 
 } // namespace CasADi
 

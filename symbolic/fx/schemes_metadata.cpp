@@ -55,6 +55,8 @@ std::string getSchemeName(InputOutputScheme scheme) {
     case SCHEME_RDAEOutput: return "RDAEOutput";
     case SCHEME_IntegratorInput: return "IntegratorInput";
     case SCHEME_IntegratorOutput: return "IntegratorOutput";
+    case SCHEME_LinsolInput: return "LinsolInput";
+    case SCHEME_LinsolOutput: return "LinsolOutput";
     case SCHEME_LPSolverInput: return "LPSolverInput";
     case SCHEME_LPSolverOutput: return "LPSolverOutput";
     case SCHEME_LPStruct: return "LPStruct";
@@ -99,6 +101,8 @@ std::string getSchemeEntryNames(InputOutputScheme scheme) {
     case SCHEME_RDAEOutput: return "ode, alg, quad";
     case SCHEME_IntegratorInput: return "x0, p, rx0, rp";
     case SCHEME_IntegratorOutput: return "xf, qf, rxf, rqf";
+    case SCHEME_LinsolInput: return "A, B, T";
+    case SCHEME_LinsolOutput: return "X";
     case SCHEME_LPSolverInput: return "c, a, lba, uba, lbx, ubx";
     case SCHEME_LPSolverOutput: return "x, cost, lam_a, lam_x";
     case SCHEME_LPStruct: return "a";
@@ -217,6 +221,14 @@ std::string getSchemeEntryName(InputOutputScheme scheme, int i) {
       if(i==1) return "qf";
       if(i==2) return "rxf";
       if(i==3) return "rqf";
+      break;
+    case SCHEME_LinsolInput: 
+      if(i==0) return "A";
+      if(i==1) return "B";
+      if(i==2) return "T";
+      break;
+    case SCHEME_LinsolOutput: 
+      if(i==0) return "X";
       break;
     case SCHEME_LPSolverInput: 
       if(i==0) return "c";
@@ -501,6 +513,14 @@ std::string getSchemeEntryDoc(InputOutputScheme scheme, int i) {
       if(i==2) return "Backward differential state at the initial time";
       if(i==3) return "Backward quadrature state at the initial time";
       break;
+    case SCHEME_LinsolInput: 
+      if(i==0) return "The square matrix A: sparse, (n x n).";
+      if(i==1) return "The right-hand-side matrix b: dense,  (n x m)";
+      if(i==2) return "Transpose A?: dense scalar, value 0 or 1,  (1 x 1)";
+      break;
+    case SCHEME_LinsolOutput: 
+      if(i==0) return "Solution to the linear system of equations";
+      break;
     case SCHEME_LPSolverInput: 
       if(i==0) return "The vector c: dense (n x 1)";
       if(i==1) return "The matrix A: sparse, (nc x n) - product with x must be dense.";
@@ -784,6 +804,14 @@ std::string getSchemeEntryEnumName(InputOutputScheme scheme, int i) {
       if(i==2) return "INTEGRATOR_RXF";
       if(i==3) return "INTEGRATOR_RQF";
       break;
+    case SCHEME_LinsolInput: 
+      if(i==0) return "LINSOL_A";
+      if(i==1) return "LINSOL_B";
+      if(i==2) return "LINSOL_T";
+      break;
+    case SCHEME_LinsolOutput: 
+      if(i==0) return "LINSOL_X";
+      break;
     case SCHEME_LPSolverInput: 
       if(i==0) return "LP_SOLVER_C";
       if(i==1) return "LP_SOLVER_A";
@@ -1014,6 +1042,12 @@ int getSchemeSize(InputOutputScheme scheme) {
     case SCHEME_IntegratorOutput: 
       return 4;
       break;
+    case SCHEME_LinsolInput: 
+      return 3;
+      break;
+    case SCHEME_LinsolOutput: 
+      return 1;
+      break;
     case SCHEME_LPSolverInput: 
       return 6;
       break;
@@ -1188,6 +1222,14 @@ int getSchemeEntryEnum(InputOutputScheme scheme, const std::string &name) {
       if(name=="qf") return 1;
       if(name=="rxf") return 2;
       if(name=="rqf") return 3;
+      break;
+    case SCHEME_LinsolInput: 
+      if(name=="A") return 0;
+      if(name=="B") return 1;
+      if(name=="T") return 2;
+      break;
+    case SCHEME_LinsolOutput: 
+      if(name=="X") return 0;
       break;
     case SCHEME_LPSolverInput: 
       if(name=="c") return 0;
