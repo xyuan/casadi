@@ -39,8 +39,6 @@ namespace CasADi{
     XFunctionInternal<MXFunction,MXFunctionInternal,MX,MXNode>(inputv,outputv) {
   
     setOption("name", "unnamed_mx_function");
-    setOption("numeric_jacobian", true);
-    setOption("numeric_hessian", true);
   
     // Check for inputs that are not are symbolic primitives
     int ind=0;
@@ -818,9 +816,10 @@ namespace CasADi{
     
       if(it->op == OP_INPUT){
         // Fetch input
-        swork[it->res.front()] = arg[it->arg.front()];
+        const CRSSparsity& sp_input = input(it->arg.front()).sparsity();
+        swork[it->res.front()] = arg[it->arg.front()].setSparse(sp_input,true);
         for(int d=0; d<nfdir; ++d){
-          dwork[it->res.front()][d] = fseed[d][it->arg.front()];
+          dwork[it->res.front()][d] = fseed[d][it->arg.front()].setSparse(sp_input,true);
         }
       } else if(it->op==OP_OUTPUT){
         // Collect the results
@@ -931,7 +930,7 @@ namespace CasADi{
         } else if(it->op==OP_OUTPUT){
           // Pass the adjoint seeds
           for(int d=0; d<nadir; ++d){
-            dwork[it->arg.front()][d] += aseed[d][it->res.front()];          
+            dwork[it->arg.front()][d] += aseed[d][it->res.front()].setSparse(output(it->res.front()).sparsity(),true);
           }
         } else if(it->op==OP_PARAMETER){
           // Clear adjoint seeds
