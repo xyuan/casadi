@@ -221,7 +221,19 @@ namespace CasADi{
     stringstream ss;
     ss << "gradient_" << getOption("name") << "_" << iind << "_" << oind;
     ret.setOption("name",ss.str());
-  
+
+    ret.setInputScheme(inputScheme_);
+    
+    // Output names
+    std::vector<std::string> ionames;
+    ionames.reserve(ret.getNumOutputs());   
+    ionames.push_back("grad");
+    for (int i=0;i<getNumOutputs();++i) {
+      ionames.push_back(outputScheme_.entryLabel(i));
+    }
+    
+    ret.setOutputScheme(ionames);
+    
     return ret;
   }
   
@@ -238,7 +250,20 @@ namespace CasADi{
     stringstream ss;
     ss << "hessian_" << getOption("name") << "_" << iind << "_" << oind;
     ret.setOption("name",ss.str());
-  
+
+    ret.setInputScheme(inputScheme_);
+    
+    // Output names
+    std::vector<std::string> ionames;
+    ionames.reserve(ret.getNumOutputs());   
+    ionames.push_back("hess");
+    ionames.push_back("grad");
+    for (int i=0;i<getNumOutputs();++i) {
+      ionames.push_back(outputScheme_.entryLabel(i));
+    }
+    
+    ret.setOutputScheme(ionames);
+    
     return ret;
   }
   
@@ -1510,6 +1535,17 @@ namespace CasADi{
     ret.setOption("name",ss.str());
     ret.setOption("verbose",getOption("verbose"));
     ret.setInputScheme(inputScheme_);
+    
+    // Output names
+    std::vector<std::string> ionames;
+    ionames.reserve(ret.getNumOutputs());   
+    ionames.push_back("jac");
+    for (int i=0;i<getNumOutputs();++i) {
+      ionames.push_back(outputScheme_.entryLabel(i));
+    }
+    
+    ret.setOutputScheme(ionames);
+    
     return ret;
   }
 
@@ -1565,68 +1601,65 @@ namespace CasADi{
       ss << "derivative_" << getOption("name") << "_" << nfwd << "_" << nadj;
       ret.setOption("name",ss.str());
       
-      // Name the inputs/outputs
-      if(inputScheme_.known() && outputScheme_.known()){
-        // Names of inputs
-        std::vector<std::string> io_names;
-        io_names.reserve(getNumInputs()*(1+nfwd)+getNumOutputs()*nadj);
+      // Names of inputs
+      std::vector<std::string> io_names;
+      io_names.reserve(getNumInputs()*(1+nfwd)+getNumOutputs()*nadj);
 
-        // Nondifferentiated inputs
-        for(int i=0; i<getNumInputs(); ++i){
-          io_names.push_back(inputScheme_.entry(i));
-        }
-
-        // Forward seeds
-        for(int d=0; d<nfwd; ++d){
-          for(int i=0; i<getNumInputs(); ++i){
-            ss.str(string());
-            ss << "fwd" << d << "_" << inputScheme_.entry(i);
-            io_names.push_back(ss.str());
-          }
-        }
-        
-        // Adjoint seeds
-        for(int d=0; d<nadj; ++d){
-          for(int i=0; i<getNumOutputs(); ++i){
-            ss.str(string());
-            ss << "adj" << d << "_" << outputScheme_.entry(i);
-            io_names.push_back(ss.str());
-          }
-        }
-        
-        // Pass to return object
-        ret.setInputScheme(io_names);
-      
-        // Names of outputs
-        io_names.clear();
-        io_names.reserve(getNumOutputs()*(1+nfwd)+getNumInputs()*nadj);
-        
-        // Nondifferentiated inputs
-        for(int i=0; i<getNumOutputs(); ++i){
-          io_names.push_back(outputScheme_.entry(i));
-        }
-        
-        // Forward sensitivities
-        for(int d=0; d<nfwd; ++d){
-          for(int i=0; i<getNumOutputs(); ++i){
-            ss.str(string());
-            ss << "fwd" << d << "_" << outputScheme_.entry(i);
-            io_names.push_back(ss.str());
-          }
-        }
-        
-        // Adjoint sensitivities
-        for(int d=0; d<nadj; ++d){
-          for(int i=0; i<getNumInputs(); ++i){
-            ss.str(string());
-            ss << "adj" << d << "_" << inputScheme_.entry(i);
-            io_names.push_back(ss.str());
-          }
-        }
-        
-        // Pass to return object
-        ret.setOutputScheme(io_names);
+      // Nondifferentiated inputs
+      for(int i=0; i<getNumInputs(); ++i){
+        io_names.push_back(inputScheme_.entryLabel(i));
       }
+
+      // Forward seeds
+      for(int d=0; d<nfwd; ++d){
+        for(int i=0; i<getNumInputs(); ++i){
+          ss.str(string());
+          ss << "fwd" << d << "_" << inputScheme_.entryLabel(i);
+          io_names.push_back(ss.str());
+        }
+      }
+      
+      // Adjoint seeds
+      for(int d=0; d<nadj; ++d){
+        for(int i=0; i<getNumOutputs(); ++i){
+          ss.str(string());
+          ss << "adj" << d << "_" << outputScheme_.entryLabel(i);
+          io_names.push_back(ss.str());
+        }
+      }
+      
+      // Pass to return object
+      ret.setInputScheme(io_names);
+    
+      // Names of outputs
+      io_names.clear();
+      io_names.reserve(getNumOutputs()*(1+nfwd)+getNumInputs()*nadj);
+      
+      // Nondifferentiated inputs
+      for(int i=0; i<getNumOutputs(); ++i){
+        io_names.push_back(outputScheme_.entryLabel(i));
+      }
+      
+      // Forward sensitivities
+      for(int d=0; d<nfwd; ++d){
+        for(int i=0; i<getNumOutputs(); ++i){
+          ss.str(string());
+          ss << "fwd" << d << "_" << outputScheme_.entryLabel(i);
+          io_names.push_back(ss.str());
+        }
+      }
+      
+      // Adjoint sensitivities
+      for(int d=0; d<nadj; ++d){
+        for(int i=0; i<getNumInputs(); ++i){
+          ss.str(string());
+          ss << "adj" << d << "_" << inputScheme_.entryLabel(i);
+          io_names.push_back(ss.str());
+        }
+      }
+      
+      // Pass to return object
+      ret.setOutputScheme(io_names);
       
       // Initialize it
       ret.init();
