@@ -68,8 +68,6 @@ namespace CasADi{
     monitor_inputs_ = false;
     monitor_outputs_ = false;
   
-    inputScheme_  = SCHEME_unknown;
-    outputScheme_ = SCHEME_unknown;
   }
 
 
@@ -179,30 +177,30 @@ namespace CasADi{
     if (getNumInputs()==1) {
       stream << " Input: " << input().dimString() << endl;
     } else{
-      if (inputScheme_==SCHEME_unknown) {
+      if (inputScheme_.isNull()) {
         stream << " Inputs (" << getNumInputs() << "):" << std::endl;
         for (int i=0;i<getNumInputs();i++) {
           stream << "  " << i << ". " << input(i).dimString() << std::endl;
         }
       } else {
-        stream << " Inputs (" << getSchemeName(inputScheme_) << ": " << getNumInputs() << "):" << std::endl;
+        stream << " Inputs (" << inputScheme_.name() << ": " << getNumInputs() << "):" << std::endl;
         for (int i=0;i<getNumInputs();i++) {
-          stream << "  " << i  << ". (" << getSchemeEntryEnumName(inputScheme_,i) << " aka " << getSchemeEntryName(inputScheme_,i) << ")   " << input(i).dimString() << std::endl;
+          stream << "  " << i  << ". (" << inputScheme_.describe(i) << ")   " << input(i).dimString() << std::endl;
         }
       }
     }
     if (getNumOutputs()==1) {
       stream << " Output: " << output().dimString() << endl;
     } else {
-      if (outputScheme_==SCHEME_unknown) {
+      if (outputScheme_.isNull()) {
         stream << " Outputs (" << getNumOutputs() << "):" << std::endl;
         for (int i=0;i<getNumOutputs();i++) {
           stream << "  " << i << ". " << output(i).dimString() << std::endl;
         }
       } else { 
-        stream << " Outputs (" << getSchemeName(outputScheme_) << ": " << getNumOutputs() << "):" << std::endl;
+        stream << " Outputs (" << outputScheme_.name() << ": " << getNumOutputs() << "):" << std::endl;
         for (int i=0;i<getNumOutputs();i++) {
-          stream << "  " << i << ". (" << getSchemeEntryEnumName(outputScheme_,i) << " aka " << getSchemeEntryName(outputScheme_,i) << ")   " << output(i).dimString() << std::endl;
+          stream << "  " << i << ". (" << outputScheme_.describe(i) << ")   " << output(i).dimString() << std::endl;
         }
       }
     }
@@ -1278,7 +1276,7 @@ namespace CasADi{
           arg_new[i].set(arg[i]);
         } catch(exception& ex){
           stringstream ss;
-          ss << "SXFunctionInternal::evalSX: Failed to set " << describeInput(inputScheme_,i) << ": " << ex.what();
+          ss << "SXFunctionInternal::evalSX: Failed to set " << inputScheme_.describeInput(i) << ": " << ex.what();
           throw CasadiException(ss.str());
         }
       }
@@ -1302,7 +1300,7 @@ namespace CasADi{
             fseed_new[dir][i].set(fseed[dir][i]);
           } catch(exception& ex){
             stringstream ss;
-            ss << "SXFunctionInternal::evalSX: Failed to set forward seed of " << describeInput(inputScheme_,i) << ", direction " << dir << ": " << ex.what();
+            ss << "SXFunctionInternal::evalSX: Failed to set forward seed of " << inputScheme_.describeInput(i) << ", direction " << dir << ": " << ex.what();
             throw CasadiException(ss.str());
           }
         }
@@ -1327,7 +1325,7 @@ namespace CasADi{
             aseed_new[dir][i].set(aseed[dir][i]);
           } catch(exception& ex){
             stringstream ss;
-            ss << "SXFunctionInternal::evalSX: Failed to set adjoint seed of " << describeOutput(outputScheme_,i) << ", direction " << dir << ": " << ex.what();
+            ss << "SXFunctionInternal::evalSX: Failed to set adjoint seed of " << outputScheme_.describeOutput(i) << ", direction " << dir << ": " << ex.what();
             throw CasadiException(ss.str());
           }
         }
@@ -1566,7 +1564,70 @@ namespace CasADi{
       stringstream ss;
       ss << "derivative_" << getOption("name") << "_" << nfwd << "_" << nadj;
       ret.setOption("name",ss.str());
-    
+      
+      // Name the inputs/outputs
+      if(inputScheme_.known() && outputScheme_.known()){
+        // Names of inputs
+        std::vector<std::string> io_names;
+        io_names.reserve(getNumInputs()*(1+nfwd)+getNumOutputs()*nadj);
+
+        // Nondifferentiated inputs
+        for(int i=0; i<getNumInputs(); ++i){
+          io_names.push_back(inputScheme_.entry(i));
+        }
+
+        // Forward seeds
+        for(int d=0; d<nfwd; ++d){
+          for(int i=0; i<getNumInputs(); ++i){
+            ss.str(string());
+            ss << "fwd" << d << "_" << inputScheme_.entry(i);
+            io_names.push_back(ss.str());
+          }
+        }
+        
+        // Adjoint seeds
+        for(int d=0; d<nadj; ++d){
+          for(int i=0; i<getNumOutputs(); ++i){
+            ss.str(string());
+            ss << "adj" << d << "_" << outputScheme_.entry(i);
+            io_names.push_back(ss.str());
+          }
+        }
+        
+        // Pass to return object
+        ret.setInputScheme(io_names);
+      
+        // Names of outputs
+        io_names.clear();
+        io_names.reserve(getNumOutputs()*(1+nfwd)+getNumInputs()*nadj);
+        
+        // Nondifferentiated inputs
+        for(int i=0; i<getNumOutputs(); ++i){
+          io_names.push_back(outputScheme_.entry(i));
+        }
+        
+        // Forward sensitivities
+        for(int d=0; d<nfwd; ++d){
+          for(int i=0; i<getNumOutputs(); ++i){
+            ss.str(string());
+            ss << "fwd" << d << "_" << outputScheme_.entry(i);
+            io_names.push_back(ss.str());
+          }
+        }
+        
+        // Adjoint sensitivities
+        for(int d=0; d<nadj; ++d){
+          for(int i=0; i<getNumInputs(); ++i){
+            ss.str(string());
+            ss << "adj" << d << "_" << inputScheme_.entry(i);
+            io_names.push_back(ss.str());
+          }
+        }
+        
+        // Pass to return object
+        ret.setOutputScheme(io_names);
+      }
+      
       // Initialize it
       ret.init();
     }
@@ -1635,7 +1696,7 @@ namespace CasADi{
         if(arg[i].isNull() || arg[i].empty() || input(i).isNull() || input(i).empty()) continue;
         casadi_assert_message(arg[i].size1()==input(i).size1() && arg[i].size2()==input(i).size2(),
                               "Evaluation::shapes of passed-in dependencies should match shapes of inputs of function." << 
-                              std::endl << describeInput(inputScheme_,i) <<  " has shape (" << input(i).size1() << 
+                              std::endl << inputScheme_.describeInput(i) <<  " has shape (" << input(i).size1() << 
                               "," << input(i).size2() << ") while a shape (" << arg[i].size1() << "," << arg[i].size2() << 
                               ") was supplied.");
       }
