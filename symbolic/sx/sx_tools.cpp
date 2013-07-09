@@ -1267,26 +1267,30 @@ void printCompact(const SXMatrix& ex, std::ostream &stream){
       ret.append((bm-ds)/a2);
       ret.append((bm+ds)/a2);
       return ret;
-    /**} else if (p.size1()==4) {
-      SX a = p.at(0);
-      SX b = p.at(1);
-      SX c = p.at(2);
-      SX d = p.at(3);
-      SX ac = a*c;
-      SX bb = b*b;
-      SX D0 = bb-3*ac;
-      SX D1 = (2*bb-9*ac)*b+27*a*a*d;
-      SX D = D1*D1-4*pow(D0,3); // Assumed strictly positive
-      SX C = pow((D1+sqrt(D))/2,1/3.0);
-      SX DC = D0/C;
-      SXMatrix ret = SXMatrix::ones(3)*b;
-      double u = 1; double u_i = 1;
-      ret(0)+= u*C + u_i*DC;
-      u = -1/2; u_i = -0.5;
-      ret(1)+= u*C + u_i*DC;
-      u = -1/2; u_i = -0.5;
-      ret(2)+= u*C + u_i*DC;
-      return -1/ret/3/a;*/
+    } else if (p.size1()==4) {
+      // www.cs.iastate.edu/~cs577/handouts/polyroots.pdf
+      SX ai = 1/p.at(0);
+       
+      SX p_ = p.at(1)*ai;
+      SX q  = p.at(2)*ai;
+      SX r  = p.at(3)*ai;
+      
+      SX pp = p_*p_;
+      
+      SX a = q - pp/3;
+      SX b = r + 2.0/27*pp*p_-p_*q/3;
+      
+      SX a3 = a/3;
+      
+      SX phi = acos(-b/2/sqrt(-a3*a3*a3));
+      
+      SXMatrix ret(3,1,2*sqrt(-a3));
+      ret(0)*= cos(phi/3);
+      ret(1)*= cos((phi+2*M_PI)/3);
+      ret(2)*= cos((phi+4*M_PI)/3);
+      
+      ret-= p_/3;
+      return ret;
     } else if (p.at(p.size()-1).isEqual(0)) {
       SXMatrix ret = poly_roots(p(range(p.size()-1)));
       ret.append(0);
@@ -1299,8 +1303,26 @@ void printCompact(const SXMatrix& ex, std::ostream &stream){
   
   SXMatrix eig_symbolic(const SXMatrix& m) {
     casadi_assert_message(m.size1()==m.size2(),"eig(): supplied matrix must be square");
+    
+    SXMatrix ret;
+    
+    /// Bring m in block diagonal form, calculating eigenvalues of each block seperately
+    std::vector<int> offset;
+    std::vector<int> index;
+    int nb = m.sparsity().stronglyConnectedComponents(offset,index);
+    
+    SXMatrix m_perm = m(offset,offset);
+    
     SXMatrix l = ssym("l");
-    return poly_roots(poly_coeff(det(SXMatrix::eye(m.size1())*l-m),l));
+    
+    for (int k=0;k<nb;++k) {
+      std::vector<int> r = range(index.at(k),index.at(k+1));
+      // det(lambda*I-m) = 0
+      std::cout << r << std::endl;
+      ret.append(poly_roots(poly_coeff(det(SXMatrix::eye(r.size())*l-m_perm(r,r)),l)));
+    }
+		
+    return ret;
   }
   
 } // namespace CasADi

@@ -1087,15 +1087,50 @@ class SXtests(casadiTestCase):
     x1 = (-b_+sqrt(d))/2/a_
     f.output()
     self.checkarray(f.output(),vertcat([x0,x1]))
+
+    p = ssym("[a,b,c,d]")
+    r = poly_roots(p)
     
+    f = SXFunction([p],[r])
+    f.init()
+    f.setInput([11,1.3,-1.7,0.1])
+    f.evaluate()
+    f.output()
+    self.checkarray(f.output(),DMatrix([0.298028,-0.479787,0.0635774]),digits=5)
     
   def test_eig_symbolic(self):
+    x = ssym("x",2,2)
+    f = SXFunction([x],[eig_symbolic(x)])
+    f.init()
+    f.setInput(DMatrix([[2,0.1],[0.3,0.7]]))
+    f.evaluate()
+    self.checkarray(f.output(),DMatrix([0.67732,2.02268]),digits=5)
+    
+    
     x = ssym("x",2)
     f = SXFunction([x],[eig_symbolic(c.diag(x))])
     f.init()
     f.setInput([3,7])
     f.evaluate()
     self.checkarray(f.output(),f.input())
+
+    
+    x = ssym("x",5)
+    f = SXFunction([x],[eig_symbolic(c.diag(x))])
+    f.init()
+    f.setInput([3,7,2,1,6])
+    f.evaluate()
+    self.checkarray(f.output(),f.input())
+    
+    x = ssym("x",2,2)
+    y = ssym("y",2)
+    f = SXFunction([x,y],[eig_symbolic(blkdiag([x,c.diag(y)]))])
+    f.init()
+    f.setInput(DMatrix([[2,0.1],[0.3,0.7]]),0)
+    f.setInput([3,7],1)
+    f.evaluate()
+    self.checkarray(f.output(),DMatrix([0.67732,2.02268,3,7]),digits=5)
+
     
   def test_jacobian_empty(self):
     x = ssym("x",3)
