@@ -691,6 +691,8 @@ Matrix<T>::Matrix(const std::vector< std::vector<T> >& d){
       );
     }
   }
+  if (m==-1) m=1;
+  
   sparsity_ = CRSSparsity(n,m,true);
   
   data().resize(n*m);
