@@ -636,6 +636,11 @@ class ADtests(casadiTestCase):
           (in1,v1,yy2[:,0],2*c.diag(x)),
           (in1,v1,yyy[:,0],sparse(DMatrix([[0,1],[1,0]]))),
           (in1,v1,mul(y,x),y),
+          (in1,v1,mul(x.T,y.T),y),
+          (in1,v1,mul(y,x,sp_triplet(2,1,[1],[0])),y[sp_triplet(2,2,[1,1],[0,1])]),
+          (in1,v1,mul(x.T,y.T,sp_triplet(2,1,[1],[0]).T),y[sp_triplet(2,2,[1,1],[0,1])]),
+          (in1,v1,mul(y[sp_triplet(2,2,[0,1,1],[0,0,1])],x),y[sp_triplet(2,2,[0,1,1],[0,0,1])]),
+          (in1,v1,mul(x.T,y[sp_triplet(2,2,[0,1,1],[0,0,1])].T),y[sp_triplet(2,2,[0,1,1],[0,0,1])]),
           (in1,v1,mul(y,x**2),y*2*vertcat([x.T,x.T])),
           (in1,v1,sin(x),c.diag(cos(x))),
           (in1,v1,sin(x**2),c.diag(cos(x**2)*2*x)),
@@ -830,7 +835,10 @@ class ADtests(casadiTestCase):
             self.checkarray(DMatrix(f.jacSparsity(),1),DMatrix(J_.sparsity(),1))
                 
       # Scalarized
-      fun = MXFunction(inputs,[out[0],jac[0,:].T])
+      s_i  = out.sparsity().getRow()[0]
+      s_j  = out.sparsity().col()[0]
+      s_k = s_i*out.size2()+s_j
+      fun = MXFunction(inputs,[out[s_i,s_j],jac[s_k,:].T])
       fun.init()
       
       for i,v in enumerate(values):
@@ -852,9 +860,27 @@ class ADtests(casadiTestCase):
             for i,v in enumerate(values):
               Gf.setInput(v,i)
             Gf.evaluate()
-            self.checkarray(Gf.getOutput(),J_)
+            self.checkarray(Gf.getOutput(),J_,failmessage=("mode: %s, numeric: %d" % (mode,numeric)))
             #self.checkarray(DMatrix(Gf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(mode)+str(numeric)+str(out)+str(type(fun)))
-    
+
+      H_ = None
+      
+      for f in [fun,fun.expand()]:
+        #  hessian()
+        for mode in ["forward","reverse"]:
+          for numeric in [True,False]:
+            f.setOption("ad_mode",mode)
+            f.setOption("numeric_jacobian",numeric)
+            f.init()
+            Hf=f.hessian(0,0)
+            Hf.init()
+            for i,v in enumerate(values):
+              Hf.setInput(v,i)
+            Hf.evaluate()
+            if H_ is None:
+              H_ = Hf.getOutput()
+            self.checkarray(Hf.getOutput(),H_,failmessage=("mode: %s, numeric: %d" % (mode,numeric)))
+            #self.checkarray(DMatrix(Gf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(mode)+str(numeric)+str(out)+str(type(fun)))
     
 if __name__ == '__main__':
     unittest.main()

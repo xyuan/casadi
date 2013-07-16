@@ -126,7 +126,12 @@ class casadiTestCase(unittest.TestCase):
 
   def assertAlmostEqual(self,first, second, places=7, msg=""):
       msg+= " %.16e <-> %.16e"  % (first, second)
-      unittest.TestCase.assertAlmostEqual(self,first,second,places=places,msg=msg)
+      n =  max(abs(first),abs(second))
+      if n>1e3:
+        n = 10**floor(log10(n))
+      else:
+        n = 1.0
+      unittest.TestCase.assertAlmostEqual(self,first/n,second/n,places=places,msg=msg + "  scaled by %d" %n)
 
   def checkarray(self,zr,zt,name="",failmessage="",digits=10):
       """
@@ -450,8 +455,6 @@ class casadiTestCase(unittest.TestCase):
       
           res,fwdsens,adjsens = f.eval(inputss,fseeds,aseeds)
           
-          fseed = [DMatrix(fseeds[d][0].sparsity(),random.random(fseeds[d][0].size())) for d in range(ndir) ]
-          aseed = [DMatrix(aseeds[d][0].sparsity(),random.random(aseeds[d][0].size())) for d in range(ndir) ]
           vf = Function(inputss+flatten([fseeds[i]+aseeds[i] for i in range(ndir)]),list(res) + flatten([list(fwdsens[i])+list(adjsens[i]) for i in range(ndir)]))
           
           vf.init()
@@ -501,7 +504,8 @@ class casadiTestCase(unittest.TestCase):
             for k,(a,b) in enumerate(zip(st[0],st[i+1])):
               if b.numel()==0 and sparse(a).size()==0: continue
               if a.numel()==0 and sparse(b).size()==0: continue
-              self.checkarray(sparse(a),sparse(b),("%s, output(%d)" % (order,k))+str(vf2.getInput(0)))
+              self.checkarray(IMatrix(a.sparsity(),1),IMatrix(b.sparsity(),1),("%s, output(%d)" % (order,k))+str(vf2.getInput(0)),digits=digits_sens)
+              self.checkarray(a,b,("%s, output(%d)" % (order,k))+str(vf2.getInput(0)),digits=digits_sens)
               
     for k in range(trial.getNumInputs()):
       trial.setInput(trial_inputs[k],k)
