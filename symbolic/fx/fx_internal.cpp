@@ -500,11 +500,10 @@ namespace CasADi{
     // Construct sparsity pattern
     CRSSparsity ret = sp_triplet(nz_out, nz_in,use_fwd ? jrow : jcol, use_fwd ? jcol : jrow);
     
+    casadi_log("Formed Jacobian sparsity pattern (dimension " << ret.shape() << ", " << ret.size() << " nonzeros, " << 100*double(ret.size())/double(ret.size1())/double(ret.size2()) << " \% nonzeros).");
+    casadi_log("FXInternal::getJacSparsity end ");
+    
     // Return sparsity pattern
-    if(verbose()){
-      std::cout << "Formed Jacobian sparsity pattern (dimension " << ret.shape() << ", " << 100*double(ret.size())/ret.numel() << " \% nonzeros)." << endl;
-      std::cout << "FXInternal::getJacSparsity end " << endl;
-    }
     return ret;
   }
 
@@ -559,7 +558,7 @@ namespace CasADi{
       
       CRSSparsity D = r.starColoring();
 
-      casadi_log("Star coloring: " << D.size1() << " <-> " << D.size2());
+      casadi_log("Star coloring on " << r.dimString() << ": " << D.size1() << " <-> " << D.size2());
       
       // Reset the virtual machine
       spInit(true);
@@ -692,8 +691,17 @@ namespace CasADi{
               }
             }
               
-            // Clean seed vector, ready for next bvec sweep
-            for(int i=0; i<nz; ++i) seed_v[i]=0;
+            // Clear the forward seeds/adjoint sensitivities, ready for next bvec sweep
+            for(int ind=0; ind<getNumInputs(); ++ind){
+              vector<double> &v = inputNoCheck(ind).data();
+              if(!v.empty()) fill_n(get_bvec_t(v),v.size(),bvec_t(0));
+            }
+   
+            // Clear the adjoint seeds/forward sensitivities, ready for next bvec sweep
+            for(int ind=0; ind<getNumOutputs(); ++ind){
+              vector<double> &v = outputNoCheck(ind).data();
+              if(!v.empty()) fill_n(get_bvec_t(v),v.size(),bvec_t(0));
+            }
               
             // Clean lookup table
             lookup_row.clear();
@@ -720,6 +728,7 @@ namespace CasADi{
     }
     
     casadi_log("Number of sweeps: " << nsweeps );
+    casadi_log("Formed Jacobian sparsity pattern (dimension " << r.shape() << ", " << r.size() << " nonzeros, " << 100*double(r.size())/double(r.size1())/double(r.size2()) << " \% nonzeros).");
     
     return r;
   }
@@ -790,6 +799,8 @@ namespace CasADi{
       CRSSparsity D1 = rT.unidirectionalColoring(r);
       CRSSparsity D2 = r.unidirectionalColoring(rT);
       
+      casadi_log("Coloring on " << r.dimString() << " (fwd seeps: " << D1.size1() << " , adj sweeps: " << D2.size2() << ")");
+      
       // Adjoint mode penalty factor (adjoint mode is usually more expensive to calculate)
       int adj_penalty = 2;
       
@@ -799,10 +810,10 @@ namespace CasADi{
       // Use whatever required less colors if we tried both (with preference to forward mode)
       if((D1.size1()*fwd_cost <= adj_penalty*D2.size1()*adj_cost)){
         use_fwd = true;
-        casadi_log("Forward mode chosen: " << D1.size1()*fwd_cost << " <-> " << adj_penalty*D2.size1()*adj_cost);
+        casadi_log("Forward mode chosen (fwd cost: " << D1.size1()*fwd_cost << ", adj cost: " << adj_penalty*D2.size1()*adj_cost << ")");
       } else {
         use_fwd = false;
-        casadi_log("Adjoint mode chosen: " << D1.size1()*fwd_cost << " <-> " << adj_penalty*D2.size1()*adj_cost);
+        casadi_log("Adjoint mode chosen (adj cost: " << D1.size1()*fwd_cost << ", adj cost: " << adj_penalty*D2.size1()*adj_cost << ")");
       }
       
       use_fwd = spCanEvaluate(true) && use_fwd;
@@ -955,9 +966,18 @@ namespace CasADi{
                 }
               }
             }
-              
-            // Clean seed vector, ready for next bvec sweep
-            for(int i=0; i<nz_seed; ++i) seed_v[i]=0;
+            
+            // Clear the forward seeds/adjoint sensitivities, ready for next bvec sweep
+            for(int ind=0; ind<getNumInputs(); ++ind){
+              vector<double> &v = inputNoCheck(ind).data();
+              if(!v.empty()) fill_n(get_bvec_t(v),v.size(),bvec_t(0));
+            }
+   
+            // Clear the adjoint seeds/forward sensitivities, ready for next bvec sweep
+            for(int ind=0; ind<getNumOutputs(); ++ind){
+              vector<double> &v = outputNoCheck(ind).data();
+              if(!v.empty()) fill_n(get_bvec_t(v),v.size(),bvec_t(0));
+            }
               
             // Clean lookup table
             lookup_row.clear();
@@ -992,6 +1012,7 @@ namespace CasADi{
       hasrun = true;
     }
     casadi_log("Number of sweeps: " << nsweeps );
+    casadi_log("Formed Jacobian sparsity pattern (dimension " << r.shape() << ", " << r.size() << " nonzeros, " << 100*double(r.size())/double(r.size1())/double(r.size2()) << " \% nonzeros).");
     
     return r;
   }
@@ -1112,9 +1133,7 @@ namespace CasADi{
       // Star coloring if symmetric
       log("FXInternal::getPartition starColoring");
       D1 = A.starColoring();
-      if(verbose()){
-        cout << "Star coloring completed: " << D1.size1() << " directional derivatives needed (" << A.size2() << " without coloring)." << endl;
-      }
+      casadi_log("Star coloring completed: " << D1.size1() << " directional derivatives needed (" << A.size2() << " without coloring).");
     
     } else {
     
@@ -1162,8 +1181,8 @@ namespace CasADi{
         }
       }
 
-      log("FXInternal::getPartition end");
     }
+    log("FXInternal::getPartition end");
   }
 
   void FXInternal::evaluateCompressed(int nfdir, int nadir){
