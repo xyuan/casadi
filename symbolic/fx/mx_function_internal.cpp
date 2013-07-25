@@ -343,10 +343,9 @@ namespace CasADi{
         it->second->temp=0;
       }
     }
-  
-    // Allocate tape
-    allocTape();
-  
+
+    // Clear any existing tape
+    tape_.clear();
   
     // Allocate memory for directional derivatives
     MXFunctionInternal::updateNumSens(false);
@@ -363,6 +362,11 @@ namespace CasADi{
       it->dataF.resize(nfdir_,it->data);
       it->dataA.resize(nadir_,it->data);
     }
+
+    // Allocate tape if needed
+    if(tape_.empty() && nadir_>0){
+      allocTape();
+    } 
 
     // Request more derivative from the embedded functions
     for(vector<AlgEl>::iterator it=algorithm_.begin(); it!=algorithm_.end(); ++it){
@@ -782,6 +786,12 @@ namespace CasADi{
     // "Tape" with spilled variables
     vector<pair<pair<int,int>,MX> > tape;
     if(nadir>0){
+      // Allocate numeric tape if needed
+      if(tape_.empty()){
+        allocTape();
+      }
+
+      // Allocate symbolic tape
       tape.resize(tape_.size());
       for(int k=0; k<tape.size(); ++k){
         tape[k].first = tape_[k].first;
