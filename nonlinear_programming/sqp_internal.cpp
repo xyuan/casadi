@@ -51,6 +51,7 @@ namespace CasADi{
     addOption("lbfgs_memory",      OT_INTEGER,     10,              "Size of L-BFGS memory.");
     addOption("regularize",        OT_BOOLEAN,  false,              "Automatic regularization of Lagrange Hessian.");
     addOption("print_header",      OT_BOOLEAN,   true,              "Print the header with problem statistics");
+    addOption("min_step_size",     OT_REAL,   1e-10,                "The size (inf-norm) of the step size should not become smaller than this.");
   
     // Monitors
     addOption("monitor",      OT_STRINGVECTOR, GenericType(),  "", "eval_f|eval_g|eval_jac_g|eval_grad_f|eval_h|qp|dx", true);
@@ -75,7 +76,8 @@ namespace CasADi{
     tol_du_ = getOption("tol_du");
     regularize_ = getOption("regularize");
     exact_hessian_ = getOption("hessian_approximation")=="exact";
-  
+    min_step_size_ = getOption("min_step_size");
+    
     // Get/generate required functions
     gradF();
     jacG();
@@ -254,18 +256,21 @@ namespace CasADi{
       // Primal infeasability
       double pr_inf = primalInfeasibility(x_, lbx, ubx, gk_, lbg, ubg);
     
-      // 1-norm of lagrange gradient
-      double gLag_norm1 = norm_1(gLag_);
+      // inf-norm of lagrange gradient
+      double gLag_norminf = norm_inf(gLag_);
     
-      // 1-norm of step
-      double dx_norm1 = norm_1(dx_);
+      // inf-norm of step
+      double dx_norminf = norm_inf(dx_);
     
       // Print header occasionally
       if(iter % 10 == 0) printIteration(cout);
     
       // Printing information about the actual iterate
-      printIteration(cout,iter,fk_,pr_inf,gLag_norm1,dx_norm1,reg_,ls_iter,ls_success);
-    
+      printIteration(cout,iter,fk_,pr_inf,gLag_norminf,dx_norminf,reg_,ls_iter,ls_success);
+	  
+	  // This log entry is here to avoid #822
+      log("Checking Stopping criteria");
+	  
       // Call callback function if present
       if (!callback_.isNull()) {
         if (!callback_.input(NLP_SOLVER_F).empty()) callback_.input(NLP_SOLVER_F).set(fk_);
@@ -278,26 +283,37 @@ namespace CasADi{
         if (callback_.output(0).at(0)) {
           cout << endl;
           cout << "CasADi::SQPMethod: aborted by callback..." << endl;
+          stats_["return_status"] = "User_Requested_Stop";
           break;
         }
       }
     
       // Checking convergence criteria
-      if (pr_inf < tol_pr_ && gLag_norm1 < tol_du_){
+      if (pr_inf < tol_pr_ && gLag_norminf < tol_du_){
         cout << endl;
         cout << "CasADi::SQPMethod: Convergence achieved after " << iter << " iterations." << endl;
+        stats_["return_status"] = "Solve_Succeeded";
         break;
       }
     
       if (iter >= max_iter_){
         cout << endl;
         cout << "CasADi::SQPMethod: Maximum number of iterations reached." << endl;
+        stats_["return_status"] = "Maximum_Iterations_Exceeded";
+        break;
+      }
+      
+      if (iter > 0 && dx_norminf <= min_step_size_) {
+        cout << endl;
+        cout << "CasADi::SQPMethod: Search direction becomes too small without convergence criteria being met." << endl;
+        stats_["return_status"] = "Search_Direction_Becomes_Too_Small";
         break;
       }
     
       // Start a new iteration
       iter++;
     
+      log("Formulating QP");
       // Formulate the QP
       transform(lbx.begin(),lbx.end(),x_.begin(),qp_LBX_.begin(),minus<double>());
       transform(ubx.begin(),ubx.end(),x_.begin(),qp_UBX_.begin(),minus<double>());
@@ -376,11 +392,24 @@ namespace CasADi{
           // Backtracking
           t = beta_ * t;
         }
+        
+        // Candidate accepted, update dual variables
+        for(int i=0; i<ng_; ++i) mu_[i] = t * qp_DUAL_A_[i] + (1 - t) * mu_[i];
+        for(int i=0; i<nx_; ++i) mu_x_[i] = t * qp_DUAL_X_[i] + (1 - t) * mu_x_[i];
+            
+        // Candidate accepted, update the primal variable
+        copy(x_.begin(),x_.end(),x_old_.begin());
+        copy(x_cand_.begin(),x_cand_.end(),x_.begin());
+        
+      } else {
+        // Full step
+        copy(qp_DUAL_A_.begin(),qp_DUAL_A_.end(),mu_.begin());
+        copy(qp_DUAL_X_.begin(),qp_DUAL_X_.end(),mu_x_.begin());
+        
+        copy(x_.begin(),x_.end(),x_old_.begin());
+        // x+=dx
+        transform(x_.begin(),x_.end(),dx_.begin(),x_.begin(),plus<double>());
       }
-
-      // Candidate accepted, update dual variables
-      for(int i=0; i<ng_; ++i) mu_[i] = t * qp_DUAL_A_[i] + (1 - t) * mu_[i];
-      for(int i=0; i<nx_; ++i) mu_x_[i] = t * qp_DUAL_X_[i] + (1 - t) * mu_x_[i];
     
       if(!exact_hessian_){
         // Evaluate the gradient of the Lagrangian with the old x but new mu (for BFGS)
@@ -389,10 +418,6 @@ namespace CasADi{
         // gLag_old += mu_x_;
         transform(gLag_old_.begin(),gLag_old_.end(),mu_x_.begin(),gLag_old_.begin(),plus<double>());
       }
-    
-      // Candidate accepted, update the primal variable
-      copy(x_.begin(),x_.end(),x_old_.begin());
-      copy(x_cand_.begin(),x_cand_.end(),x_.begin());
 
       // Evaluate the constraint Jacobian
       log("Evaluating jac_g");
@@ -456,10 +481,10 @@ namespace CasADi{
   
   void SQPInternal::printIteration(std::ostream &stream){
     stream << setw(4)  << "iter";
-    stream << setw(14) << "objective";
-    stream << setw(9) << "inf_pr";
-    stream << setw(9) << "inf_du";
-    stream << setw(9) << "||d||";
+    stream << setw(15) << "objective";
+    stream << setw(10) << "inf_pr";
+    stream << setw(10) << "inf_du";
+    stream << setw(10) << "||d||";
     stream << setw(7) << "lg(rg)";
     stream << setw(3) << "ls";
     stream << ' ';
@@ -470,10 +495,10 @@ namespace CasADi{
                                    double dx_norm, double rg, int ls_trials, bool ls_success){
     stream << setw(4) << iter;
     stream << scientific;
-    stream << setw(14) << setprecision(6) << obj;
-    stream << setw(9) << setprecision(2) << pr_inf;
-    stream << setw(9) << setprecision(2) << du_inf;
-    stream << setw(9) << setprecision(2) << dx_norm;
+    stream << setw(15) << setprecision(6) << obj;
+    stream << setw(10) << setprecision(2) << pr_inf;
+    stream << setw(10) << setprecision(2) << du_inf;
+    stream << setw(10) << setprecision(2) << dx_norm;
     stream << fixed;
     if(rg>0){
       stream << setw(7) << setprecision(2) << log10(rg);
@@ -763,19 +788,19 @@ namespace CasADi{
   
   double SQPInternal::primalInfeasibility(const std::vector<double>& x, const std::vector<double>& lbx, const std::vector<double>& ubx,
                                           const std::vector<double>& g, const std::vector<double>& lbg, const std::vector<double>& ubg){
-    // L1-norm of the primal infeasibility
+    // Linf-norm of the primal infeasibility
     double pr_inf = 0;
   
     // Bound constraints
     for(int j=0; j<x.size(); ++j){
-      pr_inf += max(0., lbx[j] - x[j]);
-      pr_inf += max(0., x[j] - ubx[j]);
+      pr_inf = max(pr_inf, lbx[j] - x[j]);
+      pr_inf = max(pr_inf, x[j] - ubx[j]);
     }
   
     // Nonlinear constraints
     for(int j=0; j<g.size(); ++j){
-      pr_inf += max(0., lbg[j] - g[j]);
-      pr_inf += max(0., g[j] - ubg[j]);
+      pr_inf = max(pr_inf, lbg[j] - g[j]);
+      pr_inf = max(pr_inf, g[j] - ubg[j]);
     }
   
     return pr_inf;
