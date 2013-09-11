@@ -72,6 +72,7 @@ option(WITH_PYTHON_INTERRUPTS "With interrupt handling inside python interface" 
 # option(WITH_GSL "Compile the GSL interface" ON)
 option(WITH_OPENMP "Compile with parallelization support" OFF)
 option(WITH_OOQP "Enable OOQP interface" ON)
+option(WITH_SQIC "Enable SQIC interface" OFF)
 option(WITH_SWIG_SPLIT "Split SWIG wrapper generation into multiple modules" OFF) 
 option(WITH_WORHP "Compile the WORHP interface" OFF) 
 option(WITH_ACADO "Compile the interfaces to ACADO and qpOASES, if it can be found" OFF) 
@@ -151,6 +152,7 @@ if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
   message(STATUS "x86_64 architecture detected - setting flag -fPIC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fPIC")
 endif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
 
 # Use the included Sundials
@@ -272,6 +274,12 @@ if(WITH_OOQP AND BLAS_FOUND)
   find_package (OOQP)
 endif()
 add_feature_info(ooqp-interface OOQP_FOUND "Interface to the QP solver OOQP (requires BLAS).")
+
+if(Fortran_language_works AND WITH_SQIC)
+  find_package (SQIC)
+  set(CASADI_DEPENDENCIES ${CASADI_DEPENDENCIES} ${SQIC_LIBRARIES})
+endif()
+add_feature_info(sqic-interface SQIC_FOUND "Interface to the QP solver SQIC.")
 
 if(WITH_WORHP AND LIBXML2_FOUND)
   find_package (WORHP)

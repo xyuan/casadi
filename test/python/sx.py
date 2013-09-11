@@ -32,6 +32,7 @@ try:
 except:
 	scipy_available = False
 	
+@run_only(['large_hessian'])
 class SXtests(casadiTestCase):
 
   def setUp(self):
@@ -1226,6 +1227,33 @@ class SXtests(casadiTestCase):
     self.checkarray(IMatrix(filt,1),IMatrix(g.output().sparsity(),1))
     
     self.checkarray(f.output()[filt],g.output())
+    
+  @skip(platform_arch==32)
+  @memory_heavy()
+  def test_large_hessian(self):
+    import pickle
+
+    A = pickle.load(file("../data/apoa1-2.pkl",'r'))
+
+    H = DMatrix(A,range(A.size()))
+    H = H + H.T
+    
+    H = H[:20000,:20000]
+    
+    x = ssym("x",H.size1())
+    
+    f = SXFunction([x],[mul([x.T,H,x])])
+    H *= 2
+    f.setOption("verbose",True)
+    f.init()
+
+    h = f.hessian()
+    h.init()
+    h.evaluate()
+    
+    self.assertTrue(h.output().sparsity()==H.sparsity())
+    
+    self.checkarray(h.output().data(),H.data())
     
 if __name__ == '__main__':
     unittest.main()
