@@ -31,8 +31,10 @@
 #ifdef WITH_SQIC
 %{
 #include "interfaces/sqic/sqic_solver.hpp"
+#include "interfaces/sqic/stabilized_sqic_solver.hpp"
 %}
 %include "interfaces/sqic/sqic_solver.hpp"
+%include "interfaces/sqic/stabilized_sqic_solver.hpp"
 #endif
 
 // IPOPT
@@ -116,4 +118,12 @@
 #include "interfaces/worhp/worhp_solver.hpp"
 %}
 %include "interfaces/worhp/worhp_solver.hpp"
+#endif
+
+
+#ifdef WITH_SNOPT
+%{
+#include "interfaces/snopt/snopt_solver.hpp"
+%}
+%include "interfaces/snopt/snopt_solver.hpp"
 #endif
