@@ -164,15 +164,72 @@ Matrix<T> blockcat(const Matrix<T> &A,const Matrix<T> &B,const Matrix<T> &C,cons
 
 /** \brief Concatenate a list of matrices vertically
 * Alternative terminology: vertical stack, vstack, vertical append, [a;b]
+*
+*   vertcat(vertsplit(x,...)) = x
 */
 template<class T>
 Matrix<T> vertcat(const std::vector<Matrix<T> > &v);
 
+/** \brief  split vertically, retaining groups of rows
+* \param offset List of all start rows for each group
+*      the last row group will run to the end.
+*
+*   vertcat(vertsplit(x,...)) = x
+*/
+template<class T>
+std::vector<Matrix<T> > vertsplit(const Matrix<T> &v, const std::vector<int>& offset);
+
+/** \brief  split vertically, retaining fixed-sized groups of rows
+* \param incr Size of each group of rows
+*
+*   vertcat(vertsplit(x,...)) = x
+*/
+template<class T>
+std::vector<Matrix<T> > vertsplit(const Matrix<T> &v, int incr=1);
+
 /** \brief Concatenate a list of matrices horizontally
 * Alternative terminology: horizontal stack, hstack, horizontal append, [a b]
+*
+*   horzcat(horzsplit(x,...)) = x
 */
 template<class T>
 Matrix<T> horzcat(const std::vector<Matrix<T> > &v);
+
+/** \brief  split horizontally, retaining groups of columns
+* \param output_offset List of all start columns for each group
+*      the last column group will run to the end.
+*
+*   horzcat(horzsplit(x,...)) = x
+*/
+template<class T>
+std::vector<Matrix<T> > horzsplit(const Matrix<T> &v, const std::vector<int>& offset);
+
+/** \brief  split horizontally, retaining fixed-sized groups of columns
+* \param incr Size of each group of columns
+*
+*   horzcat(horzsplit(x,...)) = x
+*/
+template<class T>
+std::vector<Matrix<T> > horzsplit(const Matrix<T> &v, int incr=1);
+
+
+/** \brief  chop up into blocks
+* \brief vert_offset Defines the boundaries of the block rows
+* \brief horz_offset Defines the boundaries of the block columns
+*
+*   blockcat(blocksplit(x,...,...)) = x
+*/
+template<class T>
+std::vector< std::vector< Matrix<T> > > blocksplit(const Matrix<T>& x, const std::vector<int>& vert_offset, const std::vector<int>& horz_offset);
+
+/** \brief  chop up into blocks
+* \brief vert_incr Defines the increment for block boundaries in row dimension
+* \brief horz_incr Defines the increment for block boundaries in column dimension
+*
+*   blockcat(blocksplit(x,...,...)) = x
+*/
+template<class T>
+std::vector< std::vector< Matrix<T> > > blocksplit(const Matrix<T>& x, int vert_incr = 1, int horz_incr = 1);
 
 #ifndef SWIG
 template<class T>
@@ -697,11 +754,88 @@ Matrix<T> vertcat(const std::vector<Matrix<T> > &v){
 }
 
 template<class T>
+std::vector<Matrix<T> > vertsplit(const Matrix<T> &v, const std::vector<int>& offset) {
+  // Consistency check
+  casadi_assert(offset.size()>=1);
+  casadi_assert(offset.front()==0);
+  casadi_assert(offset.back()<=v.size1());
+  casadi_assert(isMonotone(offset));
+  
+  std::vector<Matrix<T> > ret;
+  
+  // Obtain sparsity pattern
+  const std::vector<int> & rowind = v.sparsity().rowind();
+  const std::vector<int> & col = v.sparsity().col();
+  
+  for(int i=0; i<offset.size(); ++i) {
+    int start = offset[i];
+    int stop = i+1 < offset.size() ? offset[i+1] : v.size1(); 
+  
+    // rowind for the submatrix: a portion of the original rowind, 
+    // but with a common offset substracted such that rowind_s[0]==0
+    std::vector<int> rowind_s(stop-start+1,-rowind[start]);
+    std::transform(rowind.begin()+start,rowind.begin()+stop+1,rowind_s.begin(),rowind_s.begin(),std::plus<int>());
+    
+    // col for the submatrix: a portion of the original col
+    std::vector<int> col_s(rowind[stop]-rowind[start]);
+    std::copy(col.begin()+rowind[start],col.begin()+rowind[stop],col_s.begin());
+    
+    CRSSparsity s(stop-start,v.size2(),col_s,rowind_s);
+    Matrix<T> r(s);
+    
+    // data for the submatrix: a portion of the original data
+    std::copy(v.begin()+rowind[start],v.begin()+rowind[stop],r.begin());
+    
+    // Append submatrix to list
+    ret.push_back(r);
+  }
+  return ret;
+}
+
+template<class T>
+std::vector<Matrix<T> > vertsplit(const Matrix<T> &v, int incr) {
+  casadi_assert(incr>=1);
+  return vertsplit(v,range(0,v.size1(),incr));
+}
+
+
+template<class T>
 Matrix<T> horzcat(const std::vector<Matrix<T> > &v){
   Matrix<T> ret;
   for(int i=0; i<v.size(); ++i)
     ret.append(trans(v[i]));
   return trans(ret);  
+}
+
+template<class T>
+std::vector< Matrix<T> > horzsplit(const Matrix<T>& x, const std::vector<int>& offset){
+  std::vector< Matrix<T> > ret = vertsplit(trans(x),offset);
+  Matrix<T> (*transT)(const Matrix<T>& x) = trans;
+  std::transform(ret.begin(),ret.end(),ret.begin(),transT);
+  return ret;
+}
+  
+template<class T>
+std::vector< Matrix<T> > horzsplit(const Matrix<T>& x, int incr){
+    casadi_assert(incr>=1);
+    return horzsplit(x,range(0,x.size2(),incr));
+}
+
+template<class T>
+std::vector< std::vector< Matrix<T> > > blocksplit(const Matrix<T>& x, const std::vector<int>& vert_offset, const std::vector<int>& horz_offset) {
+  std::vector< Matrix<T> > rows = vertsplit(x,vert_offset);
+  std::vector< std::vector< Matrix<T> > > ret;
+  for (int i=0;i<rows.size();++i) {
+    ret.push_back(horzsplit(rows[i],horz_offset));
+  }
+  return ret;
+}
+
+template<class T>
+std::vector< std::vector< Matrix<T> > > blocksplit(const Matrix<T>& x, int vert_incr, int horz_incr) {
+  casadi_assert(horz_incr>=1);
+  casadi_assert(vert_incr>=1);
+  return blocksplit(x,range(0,x.size1(),vert_incr),range(0,x.size2(),horz_incr));
 }
 
 template<class T>
@@ -1298,8 +1432,11 @@ MTT_INST(T,vec) \
 MTT_INST(T,flatten) \
 MTT_INST(T,vecNZ) \
 MTT_INST(T,blockcat) \
+MTT_INST(T,blocksplit) \
 MTT_INST(T,horzcat) \
+MTT_INST(T,horzsplit) \
 MTT_INST(T,vertcat) \
+MTT_INST(T,vertsplit) \
 MTT_INST(T,inner_prod) \
 MTT_INST(T,outer_prod) \
 MTT_INST(T,norm_1) \

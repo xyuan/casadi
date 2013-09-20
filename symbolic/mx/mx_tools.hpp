@@ -31,17 +31,69 @@
 
 namespace CasADi{
 
-  /** \brief  concatenate vertically */
+  /** \brief  concatenate vertically
+  *
+  *  vertcat(vertsplit(x,...)) = x
+  */
   MX vertcat(const std::vector<MX>& x);
 
-  /** \brief  concatenate vertically */
+  /** \brief  split vertically, retaining groups of rows
+  * \param output_offset List of all start rows for each group
+  *      the last row group will run to the end.
+  * 
+  *   vertcat(vertsplit(x,...)) = x
+  */
   std::vector<MX> vertsplit(const MX& x, const std::vector<int>& output_offset);
 
-  /** \brief  concatenate horizontally */
+  /** \brief  split vertically, retaining fixed-sized groups of rows
+  * \param incr Size of each group of rows
+  *
+  *  vertcat(vertsplit(x,...)) = x
+  */
+  std::vector<MX> vertsplit(const MX& x, int incr=1);
+  
+  /** \brief  concatenate horizontally 
+  *
+  *   horzcat(horzsplit(x,...)) = x
+  */
   MX horzcat(const std::vector<MX>& comp);
   
-  /** \brief Construct a matrix from a list of list of blocks.*/
+  /** \brief  split horizontally, retaining groups of columns
+  * \param output_offset List of all start columns for each group
+  *      the last column group will run to the end.
+  *
+  *   horzcat(horzsplit(x,...)) = x
+  */
+  std::vector<MX> horzsplit(const MX& x, const std::vector<int>& output_offset);
+
+  /** \brief  split horizontally, retaining fixed-sized groups of columns
+  * \param incr Size of each group of columns
+  *
+  *   horzcat(horzsplit(x,...)) = x
+  */
+  std::vector<MX> horzsplit(const MX& x, int incr=1);
+  
+  /** \brief Construct a matrix from a list of list of blocks.
+  *
+  *   blockcat(blocksplit(x,...,...)) = x
+  */
   MX blockcat(const std::vector< std::vector<MX > > &v);
+  
+  /** \brief  chop up into blocks
+  * \brief vert_offset Defines the boundaries of the block rows
+  * \brief horz_offset Defines the boundaries of the block columns
+  *
+  *   blockcat(blocksplit(x,...,...)) = x
+  */
+  std::vector< std::vector<MX > > blocksplit(const MX& x, const std::vector<int>& vert_offset, const std::vector<int>& horz_offset);
+
+  /** \brief  chop up into blocks
+  * \brief vert_incr Defines the increment for block boundaries in row dimension
+  * \brief horz_incr Defines the increment for block boundaries in column dimension
+  *
+  *   blockcat(blocksplit(x,...,...)) = x
+  */
+  std::vector< std::vector<MX > > blocksplit(const MX& x, int vert_incr = 1, int horz_incr = 1);
 
 #ifndef SWIG
   /** \brief Construct a matrix from a list of list of blocks.*/
