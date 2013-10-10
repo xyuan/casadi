@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 project(casadi C CXX)
 set(PACKAGE_NAME "CasADi")
 set(PACKAGE_VERSION "1.7.0+")
+set(PACKAGE_DESCRIPTION "CasADi is a symbolic framework for automatic differentation and numeric optimization")
 
 # For systems with git installed, find out revsion and description.
 execute_process(COMMAND git rev-parse HEAD
@@ -24,6 +25,8 @@ if(Fortran_language_works)
   enable_language(Fortran OPTIONAL)
 endif()
 #end workaround
+
+include(embed_resources)
 
 # find the macports python libs if they exist
 if(APPLE)
@@ -321,6 +324,7 @@ find_package(SWIG)
     add_subdirectory(swig EXCLUDE_FROM_ALL) # the swig interfaces are not compiled when typing "make"
     add_custom_target(python DEPENDS _python_modules )
     add_custom_target(octave DEPENDS _octave_modules )
+    add_custom_target(haskell DEPENDS _haskell_modules )
 endif(SWIG_FOUND)
 
 if(WITH_DOC)
