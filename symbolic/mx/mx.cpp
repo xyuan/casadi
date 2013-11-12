@@ -140,9 +140,9 @@ namespace CasADi{
   const MX MX::sub(int i, int j) const{
     int ind = sparsity().getNZ(i,j);
     if (ind>=0) {
-      return (*this)->getGetNonzeros(CRSSparsity::scalarSparsity,vector<int>(1,ind));
+      return (*this)->getGetNonzeros(CRSSparsity::getScalar(),vector<int>(1,ind));
     } else {
-      return (*this)->getGetNonzeros(CRSSparsity::scalarSparsitySparse,vector<int>(0));
+      return (*this)->getGetNonzeros(CRSSparsity::getScalarSparse(),vector<int>(0));
     }
   }
 
@@ -668,6 +668,11 @@ namespace CasADi{
 
   MX MX::printme(const MX& b) const{ 
     return binary(OP_PRINTME,*this,b);
+  }
+  
+  MX MX::attachAssert(const MX& y,const std::string &fail_message) const{
+    casadi_assert_message(y.scalar(),"Error in attachAssert: assertion expression y must be scalar, but got " << y.dimString());
+    return(*this)->getAssertion(y, fail_message);
   }
 
   MX MX::exp() const{ 

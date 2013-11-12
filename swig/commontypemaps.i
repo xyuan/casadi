@@ -60,6 +60,10 @@
 #define PRECEDENCE_MXVectorVector 106
 
 #define PRECEDENCE_CREATOR 150
+#define PRECEDENCE_SPARSITYGENERATOR 21
+#define PRECEDENCE_JACOBIANGENERATOR 21
+#define PRECEDENCE_CUSTOMEVALUATE 21
+#define PRECEDENCE_CALLBACK 21
 
 #define PRECEDENCE_GENERICTYPE 22
 #define PRECEDENCE_DICTIONARY 21
@@ -91,6 +95,7 @@
 %template() std::vector< std::vector<std::vector<CasADi::SX> > > ;
 #endif //SWIG_MAIN_MODULE
 
+#ifdef CASADI_MODULE
 #ifdef SWIGPYTHON
 %typemap(in) int (int m) {
   bool result=meta< int >::as($input,m);
@@ -116,6 +121,7 @@
 %typemap(freearg) double {}
 
 #endif //SWIGPYTHON
+#endif // CASADI_MODULE
 
 #ifdef SWIGPYTHON
 %typemap(out) CasADi::GenericType {
@@ -141,11 +147,20 @@ if (!ret) {
 %my_creator_typemap(PRECEDENCE_CREATOR, CasADi::implicitFunctionCreator);
 
 #ifdef SWIGPYTHON
+%my_generic_const_typemap(PRECEDENCE_JACOBIANGENERATOR,CasADi::JacobianGenerator);
+%my_generic_const_typemap(PRECEDENCE_SPARSITYGENERATOR,CasADi::SparsityGenerator);
+%my_generic_const_typemap(PRECEDENCE_CUSTOMEVALUATE,CasADi::CustomEvaluate);
+%my_generic_const_typemap(PRECEDENCE_CALLBACK,CasADi::Callback);
+#endif
+
+#ifdef SWIGPYTHON
 %my_generic_const_typemap(SWIG_TYPECHECK_DOUBLE,double);
 #endif // SWIGPYTHON
 
+#ifdef CASADI_MODULE
 %my_generic_const_typemap(PRECEDENCE_DVector,std::vector<double>);
 %my_generic_const_typemap(PRECEDENCE_IVector,std::vector<int>);
+#endif // CASADI_MODULE
 
 %my_generic_const_typemap(PRECEDENCE_SX,CasADi::SX);
 %my_generic_const_typemap(PRECEDENCE_SXVector,std::vector< CasADi::SX >);
@@ -193,8 +208,12 @@ if (!ret) {
 #ifdef SWIGPYTHON
 %outputRefOwn(CasADi::CRSSparsity)
 %outputRefOwn(std::vector< CasADi::SX >)
+
+#ifdef CASADI_MODULE
 %outputRefOwn(std::vector< int >)
 %outputRefOwn(std::vector< double >)
+#endif // CASADI_MODULE
+
 %outputRefOwn(CasADi::Matrix< double >)
 %outputRefOwn(CasADi::Matrix< CasADi::SX >)
 #endif // SWIGPYTHON

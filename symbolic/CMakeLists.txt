@@ -21,6 +21,8 @@ SET(CASADI_SRCS
   options_functionality.cpp   options_functionality.hpp # Functionality for getting and setting options of a derived class
   stl_vector_tools.hpp        stl_vector_tools.cpp      # Set of useful functions for the vector template class in STL
   profiling.cpp               profiling.hpp
+  functor.cpp                 functor.hpp              # Classes for callbacks
+  functor_internal.cpp        functor_internal.hpp     
 
   # Template class Matrix<>, implements a sparse Matrix with row compressed storage, designed to work well with symbolic data types (SX)
   matrix/generic_expression.hpp                         # Base class for SX MX and Matrix<>
@@ -68,6 +70,7 @@ SET(CASADI_SRCS
   mx/inverse.hpp             mx/inverse.cpp             # Matrix inverse
   mx/inner_prod.hpp          mx/inner_prod.cpp          # Inner product
   mx/multiple_output.hpp     mx/multiple_output.cpp     # Base class for nodes with multiple outputs
+  mx/assertion.hpp           mx/assertion.cpp           # Assertion
   mx/mx_tools.hpp            mx/mx_tools.cpp
 
   # A dynamically created function with AD capabilities
@@ -77,8 +80,8 @@ SET(CASADI_SRCS
   fx/x_function_internal.hpp                            # Base class for SXFunction and MXFunction
   fx/sx_function.hpp         fx/sx_function.cpp         fx/sx_function_internal.hpp         fx/sx_function_internal.cpp
   fx/mx_function.hpp         fx/mx_function.cpp         fx/mx_function_internal.hpp         fx/mx_function_internal.cpp
-  fx/c_function.hpp          fx/c_function.cpp          fx/c_function_internal.hpp          fx/c_function_internal.cpp
-  fx/external_function.hpp   fx/external_function.cpp   fx/external_function_internal.hpp   fx/external_function_internal.cpp
+  fx/custom_function.hpp     fx/custom_function.cpp     fx/custom_function_internal.hpp     fx/custom_function_internal.cpp
+  fx/compiled_function.hpp   fx/compiled_function.cpp   fx/compiled_function_internal.hpp   fx/compiled_function_internal.cpp
   fx/derivative.hpp          fx/derivative.cpp          fx/derivative_internal.hpp          fx/derivative_internal.cpp
   fx/linear_solver.hpp       fx/linear_solver.cpp       fx/linear_solver_internal.hpp       fx/linear_solver_internal.cpp
   fx/symbolic_qr.hpp         fx/symbolic_qr.cpp         fx/symbolic_qr_internal.hpp         fx/symbolic_qr_internal.cpp

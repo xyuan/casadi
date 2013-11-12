@@ -24,6 +24,7 @@
 #define FX_INTERNAL_HPP
 
 #include "fx.hpp"
+#include "../functor.hpp"
 #include "../weak_ref.hpp"
 #include <set>
 #include "code_generator.hpp"
@@ -35,6 +36,8 @@
 #define OUTPUTSCHEME(name)
 
 namespace CasADi{
+
+  class MXFunction;
   
   /** \brief Internal class for FX
       \author Joel Andersson 
@@ -57,7 +60,7 @@ namespace CasADi{
 
     /** \brief  Evaluate */
     virtual void evaluate(int nfdir, int nadir) = 0;
-  
+
     /** \brief  Evaluate with directional derivative compression */
     void evaluateCompressed(int nfdir, int nadir);
 
@@ -166,6 +169,23 @@ namespace CasADi{
     virtual FX getDerivativeViaOO(int nfwd, int nadj);
 
     //@}
+    
+    
+    /** \brief Create a helper MXFunction with some properties copied
+    *
+    * Copied properties: 
+    *
+    *    input/outputscheme
+    *
+    *   ad_mode
+    *   number_of_fwd_dir
+    *   number_of_adj_dir
+    *   max_number_of_fwd_dir
+    *   max_number_of_adj_dir
+    *   
+    *  The function is not initialized
+    */
+    MXFunction wrapMXFunction();
 
     /** \brief  Print to a c file */
     virtual void generateCode(const std::string& filename);
@@ -315,7 +335,7 @@ namespace CasADi{
     bool gather_stats_;
 
     /// Cache for functions to evaluate directional derivatives
-    std::vector<std::vector<FX> > derivative_fcn_; // NOTE: This can result in circular dependencies!
+    std::vector<std::vector<WeakRef> > derivative_fcn_;
 
     /// Cache for full Jacobian
     WeakRef full_jacobian_;

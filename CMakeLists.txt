@@ -19,6 +19,9 @@ OUTPUT_STRIP_TRAILING_WHITESPACE
 ERROR_QUIET
 )
 
+STRING(REPLACE "+-" "+" git_describe "${git_describe}")
+STRING(REPLACE "-g" "." git_describe "${git_describe}")
+
 #begin workaround for http://public.kitware.com/Bug/print_bug_page.php?bug_id=9220
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules)
 include(language_support)
@@ -160,6 +163,11 @@ if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fPIC")
 endif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+
+if(MINGW)
+  # Circumventing a bug in MinGW g++ v4.7.2, evoked by 752fa89355ffa
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-ipa-cp-clone")
+endif()
 
 # Use the included Sundials
 if(WITH_SUNDIALS)
@@ -346,8 +354,6 @@ feature_summary(WHAT ALL)
 feature_summary(WHAT ENABLED_FEATURES VAR feature_list)
 
 STRING(REPLACE "\n" "\\n" feature_list "${feature_list}")
-STRING(REPLACE "+-" "+" git_describe "${git_describe}")
-STRING(REPLACE "-g" "." git_describe "${git_describe}")
 
 # Pass meta information
 CONFIGURE_FILE(
@@ -355,3 +361,8 @@ CONFIGURE_FILE(
   ${CMAKE_SOURCE_DIR}/symbolic/casadi_meta.cpp
   ESCAPE_QUOTES
 )
+
+if(EXTRA_CMAKE)
+  include(${EXTRA_CMAKE})
+endif()
+

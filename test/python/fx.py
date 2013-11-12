@@ -552,6 +552,519 @@ class FXtests(casadiTestCase):
     f.setOption({"name": "def"},True)
     self.assertTrue(f.getOption("name")=="def")
     
+  def test_CustomFunctionDefault(self):
+    x = msym("x")
+    y = msym("y")
+
+    @pyevaluate
+    def fun(f,nfwd,nadj):
+      # sin(x+3*y)
+      
+      print (nfwd,nadj)
+      
+      x = f.input(0)
+      y = f.input(1)
+      
+      if max_fwd>0:
+        dx = f.fwdSeed(0)
+        dy = f.fwdSeed(1)
+      
+      z0 = 3*y
+      if max_fwd>0: dz0 = 3*dy
+      
+      z1 = x+z0
+      if max_fwd>0: dz1 = dx+dz0
+      
+      z2 = sin(z1)
+      if max_fwd>0: dz2 = cos(z1)*dz1
+      
+      if max_adj>0:
+        # Backwards sweep
+        bx = 0
+        by = 0
+        bz1 = 0
+        bz0 = 0
+        
+        bz2 = f.adjSeed(0)
+        bz1 += bz2*cos(z1)
+        bx+= bz1;bz0+= bz1
+        by+= 3*bz0
+        f.setAdjSens(bx,0)
+        f.setAdjSens(by,1)
+      
+      f.setOutput(z2)
+      if max_fwd>0: f.setFwdSens(dz2)
+      
+    Fun = CustomFunction(fun, [sp_dense(1,1),sp_dense(1,1)], [sp_dense(1,1)] )
+    Fun.init()
+    with self.assertRaises(Exception):
+      Fun.jacobian()
+    
+  def test_CustomFunction(self):
+  
+    x = msym("x")
+    y = msym("y")
+    
+        
+    g = MXFunction([x,y],[sin(x+3*y)])
+    g.init()
+    
+
+    g.setInput(0.2,0)
+    g.setInput(0.7,1)
+    
+    def getP(max_fwd=1,max_adj=1,indirect=True):
+
+      @pyevaluate
+      def fun(f,nfwd,nadj):
+        # sin(x+3*y)
+        
+        assert nfwd<=max_fwd
+        assert nadj<=max_adj
+        
+        print (nfwd,nadj)
+        
+        x = f.input(0)
+        y = f.input(1)
+        
+        if max_fwd>0:
+          dx = f.fwdSeed(0)
+          dy = f.fwdSeed(1)
+        
+        z0 = 3*y
+        if max_fwd>0: dz0 = 3*dy
+        
+        z1 = x+z0
+        if max_fwd>0: dz1 = dx+dz0
+        
+        z2 = sin(z1)
+        if max_fwd>0: dz2 = cos(z1)*dz1
+        
+        if max_adj>0:
+          # Backwards sweep
+          bx = 0
+          by = 0
+          bz1 = 0
+          bz0 = 0
+          
+          bz2 = f.adjSeed(0)
+          bz1 += bz2*cos(z1)
+          bx+= bz1;bz0+= bz1
+          by+= 3*bz0
+          f.setAdjSens(bx,0)
+          f.setAdjSens(by,1)
+        
+        f.setOutput(z2)
+        if max_fwd>0: f.setFwdSens(dz2)
+
+
+      Fun = CustomFunction(fun, [sp_dense(1,1),sp_dense(1,1)], [sp_dense(1,1)] )
+      Fun.setOption("name","Fun")
+      Fun.setOption("max_number_of_fwd_dir",max_fwd)
+      Fun.setOption("max_number_of_adj_dir",max_adj)
+      Fun.init()
+      
+      if not indirect: 
+        Fun.setInput(0.2,0)
+        Fun.setInput(0.7,1)
+        return Fun
+
+      f = MXFunction([x,y],Fun.call([x,y]))
+      f.init()
+
+      f.setInput(0.2,0)
+      f.setInput(0.7,1)
+      
+      return f
+      
+    for indirect in [True,False]:
+      f = getP(max_fwd=1,max_adj=1,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,evals=1)
+
+      f = getP(max_fwd=1,max_adj=0,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,adj=False,evals=1)
+
+      f = getP(max_fwd=0,max_adj=1,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,fwd=False,evals=1)
+      
+    # vector input
+    
+    x = msym("x",2)
+    y = msym("y")
+        
+    g = MXFunction([x,y],[sin(x[0]+3*y)*x[1]])
+    g.init()
+    
+
+    g.setInput([0.2,0.6],0)
+    g.setInput(0.7,1)
+    
+    def getP(max_fwd=1,max_adj=1,indirect=True):
+
+      @pyevaluate
+      def fun(f,nfwd,nadj):
+        # sin(x0+3*y)*x1
+        
+        assert nfwd<=max_fwd
+        assert nadj<=max_adj
+        
+        print (nfwd,nadj)
+        
+        x0 = f.input(0)[0]
+        x1 = f.input(0)[1]
+        y = f.input(1)
+        
+        if max_fwd>0:
+          dx0 = f.fwdSeed(0)[0]
+          dx1 = f.fwdSeed(0)[1]
+          dy = f.fwdSeed(1)
+        
+        z0 = 3*y
+        if max_fwd>0: dz0 = 3*dy
+        
+        z1 = x0+z0
+        if max_fwd>0: dz1 = dx0+dz0
+        
+        z2 = sin(z1)
+        if max_fwd>0: dz2 = cos(z1)*dz1
+        
+        z3 = z2*x1
+        if max_fwd>0: dz3 = x1*dz2 + dx1*z2
+        
+        if max_adj>0:
+          # Backwards sweep
+          bx0 = 0
+          bx1 = 0
+          by = 0
+          
+          bz2 = 0
+          bz1 = 0
+          bz0 = 0
+          
+          bz3 = f.adjSeed(0)
+          bz2 += bz3*x1
+          bx1 += bz3*z2
+          bz1 += bz2*cos(z1)
+          bx0+= bz1;bz0+= bz1
+          by+= 3*bz0
+          f.setAdjSens([bx0,bx1],0)
+          f.setAdjSens(by,1)
+        
+        f.setOutput(z3)
+        if max_fwd>0: f.setFwdSens(dz3)
+
+
+      Fun = CustomFunction(fun, [sp_dense(2,1),sp_dense(1,1)], [sp_dense(1,1)] )
+      Fun.setOption("name","Fun")
+      Fun.setOption("max_number_of_fwd_dir",max_fwd)
+      Fun.setOption("max_number_of_adj_dir",max_adj)
+      Fun.init()
+
+      if not indirect: 
+        Fun.setInput([0.2,0.6],0)
+        Fun.setInput(0.7,1)
+        return Fun
+        
+      f = MXFunction([x,y],Fun.call([x,y]))
+      f.init()
+
+      f.setInput([0.2,0.6],0)
+      f.setInput(0.7,1)
+      
+      return f
+    
+    for indirect in [True,False]:
+      f = getP(max_fwd=1,max_adj=1,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,evals=1)
+
+      f = getP(max_fwd=1,max_adj=0,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,adj=False,evals=1)
+
+      f = getP(max_fwd=0,max_adj=1,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,fwd=False,evals=1)
+      
+    # vector input, vector output
+    
+    x = msym("x",2)
+        
+    g = MXFunction([x],[vertcat([x[0]**2,x[1]**2])])
+    g.init()
+    
+
+    g.setInput([0.2,0.6],0)
+ 
+    def getP(max_fwd=1,max_adj=1,indirect=True):
+
+      @pyevaluate
+      def squares(f,nfwd,nadj):
+        print "Called squares with :", (nfwd,nadj)
+        x = f.getInput(0)[0]
+        y = f.getInput(0)[1]
+
+        f.setOutput(f.getInput(0)**2,0)
+        f.setOutput(f.getInput(0)**2,0)
+        
+        for i in range(nfwd):
+          xdot = f.getFwdSeed(0,i)[0]
+          ydot = f.getFwdSeed(0,i)[1]
+          f.setFwdSens([2*x*xdot+ydot,y*xdot+x*ydot],0,i)
+          
+        for i in range(nadj):
+          xb = f.getAdjSeed(0,i)[0]
+          yb = f.getAdjSeed(0,i)[1]
+          f.setAdjSens([2*x*xb+y*yb,xb+x*yb],0,i)
+          
+      c = CustomFunction( squares, [sp_dense(2,1)], [sp_dense(2,1)] )
+      c.init()
+
+      if not indirect: 
+        c.setInput([0.2,0.6],0)
+        return c
+        
+      f = MXFunction([x],c.call([x]))
+      f.init()
+
+      f.setInput([0.2,0.6],0)
+      
+      return f
+    
+    for indirect in [True,False]:
+      f = getP(max_fwd=1,max_adj=1,indirect=indirect)
+      
+      with self.assertRaises(Exception):          
+        self.checkfx(f,g,sens_der=False,hessian=False,evals=1)
+
+      f = getP(max_fwd=1,max_adj=0,indirect=indirect)
+        
+      with self.assertRaises(Exception): 
+        self.checkfx(f,g,sens_der=False,hessian=False,adj=False,evals=1)
+
+      f = getP(max_fwd=0,max_adj=1,indirect=indirect)
+                
+      with self.assertRaises(Exception):
+        self.checkfx(f,g,sens_der=False,hessian=False,fwd=False,evals=1)
+      
+    # vector input, vector output
+    
+    x = msym("x",2)
+        
+    g = MXFunction([x],[vertcat([x[0]**2+x[1],x[0]*x[1]])])
+    g.init()
+    
+
+    g.setInput([0.2,0.6],0)
+ 
+    def getP(max_fwd=1,max_adj=1,indirect=True):
+
+      @pyevaluate
+      def squares(f,nfwd,nadj):
+        print "Called squares with :", (nfwd,nadj)
+        x = f.getInput(0)[0]
+        y = f.getInput(0)[1]
+
+        f.setOutput([x**2+y,x*y],0)
+        
+        for i in range(nfwd):
+          xdot = f.getFwdSeed(0,i)[0]
+          ydot = f.getFwdSeed(0,i)[1]
+          f.setFwdSens([2*x*xdot+ydot,y*xdot+x*ydot],0,i)
+          
+        for i in range(nadj):
+          xb = f.getAdjSeed(0,i)[0]
+          yb = f.getAdjSeed(0,i)[1]
+          f.setAdjSens([2*x*xb+y*yb,xb+x*yb],0,i)
+          
+      c = CustomFunction( squares, [sp_dense(2,1)], [sp_dense(2,1)] )
+      c.setOption("max_number_of_fwd_dir",1)
+      c.setOption("max_number_of_adj_dir",1)
+      c.init()
+
+      if not indirect: 
+        c.setInput([0.2,0.6],0)
+        return c
+        
+      f = MXFunction([x],c.call([x]))
+      f.init()
+
+      f.setInput([0.2,0.6],0)
+      
+      return f
+    
+    for indirect in [True,False]:
+      f = getP(max_fwd=1,max_adj=1,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,evals=1)
+
+      f = getP(max_fwd=1,max_adj=0,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,adj=False,evals=1)
+
+      f = getP(max_fwd=0,max_adj=1,indirect=indirect)
+                
+      self.checkfx(f,g,sens_der=False,hessian=False,fwd=False,evals=1)
+      
+  def test_sparsitygenerator(self):
+    x = msym("x",4)
+          
+      
+    @sparsitygenerator
+    def sp(f,iind,oind):
+      return sp_dense(4,4)
+      
+    f = MXFunction([x],[x])
+    f.init()
+    
+    J = f.jacobian()
+    J.init()
+    J.evaluate()
+    
+    self.assertEqual(J.output().size(),4)
+    
+    f = MXFunction([x],[x])
+    f.setOption("sparsity_generator",sp)
+    f.init()
+    
+    J = f.jacobian()
+    J.init()
+    J.evaluate()
+    
+    self.assertEqual(J.output().size(),16)
+      
+  def test_jacobiangenerator(self):
+    x = msym("x")
+    y = msym("y")
+        
+    g = MXFunction([x,y],[sin(x+3*y)])
+    g.init()
+    
+
+    g.setInput(0.2,0)
+    g.setInput(0.7,1)
+    
+    @pyevaluate
+    def fun(f,nfwd,nadj):
+      # sin(x0+3*y)
+      
+      assert nfwd==0
+      assert nadj==0
+      
+      x = f.input(0)
+      y = f.input(1)
+      
+      f.setOutput(sin(x+3*y))
+      
+    @jacobiangenerator
+    def funjac(f,iind,oind):
+      # sin(x0+3*y)*x1
+      print "Called jacobian with :", (iind,oind)
+      
+      x = ssym("x")
+      y = ssym("y")
+      
+      if iind==0:
+        f = SXFunction([x,y],[cos(x+3*y),sin(x+3*y)])
+        f.init()
+      elif iind==1:
+        f = SXFunction([x,y],[3*cos(x+3*y),sin(x+3*y)])
+        f.init()
+      
+      return f
+
+    Fun = CustomFunction(fun, [sp_dense(1,1),sp_dense(1,1)], [sp_dense(1,1)] )
+    Fun.setOption("name","Fun")
+    Fun.setOption("jacobian_generator",funjac)
+    Fun.init()
+
+    Fun.setInput(0.2,0)
+    Fun.setInput(0.7,1)
+    
+    print Fun.input(0),Fun.input(1)
+    
+    print g.input(0),g.input(1)
+    
+    self.checkfx(Fun,g,fwd=False,adj=False,indirect=True)
+
+    
+  def test_derivative_simplifications(self):
+  
+    n = 1
+    x = ssym("x",n)
+
+    M = SXFunction([x],[mul((x-DMatrix(range(n))),x.T)])
+    M.setOption("name","M")
+    M.init()
+    M.evaluate()
+
+
+    P = msym("P",n,n)
+    X = msym("X",n)
+
+    MX= M.call([X])[0]
+
+    Pf = MXFunction([X,P],[mul(MX,P)])
+    Pf.setOption("name","P")
+    Pf.init()
+
+    P_P = Pf.jacobian(1)
+    P_P.init()
+
+    
+    self.assertFalse("derivative" in str(P_P))
+    
+  def test_assert_derivatives(self):
+    x = msym("x")
+    
+    @pyevaluate
+    def dummy(f,nfwd,nadj):
+      assert nfwd==0
+      print f
+      f.setOutput(1)
+
+    foo = CustomFunction(dummy, [x.sparsity()], [sp_dense(1,1)] )
+    foo.setOption("name","foo")
+    foo.setOption("verbose",True)
+    foo.setOption("max_number_of_fwd_dir",1)
+    foo.init()
+
+    y = x**2
+
+    y = y.attachAssert(foo.call([x])[0],"P is not positive definite")
+
+    f = MXFunction([x],[y])
+    f.setOption("verbose",True)
+    f.init()
+
+    J = f.gradient()
+    J.init()
+
+    J.setInput([0.1])
+    J.evaluate()
+    
+    print J
+
+    self.assertFalse("derivative" in str(J))
+
+    J = f.jacobian()
+    J.init()
+
+    J.setInput([0.1])
+    J.evaluate()
+    
+    print J
+
+    self.assertFalse("derivative" in str(J))
+    
+    H = f.hessian()
+    H.init()
+    
+    H.setInput([0.1])
+    H.evaluate()
     
 if __name__ == '__main__':
     unittest.main()

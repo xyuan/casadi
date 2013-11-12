@@ -107,6 +107,19 @@ namespace CasADi{
 
     /** \brief  Outputs of the function (needed for symbolic calculations) */
     std::vector<MatType> outputv_;
+    
+    /** \brief purge seeds from all-zeros
+    *
+    * If all seeds in one direction are zero, the corresponding sensitivities are set to zero and the direction is removed
+    * \param[in] seed -- original seeds
+    * \param[in] sens -- original sens
+    * \param[in] forward -- boolean indicating if we are using forward mode
+    * \param[out] seed_purged -- filled up with non-zero seed directions
+    * \param[out] sens_purged -- filled up with corresponding sens directions
+    *
+    */
+    void purgeSeeds(const std::vector<std::vector<MatType*> >& seed, const std::vector<std::vector<MatType*> >& sens,std::vector<std::vector<MatType*> >& seed_purged, std::vector<std::vector<MatType*> >& sens_purged, bool forward);
+     
   };
 
   // Template implementations
@@ -516,6 +529,21 @@ namespace CasADi{
   MatType XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::jac(int iind, int oind, bool compact, bool symmetric, bool always_inline, bool never_inline){
     using namespace std;
     if(verbose()) std::cout << "XFunctionInternal::jac begin" << std::endl;
+    
+    if (!jacgen_.isNull()) {
+       // Use user-provided routine to calculate Jacobian
+       FX fcn = shared_from_this<FX>();
+       FX jac = jacgen_(fcn,iind,oind,user_data_);
+       
+       casadi_assert_message(jac.output().size1()==output(oind).size() && jac.output().size2()==input(iind).size(),"FXInternal::jacobian: User supplied jacobianGenerator("<< iind << "," << oind <<") returned " << jac.output().dimString() << ", while shape " <<  output(oind).size() << "-by-" << input(iind).size() << " was expected.");
+       
+       std::vector< MatType > j = jac.eval(inputv_);
+       
+       return j[0];
+    
+    }
+    
+    casadi_assert_message(nfdir_>0 || nadir_>0,"XFunctionInternal::jac - no sensitivities or jacobiangenerator available for function " << getOption("name"));
   
     // Quick return
     if (input(iind).empty()) return MatType(output(oind).numel(),0);
@@ -1002,6 +1030,50 @@ namespace CasADi{
     ret.init();
     return ret;  
   }
+  
+  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  void XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::purgeSeeds(
+    const std::vector<std::vector<MatType*> >& seed,
+    const std::vector<std::vector<MatType*> >& sens,
+    std::vector<std::vector<MatType*> >& seed_purged,
+    std::vector<std::vector<MatType*> >& sens_purged, bool forward) {
+
+    // This check out to be superfluous
+    casadi_assert(seed.size()==sens.size());
+
+    // Clear the outputs, leaving capacity intact
+    seed_purged.clear();
+    sens_purged.clear();
+    
+    // Loop over all seed directions
+    for (int d=0;d<seed.size();++d) {
+    
+      // Determine if this direction is empty
+      bool empty = true;
+      for (int i=0;i<seed[d].size();++i) {
+        if (!(seed[d][i]==0 || seed[d][i]->isNull() || (*seed[d][i])->isZero())) {
+          empty = false; break;
+        }
+      }
+      
+      if (empty) {
+        // Empty directions are discarded, with forward sensitivities put to zero
+        if (forward) {
+          for (int i=0;i<sens[d].size();++i) {
+            if (sens[d][i]!=0 && !sens[d][i]->isNull()) {
+              *sens[d][i]=MatType(sens[d][i]->sparsity(),0);
+            }
+          }
+        }
+      } else {
+        // Non-empty directions are added to the purged list
+        seed_purged.push_back(seed[d]);
+        sens_purged.push_back(sens[d]);
+      }
+    }
+   
+  }
+  
 
 } // namespace CasADi
 

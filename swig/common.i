@@ -207,6 +207,7 @@ class pair {};
 %include "symbolic/casadi_options.hpp"
 %include "symbolic/casadi_meta.hpp"
 
+#ifdef CASADI_MODULE
 %{
 #define START \
   if (CasADi::CasadiOptions::catch_errors_python){ \
@@ -251,6 +252,7 @@ class pair {};
     SWIG_exception(SWIG_TypeError, e); \
   }
 }
+#endif // CASADI_MODULE
 
 #ifdef SWIGPYTHON
 #ifndef WITH_NUMPY
@@ -386,11 +388,11 @@ memberbinops(pow,argtype,argCast,selfCast,returntype) \
 #include "symbolic/fx/mx_function.hpp" 
  	
 #include "symbolic/fx/mx_function.hpp"
-#include "symbolic/fx/c_function.hpp"
+#include "symbolic/fx/custom_function.hpp"
 #include "symbolic/fx/ocp_solver.hpp"
 #include "symbolic/fx/simulator.hpp"
 #include "symbolic/fx/parallelizer.hpp"
-#include "symbolic/fx/external_function.hpp"
+#include "symbolic/fx/compiled_function.hpp"
 
 
 #include "optimal_control/ocp_tools.hpp"

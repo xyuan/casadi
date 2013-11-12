@@ -91,15 +91,6 @@ namespace CasADi{
     template<class Mat,class XFunc>
     std::pair<FX,FX> getAugmentedGen(int nfwd, int nadj);
   
-    /// Number of states for the forward integration
-    int nx_, nz_, nq_;
-  
-    /// Number of states for the backward integration
-    int nrx_, nrz_, nrq_;
-
-    /// Number of forward and backward parameters
-    int np_, nrp_;
-
     /// Integration horizon
     double t0_, tf_;
   
@@ -119,7 +110,7 @@ namespace CasADi{
     int nsensB_store_;
   
     /// Generate new functions for calculating forward/adjoint directional derivatives
-    bool fwd_via_sct_, adj_via_sct_;
+    bool fwd_via_sct_;
   
   };
   
