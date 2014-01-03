@@ -32,36 +32,12 @@ namespace CasADi{
 
   //Call
 
-  SparsityGeneratorCInternal::SparsityGeneratorCInternal(SparsityGeneratorCPtr ptr)  : FunctorCInternal(ptr) {
-  }
-  
-  CRSSparsity SparsityGeneratorCInternal::call(FX& fcn, int iind, int oind, void* user_data) {
-    casadi_assert(ptr_!=0);
-    return ptr_(fcn, iind, oind, user_data);
-  }
-  
-  SparsityGeneratorCInternal* SparsityGeneratorCInternal::clone() const {
-    return new SparsityGeneratorCInternal(ptr_);
-  }
-  
-  JacobianGeneratorCInternal::JacobianGeneratorCInternal(JacobianGeneratorCPtr ptr)  : FunctorCInternal(ptr) {
-  }
-  
-  FX JacobianGeneratorCInternal::call(FX& fcn, int iind, int oind, void* user_data) {
-    casadi_assert(ptr_!=0);
-    return ptr_(fcn, iind, oind, user_data);
-  }
-  
-  JacobianGeneratorCInternal* JacobianGeneratorCInternal::clone() const {
-    return new JacobianGeneratorCInternal(ptr_);
-  }
-  
   CustomEvaluateCInternal::CustomEvaluateCInternal(CustomEvaluateCPtr ptr)  : FunctorCInternal(ptr) {
   }
   
-  void CustomEvaluateCInternal::call(CustomFunction& fcn, int iind, int oind, void* user_data) {
+  void CustomEvaluateCInternal::call(CustomFunction& fcn, void* user_data) {
     casadi_assert(ptr_!=0);
-    ptr_(fcn, iind, oind, user_data);
+    ptr_(fcn, user_data);
   }
   
   CustomEvaluateCInternal* CustomEvaluateCInternal::clone() const {

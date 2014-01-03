@@ -48,8 +48,8 @@ namespace CasADi{
     return static_cast<const IntegratorInternal*>(GenericIntegrator::operator->()); 
   }
   
-  void Integrator::reset(int nsens, int nsensB, int nsensB_store){
-    (*this)->reset(nsens, nsensB, nsensB_store);
+  void Integrator::reset(){
+    (*this)->reset();
   }
 
   void Integrator::integrate(double t_out){
@@ -73,7 +73,24 @@ namespace CasADi{
   }
 
   std::pair<FX,FX> Integrator::getAugmented(int nfwd, int nadj){
-    return (*this)->getAugmented(nfwd,nadj);
+    vector<int> xf_offset,qf_offset,rxf_offset,rqf_offset;
+    return (*this)->getAugmented(nfwd,nadj,xf_offset,qf_offset,rxf_offset,rqf_offset);
+  }
+
+  DMatrix& Integrator::z(){
+    return (*this)->z_;
+  }
+
+  const DMatrix& Integrator::z() const{
+    return (*this)->z_;
+  }
+
+  DMatrix& Integrator::rz(){
+    return (*this)->rz_;
+  }
+
+  const DMatrix& Integrator::rz() const{
+    return (*this)->rz_;
   }
  
 } // namespace CasADi

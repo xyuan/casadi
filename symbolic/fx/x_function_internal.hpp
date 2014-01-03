@@ -72,12 +72,18 @@ namespace CasADi{
              
     /** \brief Gradient via source code transformation */
     MatType grad(int iind=0, int oind=0);
+
+    /** \brief Tangent via source code transformation */
+    MatType tang(int iind=0, int oind=0);
   
     /** \brief  Construct a complete Jacobian by compression */
     MatType jac(int iind=0, int oind=0, bool compact=false, bool symmetric=false, bool always_inline=true, bool never_inline=false);
 
     /** \brief Return gradient function  */
     virtual FX getGradient(int iind, int oind);
+
+    /** \brief Return tangent function  */
+    virtual FX getTangent(int iind, int oind);
 
     /** \brief Return Jacobian function  */
     virtual FX getJacobian(int iind, int oind, bool compact, bool symmetric);
@@ -86,7 +92,7 @@ namespace CasADi{
     virtual FX getDerivative(int nfdir, int nadir);
 
     /** \brief Constructs and returns a function that calculates forward derivatives by creating the Jacobian then multiplying */
-    virtual FX getDerivativeViaJac(int nfdir, int nadir);
+    //virtual FX getDerivativeViaJac(int nfdir, int nadir);
   
     /** \brief Symbolic expressions for the forward seeds */
     std::vector<std::vector<MatType> > symbolicFwdSeed(int nfdir);
@@ -143,7 +149,7 @@ namespace CasADi{
       
     // Allocate space for inputs
     setNumInputs(inputv_.size());
-    for(int i=0; i<input_.size(); ++i)
+    for(int i=0; i<inputv_.size(); ++i)
       input(i) = DMatrix(inputv_[i].sparsity());
   
     // Null output arguments become empty
@@ -155,7 +161,7 @@ namespace CasADi{
 
     // Allocate space for outputs
     setNumOutputs(outputv_.size());
-    for(int i=0; i<output_.size(); ++i)
+    for(int i=0; i<outputv_.size(); ++i)
       output(i) = DMatrix(outputv_[i].sparsity());
   }
 
@@ -524,27 +530,38 @@ namespace CasADi{
     return asens[0].at(iind);
   }
 
+  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  MatType XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::tang(int iind, int oind){
+    casadi_assert_message(input(iind).scalar(),"Only tangent of scalar input functions allowed. Use jacobian instead.");
+  
+    // Forward seeds
+    typename std::vector<std::vector<MatType> > fseed(1,std::vector<MatType>(inputv_.size()));
+    for(int i=0; i<inputv_.size(); ++i){
+      fseed[0][i] = MatType(inputv_[i].sparsity(),i==iind ? 1 : 0);
+    }
+
+    // Dummy adjoint seeds and sensitivities
+    typename std::vector<std::vector<MatType> > aseed, asens;
+    
+    // Forward sensitivities
+    std::vector<std::vector<MatType> > fsens(1,std::vector<MatType>(outputv_.size()));
+    for(int i=0; i<outputv_.size(); ++i){
+      fsens[0][i] = MatType(outputv_[i].sparsity());
+    }
+  
+    // Calculate with adjoint mode AD
+    std::vector<MatType> res(outputv_);
+    call(inputv_,res,fseed,fsens,aseed,asens,true,false);
+  
+    // Return adjoint directional derivative
+    return fsens[0].at(oind);
+  }
 
   template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
   MatType XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::jac(int iind, int oind, bool compact, bool symmetric, bool always_inline, bool never_inline){
     using namespace std;
     if(verbose()) std::cout << "XFunctionInternal::jac begin" << std::endl;
-    
-    if (!jacgen_.isNull()) {
-       // Use user-provided routine to calculate Jacobian
-       FX fcn = shared_from_this<FX>();
-       FX jac = jacgen_(fcn,iind,oind,user_data_);
-       
-       casadi_assert_message(jac.output().size1()==output(oind).size() && jac.output().size2()==input(iind).size(),"FXInternal::jacobian: User supplied jacobianGenerator("<< iind << "," << oind <<") returned " << jac.output().dimString() << ", while shape " <<  output(oind).size() << "-by-" << input(iind).size() << " was expected.");
-       
-       std::vector< MatType > j = jac.eval(inputv_);
-       
-       return j[0];
-    
-    }
-    
-    casadi_assert_message(nfdir_>0 || nadir_>0,"XFunctionInternal::jac - no sensitivities or jacobiangenerator available for function " << getOption("name"));
-  
+        
     // Quick return
     if (input(iind).empty()) return MatType(output(oind).numel(),0);
     if (output(oind).empty()) return MatType(0,input(iind).numel());
@@ -852,6 +869,18 @@ namespace CasADi{
   }
 
   template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  FX XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::getTangent(int iind, int oind){
+    // Create expressions for the gradient
+    std::vector<MatType> ret_out;
+    ret_out.reserve(1+outputv_.size());
+    ret_out.push_back(tang(iind,oind));
+    ret_out.insert(ret_out.end(),outputv_.begin(),outputv_.end());
+  
+    // Return function
+    return PublicType(inputv_,ret_out);  
+  }
+
+  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
   FX XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::getJacobian(int iind, int oind, bool compact, bool symmetric){
     // Return function expression
     std::vector<MatType> ret_out;
@@ -943,93 +972,93 @@ namespace CasADi{
     return ret;
   }
 
-  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
-  FX XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::getDerivativeViaJac(int nfdir, int nadir){
+  // template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  // FX XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::getDerivativeViaJac(int nfdir, int nadir){
  
-    // Seeds
-    std::vector<std::vector<MatType> > fseed = symbolicFwdSeed(nfdir);
-    std::vector<std::vector<MatType> > aseed = symbolicAdjSeed(nadir);
+  //   // Seeds
+  //   std::vector<std::vector<MatType> > fseed = symbolicFwdSeed(nfdir);
+  //   std::vector<std::vector<MatType> > aseed = symbolicAdjSeed(nadir);
 
-    // Sensitivities
-    std::vector<std::vector<MatType> > fsens(nfdir,std::vector<MatType>(outputv_.size()));
-    std::vector<std::vector<MatType> > asens(nadir,std::vector<MatType>(inputv_.size()));
+  //   // Sensitivities
+  //   std::vector<std::vector<MatType> > fsens(nfdir,std::vector<MatType>(outputv_.size()));
+  //   std::vector<std::vector<MatType> > asens(nadir,std::vector<MatType>(inputv_.size()));
   
-    // Loop over outputs
-    for (int oind = 0; oind < outputv_.size(); ++oind) {
-      // Output dimensions
-      int od1 = outputv_[oind].size1();
-      int od2 = outputv_[oind].size2();
+  //   // Loop over outputs
+  //   for (int oind = 0; oind < outputv_.size(); ++oind) {
+  //     // Output dimensions
+  //     int od1 = outputv_[oind].size1();
+  //     int od2 = outputv_[oind].size2();
     
-      // Loop over inputs
-      for (int iind = 0; iind < inputv_.size(); ++iind) {
-        // Input dimensions
-        int id1 = inputv_[iind].size1();
-        int id2 = inputv_[iind].size2();
+  //     // Loop over inputs
+  //     for (int iind = 0; iind < inputv_.size(); ++iind) {
+  //       // Input dimensions
+  //       int id1 = inputv_[iind].size1();
+  //       int id2 = inputv_[iind].size2();
 
-        // Create a Jacobian block
-        MatType J = jac(iind,oind);
-        if (isZero(J)) continue;
+  //       // Create a Jacobian block
+  //       MatType J = jac(iind,oind);
+  //       if (isZero(J)) continue;
 
-        // Forward sensitivities
-        for (int d = 0; d < nfdir; ++d) {
-          MatType fsens_d = mul(J, flatten(fseed[d][iind]));
-          if (!isZero(fsens_d)) {
-            // Reshape sensitivity contribution if necessary
-            if (od2 > 1)
-              fsens_d = reshape(fsens_d, od1, od2);
+  //       // Forward sensitivities
+  //       for (int d = 0; d < nfdir; ++d) {
+  //         MatType fsens_d = mul(J, flatten(fseed[d][iind]));
+  //         if (!isZero(fsens_d)) {
+  //           // Reshape sensitivity contribution if necessary
+  //           if (od2 > 1)
+  //             fsens_d = reshape(fsens_d, od1, od2);
 
-            // Save or add to vector
-            if (fsens[d][oind].isNull() || fsens[d][oind].empty()) {
-              fsens[d][oind] = fsens_d;
-            } else {
-              fsens[d][oind] += fsens_d;
-            }
-          }
+  //           // Save or add to vector
+  //           if (fsens[d][oind].isNull() || fsens[d][oind].empty()) {
+  //             fsens[d][oind] = fsens_d;
+  //           } else {
+  //             fsens[d][oind] += fsens_d;
+  //           }
+  //         }
 
-          // If no contribution added, set to zero
-          if (fsens[d][oind].isNull() || fsens[d][oind].empty()) {
-            fsens[d][oind] = MatType::sparse(od1, od2);
-          }
-        }
+  //         // If no contribution added, set to zero
+  //         if (fsens[d][oind].isNull() || fsens[d][oind].empty()) {
+  //           fsens[d][oind] = MatType::sparse(od1, od2);
+  //         }
+  //       }
 
-        // Adjoint sensitivities
-        for (int d = 0; d < nadir; ++d) {
-          MatType asens_d = mul(trans(J), flatten(aseed[d][oind]));
-          if (!isZero(asens_d)) {
-            // Reshape sensitivity contribution if necessary
-            if (id2 > 1)
-              asens_d = reshape(asens_d, id1, id2);
+  //       // Adjoint sensitivities
+  //       for (int d = 0; d < nadir; ++d) {
+  //         MatType asens_d = mul(trans(J), flatten(aseed[d][oind]));
+  //         if (!isZero(asens_d)) {
+  //           // Reshape sensitivity contribution if necessary
+  //           if (id2 > 1)
+  //             asens_d = reshape(asens_d, id1, id2);
 
-            // Add to vector
-            asens[d][iind] += asens_d;
-          }
-        }
-      }
-    }
+  //           // Add to vector
+  //           asens[d][iind] += asens_d;
+  //         }
+  //       }
+  //     }
+  //   }
 
-    // All inputs of the return function
-    std::vector<MatType> ret_in;
-    ret_in.reserve(inputv_.size()*(1+nfdir) + outputv_.size()*nadir);
-    ret_in.insert(ret_in.end(),inputv_.begin(),inputv_.end());
-    for(int dir=0; dir<nfdir; ++dir)
-      ret_in.insert(ret_in.end(),fseed[dir].begin(),fseed[dir].end());
-    for(int dir=0; dir<nadir; ++dir)
-      ret_in.insert(ret_in.end(),aseed[dir].begin(),aseed[dir].end());
+  //   // All inputs of the return function
+  //   std::vector<MatType> ret_in;
+  //   ret_in.reserve(inputv_.size()*(1+nfdir) + outputv_.size()*nadir);
+  //   ret_in.insert(ret_in.end(),inputv_.begin(),inputv_.end());
+  //   for(int dir=0; dir<nfdir; ++dir)
+  //     ret_in.insert(ret_in.end(),fseed[dir].begin(),fseed[dir].end());
+  //   for(int dir=0; dir<nadir; ++dir)
+  //     ret_in.insert(ret_in.end(),aseed[dir].begin(),aseed[dir].end());
 
-    // All outputs of the return function
-    std::vector<MatType> ret_out;
-    ret_out.reserve(outputv_.size()*(1+nfdir) + inputv_.size()*nadir);
-    ret_out.insert(ret_out.end(),outputv_.begin(),outputv_.end());
-    for(int dir=0; dir<nfdir; ++dir)
-      ret_out.insert(ret_out.end(),fsens[dir].begin(),fsens[dir].end());
-    for(int dir=0; dir<nadir; ++dir)
-      ret_out.insert(ret_out.end(),asens[dir].begin(),asens[dir].end());
+  //   // All outputs of the return function
+  //   std::vector<MatType> ret_out;
+  //   ret_out.reserve(outputv_.size()*(1+nfdir) + inputv_.size()*nadir);
+  //   ret_out.insert(ret_out.end(),outputv_.begin(),outputv_.end());
+  //   for(int dir=0; dir<nfdir; ++dir)
+  //     ret_out.insert(ret_out.end(),fsens[dir].begin(),fsens[dir].end());
+  //   for(int dir=0; dir<nadir; ++dir)
+  //     ret_out.insert(ret_out.end(),asens[dir].begin(),asens[dir].end());
 
-    // Assemble function and return
-    PublicType ret(ret_in,ret_out);
-    ret.init();
-    return ret;  
-  }
+  //   // Assemble function and return
+  //   PublicType ret(ret_in,ret_out);
+  //   ret.init();
+  //   return ret;  
+  // }
   
   template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
   void XFunctionInternal<PublicType,DerivedType,MatType,NodeType>::purgeSeeds(

@@ -33,12 +33,6 @@ using namespace std;
 namespace CasADi{
 
   LinearSolverInternal::LinearSolverInternal(const CRSSparsity& sparsity, int nrhs){
-    // No OO derivatives supported/needed
-    setOption("number_of_fwd_dir",0);
-    setOption("number_of_adj_dir",0);
-    setOption("max_number_of_fwd_dir",0);
-    setOption("max_number_of_adj_dir",0);
-
     // Make sure arguments are consistent
     casadi_assert(!sparsity.isNull());
     casadi_assert_message(sparsity.size1()==sparsity.size2(),"LinearSolverInternal::init: the matrix must be square but got " << sparsity.dimString());  
@@ -49,16 +43,16 @@ namespace CasADi{
     sparsity.dulmageMendelsohn(rowperm_, colperm_, rowblock_, colblock_, coarse_rowblock, coarse_colblock);
 
     // Allocate inputs
-    input_.resize(LINSOL_NUM_IN);
+    setNumInputs(LINSOL_NUM_IN);
     input(LINSOL_A) = DMatrix(sparsity);
     input(LINSOL_B) = DMatrix(nrhs,sparsity.size1(),0);
   
     // Allocate outputs
-    output_.resize(LINSOL_NUM_OUT);
+    setNumOutputs(LINSOL_NUM_OUT);
     output(LINSOL_X) = input(LINSOL_B);
 
-    inputScheme_ = SCHEME_LinsolInput;
-    outputScheme_ = SCHEME_LinsolOutput;
+    input_.scheme = SCHEME_LinsolInput;
+    output_.scheme = SCHEME_LinsolOutput;
   }
 
   void LinearSolverInternal::init(){
@@ -72,9 +66,7 @@ namespace CasADi{
   LinearSolverInternal::~LinearSolverInternal(){
   }
  
-  void LinearSolverInternal::evaluate(int nfdir, int nadir){
-    casadi_assert_message(nfdir==0 && nadir==0,"Directional derivatives for LinearSolver not supported. Reformulate or wrap in an MXFunction instance.");
-
+  void LinearSolverInternal::evaluate(){
     /*  Factorization fact;
         if(called_once){
         // Check if any element has changed
@@ -339,9 +331,7 @@ namespace CasADi{
     }
   }
 
-  void LinearSolverInternal::evaluateDGen(const DMatrixPtrV& input, DMatrixPtrV& output, const DMatrixPtrVV& fwdSeed, DMatrixPtrVV& fwdSens, const DMatrixPtrVV& adjSeed, DMatrixPtrVV& adjSens, bool tr){
-    int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
+  void LinearSolverInternal::evaluateDGen(const DMatrixPtrV& input, DMatrixPtrV& output, bool tr){
     
     // Factorize the matrix
     setInput(*input[1],LINSOL_A);
@@ -352,44 +342,6 @@ namespace CasADi{
       copy(input[0]->begin(),input[0]->end(),output[0]->begin());
     }
     solve(getPtr(output[0]->data()),output[0]->size1(),tr);
-
-    // Forward sensitivities
-    for(int d=0; d<nfwd; ++d){
-      if(fwdSeed[d][0]!=fwdSens[d][0]){
-        copy(fwdSeed[d][0]->begin(),fwdSeed[d][0]->end(),fwdSens[d][0]->begin());
-      }
-      transform(fwdSens[d][0]->begin(),fwdSens[d][0]->end(),fwdSens[d][0]->begin(),std::negate<double>());
-      if(tr){
-        DMatrix::mul_no_alloc_nt(*output[0],*fwdSeed[d][1],*fwdSens[d][0]);
-      } else {
-        DMatrix::mul_no_alloc_nn(*output[0],*fwdSeed[d][1],*fwdSens[d][0]);
-      }
-      transform(fwdSens[d][0]->begin(),fwdSens[d][0]->end(),fwdSens[d][0]->begin(),std::negate<double>());
-      solve(getPtr(fwdSens[d][0]->data()),output[0]->size1(),tr);      
-    }
-
-    // Adjoint sensitivities
-    for(int d=0; d<nadj; ++d){
-
-      // Solve transposed
-      transform(adjSeed[d][0]->begin(),adjSeed[d][0]->end(),adjSeed[d][0]->begin(),std::negate<double>());
-      solve(getPtr(adjSeed[d][0]->data()),output[0]->size1(),!tr);
-
-      // Propagate to A
-      if(!tr){
-        DMatrix::mul_no_alloc_tn(*output[0],*adjSeed[d][0],*adjSens[d][1]);
-      } else {
-        DMatrix::mul_no_alloc_tn(*adjSeed[d][0],*output[0],*adjSens[d][1]);
-      }
-
-      // Propagate to B
-      if(adjSeed[d][0]==adjSens[d][0]){
-        transform(adjSens[d][0]->begin(),adjSens[d][0]->end(),adjSens[d][0]->begin(),std::negate<double>());
-      } else {
-        transform(adjSens[d][0]->begin(),adjSens[d][0]->end(),adjSeed[d][0]->begin(),adjSens[d][0]->begin(),std::minus<double>());
-        fill(adjSeed[d][0]->begin(),adjSeed[d][0]->end(),0);
-      }
-    }
   }
 
   MX LinearSolverInternal::solve(const MX& A, const MX& B, bool transpose){

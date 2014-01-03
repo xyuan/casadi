@@ -29,12 +29,6 @@ def attach_return_type(f,t):
   f.func_annotations["return"] = t
   return f
 
-def sparsitygenerator(f):
-  return attach_return_type(f,CRSSparsity)
-  
-def jacobiangenerator(f):
-  return attach_return_type(f,FX)
-
 def pyevaluate(f):
   return attach_return_type(f,None)
   
@@ -101,28 +95,11 @@ namespace CasADi {
       PyObject *p_;
   };
   
- class SparsityGeneratorPythonInternal : public SparsityGeneratorInternal, FunctorPythonInternal {
-    friend class SparsityGeneratorPython;
-    
-    SparsityGeneratorPythonInternal(PyObject *p) : FunctorPythonInternal(p) {}
-    virtual CRSSparsity call(FX& fcn, int iind, int oind, void* user_data);
-    virtual SparsityGeneratorPythonInternal* clone() const { return new SparsityGeneratorPythonInternal(p_); }
-
-  };
-  
-  class JacobianGeneratorPythonInternal : public JacobianGeneratorInternal, FunctorPythonInternal {
-    friend class JacobianGeneratorPython;
-    
-    JacobianGeneratorPythonInternal(PyObject *p) : FunctorPythonInternal(p) {}
-    virtual FX call(FX& fcn, int iind, int oind, void* user_data);
-    virtual JacobianGeneratorPythonInternal* clone() const { return new JacobianGeneratorPythonInternal(p_); }
-  };
-  
   class CustomEvaluatePythonInternal : public CustomEvaluateInternal, FunctorPythonInternal {
     friend class CustomEvaluatePython;
     
     CustomEvaluatePythonInternal(PyObject *p) : FunctorPythonInternal(p) {}
-    virtual void call(CustomFunction& fcn, int nfdir, int nadir, void* user_data);
+    virtual void call(CustomFunction& fcn, void* user_data);
     virtual CustomEvaluatePythonInternal* clone() const { return new CustomEvaluatePythonInternal(p_); }
   };
   
@@ -132,16 +109,6 @@ namespace CasADi {
     CallbackPythonInternal(PyObject *p) : FunctorPythonInternal(p) {}
     virtual int call(FX& fcn, void* user_data);
     virtual CallbackPythonInternal* clone() const { return new CallbackPythonInternal(p_); }
-  };
-  
-  class SparsityGeneratorPython : public SparsityGenerator {
-    public:
-      SparsityGeneratorPython(PyObject *p) { assignNode(new SparsityGeneratorPythonInternal(p)); }
-  };
-  
-  class JacobianGeneratorPython : public JacobianGenerator {
-    public:
-      JacobianGeneratorPython(PyObject *p) { assignNode(new JacobianGeneratorPythonInternal(p)); }
   };
   
   class CustomEvaluatePython : public CustomEvaluate {
@@ -160,77 +127,15 @@ namespace CasADi {
 %wrapper %{  
 
 namespace CasADi {
-  CRSSparsity SparsityGeneratorPythonInternal::call(FX& fcn, int iind, int oind, void* user_data) {
-    casadi_assert(p_!=0);
-    PyObject * iind_py = PyInt_FromLong(iind);
-    PyObject * oind_py = PyInt_FromLong(oind);
-    PyObject * fcn_py = SWIG_NewPointerObj((new FX(static_cast< const FX& >(fcn))), SWIGTYPE_p_CasADi__FX, SWIG_POINTER_OWN |  0 );
-    if(!fcn_py) {
-      Py_DECREF(iind_py);
-      Py_DECREF(oind_py);
-      throw CasadiException("SparsityGeneratorPythonInternal: failed to convert FX to python");
-    }
-    
-    PyObject *r = PyObject_CallFunctionObjArgs(p_, fcn_py, iind_py, oind_py, NULL);
-    Py_DECREF(iind_py);
-    Py_DECREF(oind_py);
-    Py_DECREF(fcn_py);
-    if (r) {
-      CRSSparsity ret;  
-      int result = meta< CRSSparsity >::as(r,ret);
-      if(!result) { Py_DECREF(r); throw CasadiException("SparsityGeneratorPythonInternal: return type was not CRSSparsity."); }
-      Py_DECREF(r);
-      return ret;
-    } else {
-     PyErr_Print();
-     throw CasadiException("SparsityGeneratorPythonInternal: python method execution raised an Error.");
-    }
-   
-  }
-  
 
-  FX JacobianGeneratorPythonInternal::call(FX& fcn, int iind, int oind, void* user_data) {
+  void CustomEvaluatePythonInternal::call(CustomFunction& fcn, void* user_data) {
     casadi_assert(p_!=0);
-    PyObject * iind_py = PyInt_FromLong(iind);
-    PyObject * oind_py = PyInt_FromLong(oind);
-    PyObject * fcn_py = SWIG_NewPointerObj((new FX(static_cast< const FX& >(fcn))), SWIGTYPE_p_CasADi__FX, SWIG_POINTER_OWN |  0 );
-    if(!fcn_py) {
-      Py_DECREF(iind_py);
-      Py_DECREF(oind_py);
-      throw CasadiException("JacobianGeneratorPythonInternal: failed to convert FX to python");
-    }
-    
-    PyObject *r = PyObject_CallFunctionObjArgs(p_, fcn_py, iind_py, oind_py, NULL);
-    Py_DECREF(iind_py);
-    Py_DECREF(oind_py);
-    Py_DECREF(fcn_py);
-    
-    if (r) {
-      FX ret;  
-      int result = meta< FX >::as(r,ret);
-      if(!result) { Py_DECREF(r); throw CasadiException("JacobianGeneratorPythonInternal: return type was not FX."); }
-      Py_DECREF(r);
-      return ret;
-    } else {
-      PyErr_Print();
-      throw CasadiException("JacobianGeneratorPythonInternal: python method execution raised an Error.");
-    }
-  }
-
-  void CustomEvaluatePythonInternal::call(CustomFunction& fcn, int nfdir, int nadir, void* user_data) {
-    casadi_assert(p_!=0);
-    PyObject * nfdir_py = PyInt_FromLong(nfdir);
-    PyObject * nadir_py = PyInt_FromLong(nadir);
     PyObject * fcn_py = SWIG_NewPointerObj((new CustomFunction(static_cast< const CustomFunction& >(fcn))), SWIGTYPE_p_CasADi__CustomFunction, SWIG_POINTER_OWN |  0 );
     if(!fcn_py) {
-      Py_DECREF(nfdir_py);
-      Py_DECREF(nadir_py);
       throw CasadiException("CustomEvaluatePythonInternal: failed to convert CustomFunction to python");
     }
     
-    PyObject *r = PyObject_CallFunctionObjArgs(p_, fcn_py, nfdir_py, nadir_py, NULL);
-    Py_DECREF(nfdir_py);
-    Py_DECREF(nadir_py);
+    PyObject *r = PyObject_CallFunctionObjArgs(p_, fcn_py, NULL);
     Py_DECREF(fcn_py);
     if (!r) {
      PyErr_Print();
@@ -466,47 +371,6 @@ template<> int meta< CasADi::GenericType::Dictionary >::as(PyObject * p,CasADi::
 template<> bool meta< CasADi::GenericType::Dictionary >::couldbe(PyObject * p);
 template<> bool meta< CasADi::GenericType::Dictionary >::toPython(const CasADi::GenericType::Dictionary &a, PyObject *&p);
 
-
-/// CasADi::SparsityGenerator
-template<> char meta< CasADi::SparsityGenerator >::expected_message[] = "Expecting sparsity generator";
-
-template <>
-int meta< CasADi::SparsityGenerator >::as(PyObject * p, CasADi::SparsityGenerator &s) {
-  NATIVERETURN(CasADi::SparsityGenerator, s)
-  s = CasADi::SparsityGeneratorPython(p);
-  return true;
-}
-
-template<> bool meta< CasADi::SparsityGenerator >::couldbe(PyObject * p) {
-  PyObject* return_type = getReturnType(p);
-  if (!return_type) return false;
-  PyObject* sp = getCasadiObject("CRSSparsity");
-  if (!sp) { Py_DECREF(return_type); return false; }
-  bool res = PyClass_IsSubclass(return_type,sp);
-  Py_DECREF(return_type);Py_DECREF(sp);
-  return res;
-}
-
-/// CasADi::JacobianGenerator
-template<> char meta< CasADi::JacobianGenerator >::expected_message[] = "Expecting sparsity generator";
-
-template <>
-int meta< CasADi::JacobianGenerator >::as(PyObject * p, CasADi::JacobianGenerator &s) {
-  NATIVERETURN(CasADi::JacobianGenerator, s)
-  s = CasADi::JacobianGeneratorPython(p);
-  return true;
-}
-
-template<> bool meta< CasADi::JacobianGenerator >::couldbe(PyObject * p) {
-  PyObject* return_type = getReturnType(p);
-  if (!return_type) return false;
-  PyObject* fx = getCasadiObject("FX");
-  if (!fx) { Py_DECREF(return_type); return false; }
-  bool res = PyClass_IsSubclass(return_type,fx);
-  Py_DECREF(return_type);Py_DECREF(fx);
-  return res;
-}
-
 /// CasADi::CustomEvaluate
 template<> char meta< CasADi::CustomEvaluate >::expected_message[] = "Expecting CustomFunction wrapper generator";
 
@@ -615,7 +479,7 @@ int meta< CasADi::GenericType >::as(PyObject * p,CasADi::GenericType &s) {
 
 template <>
 bool meta< CasADi::GenericType >::couldbe(PyObject * p) {
-  return meta< CasADi::GenericType >::isa(p) || PyBool_Check(p) ||  PyInt_Check(p) || PyFloat_Check(p) || PyString_Check(p) || meta< std::vector<double> >::couldbe(p) || meta< CasADi::FX >::couldbe(p) || meta< std::vector<std::string> >::couldbe(p) || PyType_Check(p) || meta< CasADi::GenericType::Dictionary >::couldbe(p) || meta< CasADi::JacobianGenerator >::couldbe(p) || meta< CasADi::SparsityGenerator >::couldbe(p) || meta< CasADi::Callback >::couldbe(p);
+  return meta< CasADi::GenericType >::isa(p) || PyBool_Check(p) ||  PyInt_Check(p) || PyFloat_Check(p) || PyString_Check(p) || meta< std::vector<double> >::couldbe(p) || meta< CasADi::FX >::couldbe(p) || meta< std::vector<std::string> >::couldbe(p) || PyType_Check(p) || meta< CasADi::GenericType::Dictionary >::couldbe(p) || meta< CasADi::Callback >::couldbe(p);
 
   
   }

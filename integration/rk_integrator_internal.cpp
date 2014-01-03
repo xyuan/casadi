@@ -106,10 +106,6 @@ void RKIntegratorInternal::init(){
     yf_fun_ = yf_fun;
   }
   
-  // Set number of derivative directions
-  yf_fun_.setOption("number_of_fwd_dir",getOption("number_of_fwd_dir"));
-  yf_fun_.setOption("number_of_adj_dir",getOption("number_of_adj_dir"));
-  
   // Initialize function
   yf_fun_.init();
 }
@@ -117,52 +113,19 @@ void RKIntegratorInternal::init(){
 void RKIntegratorInternal::initAdj(){
 }
 
-void RKIntegratorInternal::evaluate(int nfdir, int nadir){
-  // Store the sensitivity directions
-  nfdir_ = nfdir;
-  nadir_ = nadir;
-  
+void RKIntegratorInternal::reset(){
   // Call the base class method
-  IntegratorInternal::evaluate(nfdir,nadir);
-}
-
-void RKIntegratorInternal::reset(int nsens, int nsensB, int nsensB_store){
-  // Call the base class method
-  IntegratorInternal::reset(nsens,nsensB,nsensB_store);
-
-  int nfdir = 0; // NOTE: need to update the function below to the new integrator formulation
+  IntegratorInternal::reset();
   
   // Pass the inputs
   yf_fun_.setInput(input(INTEGRATOR_X0),0);
   yf_fun_.setInput(input(INTEGRATOR_P),1);
-  
-  // Pass the forward seeds
-  for(int dir=0; dir<nfdir_; ++dir){
-    yf_fun_.setFwdSeed(fwdSeed(INTEGRATOR_X0,dir),0,dir);
-    yf_fun_.setFwdSeed(fwdSeed(INTEGRATOR_P,dir),1,dir);
-  }
-  
-  // Pass the adjoint seeds
-  for(int dir=0; dir<nadir_; ++dir){
-    yf_fun_.setAdjSeed(adjSeed(INTEGRATOR_XF,dir),0,dir);
-  }
-  
+    
   // Evaluate the function
-  yf_fun_.evaluate(nfdir);
+  yf_fun_.evaluate();
   
   // Get the outputs
   yf_fun_.getOutput(output(INTEGRATOR_XF),0);
-  
-  // Get the forward sensitivities
-  for(int dir=0; dir<nfdir_; ++dir){
-    yf_fun_.getFwdSens(fwdSens(INTEGRATOR_XF,dir),0,dir);
-  }
-  
-  // Get the adjoint sensitivities
-  for(int dir=0; dir<nadir_; ++dir){
-    yf_fun_.getAdjSens(adjSens(INTEGRATOR_X0,dir),0,dir);
-    yf_fun_.getAdjSens(adjSens(INTEGRATOR_P,dir),1,dir);
-  }
 }
 
 void RKIntegratorInternal::resetB(){

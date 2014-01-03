@@ -31,19 +31,9 @@ using namespace std;
 namespace CasADi{
   
 
-CRSSparsity SparsityGenerator::operator()(FX& fcn, int iind, int oind, void* user_data) {
+void CustomEvaluate::operator()(CustomFunction& fcn, void* user_data) {
   checkNode();
-  return static_cast<SparsityGeneratorInternal*>(SharedObject::operator->())->call(fcn, iind, oind, user_data);
-}
-
-FX JacobianGenerator::operator()(FX& fcn, int iind, int oind, void* user_data) {
-  checkNode();
-  return static_cast<JacobianGeneratorInternal*>(SharedObject::operator->())->call(fcn, iind, oind, user_data);
-}
-  
-void CustomEvaluate::operator()(CustomFunction& fcn, int nfdir, int nadir, void* user_data) {
-  checkNode();
-  static_cast<CustomEvaluateInternal*>(SharedObject::operator->())->call(fcn, nfdir, nadir, user_data);
+  static_cast<CustomEvaluateInternal*>(SharedObject::operator->())->call(fcn, user_data);
 }
   
 int Callback::operator()(FX& fcn, void* user_data) {
@@ -51,14 +41,6 @@ int Callback::operator()(FX& fcn, void* user_data) {
   return static_cast<CallbackInternal*>(SharedObject::operator->())->call(fcn, user_data);
 }
   
-SparsityGenerator::SparsityGenerator(SparsityGeneratorCPtr ptr) {
-  assignNode(new SparsityGeneratorCInternal(ptr));
-}
-  
-JacobianGenerator::JacobianGenerator(JacobianGeneratorCPtr ptr) {
-  assignNode(new JacobianGeneratorCInternal(ptr));
-}  
-
 CustomEvaluate::CustomEvaluate(CustomEvaluateCPtr ptr) {
   assignNode(new CustomEvaluateCInternal(ptr));
 }

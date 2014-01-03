@@ -50,8 +50,8 @@ namespace CasADi{
   }
 
   template<bool Tr>
-  void Solve<Tr>::evaluateD(const DMatrixPtrV& input, DMatrixPtrV& output, const DMatrixPtrVV& fwdSeed, DMatrixPtrVV& fwdSens, const DMatrixPtrVV& adjSeed, DMatrixPtrVV& adjSens){
-    linear_solver_->evaluateDGen(input,output,fwdSeed,fwdSens,adjSeed,adjSens,Tr);
+  void Solve<Tr>::evaluateD(const DMatrixPtrV& input, DMatrixPtrV& output, std::vector<int>& itmp, std::vector<double>& rtmp){
+    linear_solver_->evaluateDGen(input,output,Tr);
   }
 
   template<bool Tr>

@@ -61,8 +61,6 @@ namespace CasADi{
   class ImplicitFunction;
   
   
-  class JacobianGenerator;
-  class SparsityGenerator;
   class Callback;
   class CustomEvaluate;
   class CustomFunction;

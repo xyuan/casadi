@@ -484,6 +484,20 @@
 <br/>
 @copydoc scheme_IntegratorOutput
 */
+/** \class CasADi::QPLPInternal
+\n
+\par
+@copydoc scheme_LPSolverInput
+<br/>
+@copydoc scheme_LPSolverOutput
+*/
+/** \class CasADi::QPLPSolver
+\n
+\par
+@copydoc scheme_LPSolverInput
+<br/>
+@copydoc scheme_LPSolverOutput
+*/
 /** \class CasADi::SDPSDQPInternal
 \n
 \par
@@ -526,6 +540,20 @@
 <br/>
 @copydoc scheme_IntegratorOutput
 */
+/** \class CasADi::QPSolverInternal
+\n
+\par
+@copydoc scheme_QPSolverInput
+<br/>
+@copydoc scheme_QPSolverOutput
+*/
+/** \class CasADi::QPSolver
+\n
+\par
+@copydoc scheme_QPSolverInput
+<br/>
+@copydoc scheme_QPSolverOutput
+*/
 /** \class CasADi::DSDPInternal
 \n
 \par
@@ -567,20 +595,6 @@
 @copydoc scheme_NLPSolverInput
 <br/>
 @copydoc scheme_NLPSolverOutput
-*/
-/** \class CasADi::QPSolverInternal
-\n
-\par
-@copydoc scheme_QPSolverInput
-<br/>
-@copydoc scheme_QPSolverOutput
-*/
-/** \class CasADi::QPSolver
-\n
-\par
-@copydoc scheme_QPSolverInput
-<br/>
-@copydoc scheme_QPSolverOutput
 */
 /** \class CasADi::SQICInternal
 \n
@@ -763,20 +777,6 @@
 @copydoc scheme_LinsolInput
 <br/>
 @copydoc scheme_LinsolOutput
-*/
-/** \class CasADi::QPLPInternal
-\n
-\par
-@copydoc scheme_LPSolverInput
-<br/>
-@copydoc scheme_LPSolverOutput
-*/
-/** \class CasADi::QPLPSolver
-\n
-\par
-@copydoc scheme_LPSolverInput
-<br/>
-@copydoc scheme_LPSolverOutput
 */
 /** \class CasADi::GenericIntegratorInternal
 \n

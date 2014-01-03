@@ -136,48 +136,7 @@ class ADtests(casadiTestCase):
         "sparse" : lambda x,y,z,w:  array([[1,0,0,0,0,0],[0,0,0,0,0,0],[1,0,4*y,0,0,0],[0,0,0,0,0,0],[1,0,6*y**2,0,12*z**3,0],[0,0,0,0,0,1]])
       }
     }
-  
-  
-  def test_fwd(self):
-    n=array([1.2,2.3,7,1.4])
-    for inputshape in ["column","row","matrix"]:
-      for outputshape in ["column","row","matrix"]:
-        for inputtype in ["sparse","dense"]:
-          for outputtype in ["sparse","dense"]:
-            self.message("fwd AD on SX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
-            f=SXFunction(self.sxinputs[inputshape][inputtype],self.sxoutputs[outputshape][outputtype])
-            f.init()
-            f.setInput(n)
-            self.assertEqual(f.fwdSeed().shape,f.input().shape,"fwdSeed shape")
-            self.assertEqual(f.fwdSeed().size(),f.input().size(),"fwdSeed shape")
-            J = self.jacobians[inputtype][outputtype](*n)
-            for d in [array([1,0,0,0]),array([0,2,0,0]),array([1.2,4.8,7.9,4.6])]:
-              f.setFwdSeed(d)
-              f.evaluate(1,0)
-              seed = array(f.getFwdSeed()).ravel()
-              sens = array(f.getFwdSens()).ravel()
-              self.checkarray(sens,dot(J,seed),"AD")
-
-  def test_adj(self):
-    n=array([1.2,2.3,7,1.4])
-    for inputshape in ["column","row","matrix"]:
-      for outputshape in ["column","row","matrix"]:
-        for inputtype in ["sparse","dense"]:
-          for outputtype in ["sparse","dense"]:
-            self.message("adj AD on SX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
-            f=SXFunction(self.sxinputs[inputshape][inputtype],self.sxoutputs[outputshape][outputtype])
-            f.init()
-            f.setInput(n)
-            self.assertEqual(f.adjSeed().shape,f.output().shape,"adjSeed shape")
-            self.assertEqual(f.adjSeed().size(),f.output().size(),"adjSeed shape")
-            J = self.jacobians[inputtype][outputtype](*n)
-            for d in [array([1,0,0,0]),array([0,2,0,0]),array([1.2,4.8,7.9,4.7])]:
-              f.setAdjSeed(d)
-              f.evaluate(0,1)
-              seed = array(f.getAdjSeed()).ravel()
-              sens = array(f.getAdjSens()).ravel()
-              self.checkarray(sens,dot(J.T,seed),"AD")
-              
+                
   def test_SXevalSX(self):
     n=array([1.2,2.3,7,1.4])
     for inputshape in ["column","row","matrix"]:
@@ -223,46 +182,6 @@ class ADtests(casadiTestCase):
               fe.setInput(n)
               fe.evaluate()
               self.checkarray(c.flatten(fe.getOutput()),mul(J.T,c.flatten(seed)),"AD") 
-
-  def test_fwdMX(self):
-    n=array([1.2,2.3,7,1.4])
-    for inputshape in ["column","row","matrix"]:
-      for outputshape in ["column","row","matrix"]:
-        for inputtype in ["dense","sparse"]:
-          for outputtype in ["dense","sparse"]:
-            self.message("fwd AD on MX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
-            f=MXFunction(self.mxinputs[inputshape][inputtype],self.mxoutputs[outputshape][outputtype](self.mxinputs[inputshape][inputtype][0]))
-            f.init()
-            f.setInput(n)
-            self.assertEqual(f.fwdSeed().shape,f.input().shape,"fwdSeed shape")
-            self.assertEqual(f.fwdSeed().size(),f.input().size(),"fwdSeed shape")
-            J = self.jacobians[inputtype][outputtype](*n)
-            for d in [array([1,0,0,0]),array([0,2,0,0]),array([1.2,4.8,7.9,4.6])]:
-              f.setFwdSeed(d)
-              f.evaluate(1,0)
-              seed = array(f.getFwdSeed()).ravel()
-              sens = array(f.getFwdSens()).ravel()
-              self.checkarray(sens,dot(J,seed),"AD")    
-
-  def test_adjMX(self):
-    n=array([1.2,2.3,7,1.4])
-    for inputshape in ["column","row","matrix"]:
-      for outputshape in ["column","row","matrix"]:
-        for inputtype in ["dense","sparse"]:
-          for outputtype in ["dense","sparse"]:
-            self.message("adj AD on MX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
-            f=MXFunction(self.mxinputs[inputshape][inputtype],self.mxoutputs[outputshape][outputtype](self.mxinputs[inputshape][inputtype][0]))
-            f.init()
-            f.setInput(n)
-            self.assertEqual(f.adjSeed().shape,f.output().shape,"adjSeed shape")
-            self.assertEqual(f.adjSeed().size(),f.output().size(),"adjSeed shape")
-            J = self.jacobians[inputtype][outputtype](*n)
-            for d in [array([1,0,0,0]),array([0,2,0,0]),array([1.2,4.8,7.9,4.3])]:
-              f.setAdjSeed(d)
-              f.evaluate(0,1)
-              seed = array(f.getAdjSeed()).ravel()
-              sens = array(f.getAdjSens()).ravel()
-              self.checkarray(sens,dot(J.T,seed),"AD")
               
   def test_MXevalMX(self):
     n=array([1.2,2.3,7,1.4])
@@ -390,18 +309,16 @@ class ADtests(casadiTestCase):
         for inputtype in ["dense","sparse"]:
           for outputtype in ["dense","sparse"]:
             for mode in ["forward","reverse"]:
-              for numeric in [True,False]:
-                self.message(" %s Jacobian on SX. Input %s %s, Output %s %s" % (mode,inputtype,inputshape,outputtype,outputshape) )
-                f=SXFunction(self.sxinputs[inputshape][inputtype],self.sxoutputs[outputshape][outputtype])
-                f.setOption("ad_mode",mode)
-                f.setOption("numeric_jacobian",numeric)
-                f.init()
-                Jf=f.jacobian(0,0)
-                Jf.init()
-                Jf.setInput(n)
-                Jf.evaluate()
-                J = self.jacobians[inputtype][outputtype](*n)
-                self.checkarray(array(Jf.getOutput()),J,"Jacobian\n Mode: %s\n Input: %s %s\n Output: %s %s\n Numeric: %s"% (mode, inputshape, inputtype, outputshape, outputtype, numeric))
+              self.message(" %s Jacobian on SX. Input %s %s, Output %s %s" % (mode,inputtype,inputshape,outputtype,outputshape) )
+              f=SXFunction(self.sxinputs[inputshape][inputtype],self.sxoutputs[outputshape][outputtype])
+              f.setOption("ad_mode",mode)
+              f.init()
+              Jf=f.jacobian(0,0)
+              Jf.init()
+              Jf.setInput(n)
+              Jf.evaluate()
+              J = self.jacobians[inputtype][outputtype](*n)
+              self.checkarray(array(Jf.getOutput()),J,"Jacobian\n Mode: %s\n Input: %s %s\n Output: %s %s"% (mode, inputshape, inputtype, outputshape, outputtype))
               
   def test_jacobianSX(self):
     n=array([1.2,2.3,7,4.6])
@@ -444,18 +361,16 @@ class ADtests(casadiTestCase):
         for inputtype in ["dense","sparse"]:
           for outputtype in ["dense","sparse"]:
             for mode in ["forward","reverse"]:
-              for numeric in [True,False]:
-                self.message("adj AD on MX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
-                f=MXFunction(self.mxinputs[inputshape][inputtype],self.mxoutputs[outputshape][outputtype](self.mxinputs[inputshape][inputtype][0]))
-                f.setOption("ad_mode",mode)
-                f.setOption("numeric_jacobian",numeric)
-                f.init()
-                Jf=f.jacobian(0,0)
-                Jf.init()
-                Jf.setInput(n)
-                Jf.evaluate()
-                J = self.jacobians[inputtype][outputtype](*n)
-                self.checkarray(Jf.getOutput(),J,"Jacobian\n Mode: %s\n Input: %s %s\n Output: %s %s\n Numeric: %s"% (mode, inputshape, inputtype, outputshape, outputtype, numeric))
+              self.message("adj AD on MX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
+              f=MXFunction(self.mxinputs[inputshape][inputtype],self.mxoutputs[outputshape][outputtype](self.mxinputs[inputshape][inputtype][0]))
+              f.setOption("ad_mode",mode)
+              f.init()
+              Jf=f.jacobian(0,0)
+              Jf.init()
+              Jf.setInput(n)
+              Jf.evaluate()
+              J = self.jacobians[inputtype][outputtype](*n)
+              self.checkarray(Jf.getOutput(),J,"Jacobian\n Mode: %s\n Input: %s %s\n Output: %s %s"% (mode, inputshape, inputtype, outputshape, outputtype))
                    
   def test_jacsparsityMX(self):
     n=array([1.2,2.3,7,4.6])
@@ -513,7 +428,6 @@ class ADtests(casadiTestCase):
 
     f=SXFunction([inp],[vertcat([x+y,x,y])])
     #f.setOption("ad_mode","forward")
-    f.setOption("numeric_jacobian",True)
     f.init()
     J=f.jacobian(0,0)
     J.init()
@@ -535,7 +449,6 @@ class ADtests(casadiTestCase):
 
     f=SXFunction([inp],[vertcat([x+y,x,y])])
     #f.setOption("ad_mode","forward")
-    f.setOption("numeric_jacobian",True)
     f.init()
     J=f.jacobian(0,0)
     J.init()
@@ -543,13 +456,15 @@ class ADtests(casadiTestCase):
     J.evaluate()
 
     f=SXFunction([inp],[vertcat([x+y,x,y])])
-    f.setOption("numeric_jacobian",True)
     f.init()
     print f.input().shape
     J=f.jacobian(0,0)
     
     
   def test_MX(self):
+    # commented out, uses directional derivatives #884
+    return
+
     x = msym("x",2)
     y = msym("y",2,2)
     
@@ -843,18 +758,16 @@ class ADtests(casadiTestCase):
       for f in [fun.expand(),fun]:
         #  jacobian()
         for mode in ["forward","reverse"]:
-          for numeric in [True,False]:
-            f.setOption("ad_mode",mode)
-            f.setOption("numeric_jacobian",numeric)
-            f.init()
-            Jf=f.jacobian(0,0)
-            Jf.init()
-            for i,v in enumerate(values):
-              Jf.setInput(v,i)
-            Jf.evaluate()
-            self.checkarray(Jf.getOutput(),J_)
-            self.checkarray(DMatrix(Jf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(out)+str(mode)+str(numeric))
-            self.checkarray(DMatrix(f.jacSparsity(),1),DMatrix(J_.sparsity(),1))
+          f.setOption("ad_mode",mode)
+          f.init()
+          Jf=f.jacobian(0,0)
+          Jf.init()
+          for i,v in enumerate(values):
+            Jf.setInput(v,i)
+          Jf.evaluate()
+          self.checkarray(Jf.getOutput(),J_)
+          self.checkarray(DMatrix(Jf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(out)+str(mode))
+          self.checkarray(DMatrix(f.jacSparsity(),1),DMatrix(J_.sparsity(),1))
                 
       # Scalarized
       if out.empty(): continue
@@ -874,36 +787,32 @@ class ADtests(casadiTestCase):
       for f in [fun,fun.expand()]:
         #  gradient()
         for mode in ["forward","reverse"]:
-          for numeric in [True,False]:
-            f.setOption("ad_mode",mode)
-            f.setOption("numeric_jacobian",numeric)
-            f.init()
-            Gf=f.gradient(0,0)
-            Gf.init()
-            for i,v in enumerate(values):
-              Gf.setInput(v,i)
-            Gf.evaluate()
-            self.checkarray(Gf.getOutput(),J_,failmessage=("mode: %s, numeric: %d" % (mode,numeric)))
-            #self.checkarray(DMatrix(Gf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(mode)+str(numeric)+str(out)+str(type(fun)))
+          f.setOption("ad_mode",mode)
+          f.init()
+          Gf=f.gradient(0,0)
+          Gf.init()
+          for i,v in enumerate(values):
+            Gf.setInput(v,i)
+          Gf.evaluate()
+          self.checkarray(Gf.getOutput(),J_,failmessage=("mode: %s" % mode))
+          #self.checkarray(DMatrix(Gf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(mode)+str(out)+str(type(fun)))
 
       H_ = None
       
       for f in [fun,fun.expand()]:
         #  hessian()
         for mode in ["forward","reverse"]:
-          for numeric in [True,False]:
-            f.setOption("ad_mode",mode)
-            f.setOption("numeric_jacobian",numeric)
-            f.init()
-            Hf=f.hessian(0,0)
-            Hf.init()
-            for i,v in enumerate(values):
-              Hf.setInput(v,i)
-            Hf.evaluate()
-            if H_ is None:
-              H_ = Hf.getOutput()
-            self.checkarray(Hf.getOutput(),H_,failmessage=("mode: %s, numeric: %d" % (mode,numeric)))
-            #self.checkarray(DMatrix(Gf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(mode)+str(numeric)+str(out)+str(type(fun)))
+          f.setOption("ad_mode",mode)
+          f.init()
+          Hf=f.hessian(0,0)
+          Hf.init()
+          for i,v in enumerate(values):
+            Hf.setInput(v,i)
+          Hf.evaluate()
+          if H_ is None:
+            H_ = Hf.getOutput()
+          self.checkarray(Hf.getOutput(),H_,failmessage=("mode: %s" % mode))
+          #self.checkarray(DMatrix(Gf.output().sparsity(),1),DMatrix(J_.sparsity(),1),str(mode)+str(out)+str(type(fun)))
     
 if __name__ == '__main__':
     unittest.main()

@@ -45,7 +45,7 @@ public:
   virtual void init();
 
   /** \brief  Reset the forward problem and bring the time back to t0 */
-  virtual void reset(int nsens, int nsensB, int nsensB_store) = 0;
+  virtual void reset() = 0;
   
   /** \brief  Deep copy data members */
   virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
@@ -99,6 +99,9 @@ public:
   
   // Jacobian of the DAE with respect to the state and state derivatives
   FX jac_, jacB_;
+
+  // Jacobian times vector functions
+  FX f_fwd_, g_fwd_;
   
   /** \brief  Get the integrator Jacobian for the forward problem */
   virtual FX getJacobian()=0;

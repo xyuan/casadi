@@ -225,8 +225,6 @@ namespace CasADi{
       bfgs_in[BFGS_GLAG] = gLag;
       bfgs_in[BFGS_GLAG_OLD] = gLag_old;
       bfgs_ = SXFunction(bfgs_in,Bk_new);
-      bfgs_.setOption("number_of_fwd_dir",0);
-      bfgs_.setOption("number_of_adj_dir",0);
       bfgs_.init();
     
       // Initial Hessian approximation
@@ -251,9 +249,7 @@ namespace CasADi{
     }
   }
 
-  void StabilizedSQPInternal::evaluate(int nfdir, int nadir){
-    casadi_assert(nfdir==0 && nadir==0);
-  
+  void StabilizedSQPInternal::evaluate(){
     if (inputs_check_) checkInputs();
     checkInitialBounds();
   

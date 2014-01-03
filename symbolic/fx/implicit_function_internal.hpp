@@ -62,11 +62,8 @@ namespace CasADi{
     /// Is the class able to propate seeds through the algorithm?
     virtual bool spCanEvaluate(bool fwd){ return true;}
 
-    /** \brief  Update the number of sensitivity directions during or after initialization */
-    virtual void updateNumSens(bool recursive);
-
     /// Solve the system of equations and calculate derivatives
-    virtual void evaluate(int nfdir, int nadir);
+    virtual void evaluate();
  
     /// Solve the nonlinear system of equations
     virtual void solveNonLinear() = 0;

@@ -43,118 +43,37 @@ namespace CasADi{
     addOption("print_stats",              OT_BOOLEAN,     false, "Print out statistics after integration");
     addOption("t0",                       OT_REAL,        0.0, "Beginning of the time horizon"); 
     addOption("tf",                       OT_REAL,        1.0, "End of the time horizon");
-    addOption("fwd_via_sct",              OT_BOOLEAN,     true, "Generate new functions for calculating forward directional derivatives");
     addOption("augmented_options",        OT_DICTIONARY,  GenericType(), "Options to be passed down to the augmented integrator, if one is constructed.");
   
     // Negative number of parameters for consistancy checking
     np_ = -1;
   
-    inputScheme_ = SCHEME_IntegratorInput;
-    outputScheme_ = SCHEME_IntegratorOutput;
+    input_.scheme = SCHEME_IntegratorInput;
+    output_.scheme = SCHEME_IntegratorOutput;
   }
 
   IntegratorInternal::~IntegratorInternal(){ 
   }
 
-  void IntegratorInternal::evaluate(int nfdir, int nadir){
-  
-    // What needs to be calculated
-    bool need_nondiff = true;
-    bool need_fwd = nfdir!=0;
-    bool need_adj = nadir!=0;
-    
-    // No sensitivity analysis
-    bool no_sens = !need_fwd && !need_adj;
-  
-    // Calculate without source code transformation
-    if(no_sens || (need_fwd && !fwd_via_sct_)){
-  
-      // Number of sensitivities integrating forward
-      int nsens = fwd_via_sct_ ? 0 : nfdir; // NOTE: Can be overly pessimistic e.g. if there are no seeds at all in some directions
-    
-      // Number of sensitivities integrate_backward 
-      int nsensB = nrx_>0 ? nsens : 0; // NOTE: Can be overly pessimistic e.g. if there are no seeds at all in some directions
-    
-      // Number of sensitivities in the forward integration to be used in the backward integration
-      int nsensB_store = nsensB; // NOTE: Can be overly pessimistic e.g. if some sensitivities do not depend on the forward sensitivities
-    
-      // Reset solver
-      reset(nsens,nsensB,nsensB_store);
+  void IntegratorInternal::evaluate(){
+    // Reset solver
+    reset();
 
-      // Integrate forward to the end of the time horizon
-      integrate(tf_);
+    // Integrate forward to the end of the time horizon
+    integrate(tf_);
 
-      // If backwards integration is needed
-      if(nrx_>0){
+    // If backwards integration is needed
+    if(nrx_>0){
       
-        // Re-initialize backward problem
-        resetB();
-
-        // Integrate backwards to the beginning
-        integrateB(t0_);
-      }
-    
-      // Mark to avoid overwriting
-      need_nondiff = false;
-      if(!fwd_via_sct_) need_fwd = false;
+      // Re-initialize backward problem
+      resetB();
+      
+      // Integrate backwards to the beginning
+      integrateB(t0_);
     }
-  
-    // Quick return if done
-    if(!need_fwd && !need_adj) return;
-  
-    // Correct nfdir if needed
-    if(!need_fwd) nfdir = 0;
-  
-    // Get derivative function
-    FX dfcn = derivative(nfdir, nadir);
-
-    // Pass function values
-    int input_index = 0;
-    for(int i=0; i<INTEGRATOR_NUM_IN; ++i){
-      dfcn.setInput(input(i),input_index++);
-    }
-  
-    // Pass forward seeds
-    for(int dir=0; dir<nfdir; ++dir){
-      for(int i=0; i<INTEGRATOR_NUM_IN; ++i){
-        dfcn.setInput(fwdSeed(i,dir),input_index++);
-      }
-    }
-    
-    // Pass adjoint seeds
-    for(int dir=0; dir<nadir; ++dir){
-      for(int i=0; i<INTEGRATOR_NUM_OUT; ++i){
-        dfcn.setInput(adjSeed(i,dir),input_index++);
-      }
-    }
-  
-    // Evaluate to get function values and adjoint sensitivities
-    dfcn.evaluate();
-  
-    // Get nondifferentiated results
-    int output_index = 0;
-    for(int i=0; i<INTEGRATOR_NUM_OUT; ++i){
-      dfcn.getOutput(output(i),output_index++);
-    }
-  
-    // Get forward sensitivities 
-    for(int dir=0; dir<nfdir; ++dir){
-      for(int i=0; i<INTEGRATOR_NUM_OUT; ++i){
-        dfcn.getOutput(fwdSens(i,dir),output_index++);
-      }
-    }
-  
-    // Get adjoint sensitivities 
-    for(int dir=0; dir<nadir; ++dir){
-      for(int i=0; i<INTEGRATOR_NUM_IN; ++i){
-        dfcn.getOutput(adjSens(i,dir),output_index++);
-      }
-    }
-  
+      
     // Print statistics
     if(getOption("print_stats")) printStats(std::cout);
-  
-    //if (!integrator.isNull()) stats_["augmented_stats"] =  integrator.getStats();
   }
 
   void IntegratorInternal::init(){
@@ -162,20 +81,16 @@ namespace CasADi{
     // Initialize the functions
     casadi_assert(!f_.isNull());
   
-    // Initialize, get and assert dimensions of the forward integration
+    // Initialize and get dimensions for the forward integration
     if(!f_.isInit()) f_.init();
     casadi_assert_message(f_.getNumInputs()==DAE_NUM_IN,"Wrong number of inputs for the DAE callback function");
     casadi_assert_message(f_.getNumOutputs()==DAE_NUM_OUT,"Wrong number of outputs for the DAE callback function");
-    casadi_assert_message(f_.input(DAE_X).dense(),"State vector must be dense in the DAE callback function");
-    casadi_assert_message(f_.output(DAE_ODE).dense(),"Right hand side vector must be dense in the DAE callback function");
-    nx_ = f_.input(DAE_X).numel();
-    nz_ = f_.input(DAE_Z).numel();
-    nq_ = f_.output(DAE_QUAD).numel();
-    np_  = f_.input(DAE_P).numel();
-    casadi_assert_message(f_.output(DAE_ODE).numel()==nx_,"Inconsistent dimensions. Expecting DAE_ODE output of size " << nx_ << ", but got " << f_.output(DAE_ODE).numel() << " instead.");
-    casadi_assert_message(f_.output(DAE_ALG).numel()==nz_,"Inconsistent dimensions. Expecting DAE_ALG output of size " << nz_ << ", but got " << f_.output(DAE_ALG).numel() << " instead.");
-  
-    // Initialize, get and assert dimensions of the backwards integration
+    nx_ = f_.input(DAE_X).size();
+    nz_ = f_.input(DAE_Z).size();
+    nq_ = f_.output(DAE_QUAD).size();
+    np_  = f_.input(DAE_P).size();
+
+    // Initialize and get dimensions for the backward integration
     if(g_.isNull()){
       // No backwards integration
       nrx_ = nrz_ = nrq_ = nrp_ = 0;
@@ -183,33 +98,50 @@ namespace CasADi{
       if(!g_.isInit()) g_.init();
       casadi_assert_message(g_.getNumInputs()==RDAE_NUM_IN,"Wrong number of inputs for the backwards DAE callback function");
       casadi_assert_message(g_.getNumOutputs()==RDAE_NUM_OUT,"Wrong number of outputs for the backwards DAE callback function");
-      nrx_ = g_.input(RDAE_RX).numel();
-      nrz_ = g_.input(RDAE_RZ).numel();
-      nrp_ = g_.input(RDAE_RP).numel();
-      nrq_ = g_.output(RDAE_QUAD).numel();
-      casadi_assert_message(g_.input(RDAE_P).numel()==np_,"Inconsistent dimensions. Expecting RDAE_P input of size " << np_ << ", but got " << g_.input(RDAE_P).numel() << " instead.");
-      casadi_assert_message(g_.input(RDAE_X).numel()==nx_,"Inconsistent dimensions. Expecting RDAE_X input of size " << nx_ << ", but got " << g_.input(RDAE_X).numel() << " instead.");
-      casadi_assert_message(g_.input(RDAE_Z).numel()==nz_,"Inconsistent dimensions. Expecting RDAE_Z input of size " << nz_ << ", but got " << g_.input(RDAE_Z).numel() << " instead.");
-      casadi_assert_message(g_.output(RDAE_ODE).numel()==nrx_,"Inconsistent dimensions. Expecting RDAE_ODE output of size " << nrx_ << ", but got " << g_.output(RDAE_ODE).numel() << " instead.");
-      casadi_assert_message(g_.output(RDAE_ALG).numel()==nrz_,"Inconsistent dimensions. Expecting RDAE_ALG input of size " << nrz_ << ", but got " << g_.output(RDAE_ALG).numel() << " instead.");
+      nrx_ = g_.input(RDAE_RX).size();
+      nrz_ = g_.input(RDAE_RZ).size();
+      nrp_ = g_.input(RDAE_RP).size();
+      nrq_ = g_.output(RDAE_QUAD).size();
     }
-  
+
     // Allocate space for inputs
-    input_.resize(INTEGRATOR_NUM_IN);
-    input(INTEGRATOR_X0)  = DMatrix(f_.input(DAE_X).sparsity(),0);
-    input(INTEGRATOR_P)   = DMatrix(f_.input(DAE_P).sparsity(),0);
+    setNumInputs(INTEGRATOR_NUM_IN);
+    input(INTEGRATOR_X0)  = DMatrix::zeros(f_.input(DAE_X).sparsity());
+    input(INTEGRATOR_P)   = DMatrix::zeros(f_.input(DAE_P).sparsity());
     if(!g_.isNull()){
-      input(INTEGRATOR_RX0)  = DMatrix(g_.input(RDAE_RX).sparsity(),0);
-      input(INTEGRATOR_RP)  = DMatrix(g_.input(RDAE_RP).sparsity(),0);
+      input(INTEGRATOR_RX0)  = DMatrix::zeros(g_.input(RDAE_RX).sparsity());
+      input(INTEGRATOR_RP)  = DMatrix::zeros(g_.input(RDAE_RP).sparsity());
     }
   
     // Allocate space for outputs
-    output_.resize(INTEGRATOR_NUM_OUT);
-    output(INTEGRATOR_XF) = DMatrix(f_.output(DAE_ODE).sparsity(),0);
-    output(INTEGRATOR_QF) = DMatrix(f_.output(DAE_QUAD).sparsity(),0);
+    setNumOutputs(INTEGRATOR_NUM_OUT);
+    output(INTEGRATOR_XF) = input(INTEGRATOR_X0);
+    output(INTEGRATOR_QF) = DMatrix::zeros(f_.output(DAE_QUAD).sparsity());
     if(!g_.isNull()){
-      output(INTEGRATOR_RXF)  = DMatrix(g_.output(RDAE_ODE).sparsity(),0);
-      output(INTEGRATOR_RQF)  = DMatrix(g_.output(RDAE_QUAD).sparsity(),0);
+      output(INTEGRATOR_RXF)  = input(INTEGRATOR_RX0);
+      output(INTEGRATOR_RQF)  = DMatrix::zeros(g_.output(RDAE_QUAD).sparsity());
+    }
+
+    // Allocate space for algebraic variable
+    z_ = DMatrix::zeros(f_.input(DAE_Z).sparsity());
+    if(!g_.isNull()){
+      rz_ = DMatrix::zeros(g_.input(RDAE_RZ).sparsity());
+    }
+
+    // Warn if sparse inputs (was previously an error)
+    casadi_assert_warning(f_.input(DAE_X).dense(),"Sparse states in integrators are experimental");
+
+    // Consistency checks
+    casadi_assert_message(f_.output(DAE_ODE).shape()==input(INTEGRATOR_X0).shape(),"Inconsistent dimensions. Expecting DAE_ODE output of shape " << input(INTEGRATOR_X0).shape() << ", but got " << f_.output(DAE_ODE).shape() << " instead.");
+    casadi_assert(f_.output(DAE_ODE).sparsity()==input(INTEGRATOR_X0).sparsity());
+    casadi_assert_message(f_.output(DAE_ALG).shape()==z_.shape(),"Inconsistent dimensions. Expecting DAE_ALG output of shape " << z_.shape() << ", but got " << f_.output(DAE_ALG).shape() << " instead.");
+    casadi_assert(f_.output(DAE_ALG).sparsity()==z_.sparsity());
+    if(!g_.isNull()){
+      casadi_assert(g_.input(RDAE_P).sparsity()==input(INTEGRATOR_P).sparsity());
+      casadi_assert(g_.input(RDAE_X).sparsity()==input(INTEGRATOR_X0).sparsity());
+      casadi_assert(g_.input(RDAE_Z).sparsity()==z_.sparsity());
+      casadi_assert(g_.output(RDAE_ODE).sparsity()==input(INTEGRATOR_RX0).sparsity());
+      casadi_assert(g_.output(RDAE_ALG).sparsity()==rz_.sparsity());
     }
   
     // Call the base class method
@@ -224,7 +156,6 @@ namespace CasADi{
     // read options
     t0_ = getOption("t0");
     tf_ = getOption("tf");
-    fwd_via_sct_ = getOption("fwd_via_sct");
   }
 
   void IntegratorInternal::deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied){
@@ -233,23 +164,29 @@ namespace CasADi{
     g_ = deepcopy(g_,already_copied);
   }
 
-  std::pair<FX,FX> IntegratorInternal::getAugmented(int nfwd, int nadj){
+  std::pair<FX,FX> IntegratorInternal::getAugmented(int nfwd, int nadj, vector<int>& xf_offset, vector<int>& qf_offset, vector<int>& rxf_offset, vector<int>& rqf_offset){
     log("IntegratorInternal::getAugmented","call");
     if(is_a<SXFunction>(f_)){
       casadi_assert_message(g_.isNull() || is_a<SXFunction>(g_), "Currently, g_ must be of the same type as f_");
-      return getAugmentedGen<SXMatrix,SXFunction>(nfwd,nadj);
+      return getAugmentedGen<SXMatrix,SXFunction>(nfwd,nadj,xf_offset,qf_offset,rxf_offset,rqf_offset);
     } else if(is_a<MXFunction>(f_)){
       casadi_assert_message(g_.isNull() || is_a<MXFunction>(g_), "Currently, g_ must be of the same type as f_");
-      return getAugmentedGen<MX,MXFunction>(nfwd,nadj);
+      return getAugmentedGen<MX,MXFunction>(nfwd,nadj,xf_offset,qf_offset,rxf_offset,rqf_offset);
     } else {
       throw CasadiException("Currently, f_ must be either SXFunction or MXFunction");
     }
   }
   
   template<class Mat,class XFunc>
-  std::pair<FX,FX> IntegratorInternal::getAugmentedGen(int nfwd, int nadj){
+  std::pair<FX,FX> IntegratorInternal::getAugmentedGen(int nfwd, int nadj, vector<int>& xf_offset, vector<int>& qf_offset, vector<int>& rxf_offset, vector<int>& rqf_offset){
   
     log("IntegratorInternal::getAugmentedGen","begin");
+
+    // Reset the offset
+    xf_offset.clear();    xf_offset.push_back(0);
+    qf_offset.clear();    qf_offset.push_back(0);
+    rxf_offset.clear();   rxf_offset.push_back(0);
+    rqf_offset.clear();   rqf_offset.push_back(0);
   
     // Get derivatived type
     XFunc f = shared_cast<XFunc>(f_);
@@ -267,7 +204,7 @@ namespace CasADi{
     Mat ode = dae_out[DAE_ODE];
     Mat alg = dae_out[DAE_ALG];
     Mat quad = dae_out[DAE_QUAD];
-  
+
     // Take apart the backwards problem
     vector<Mat> rdae_in(RDAE_NUM_IN), rdae_out(RDAE_NUM_OUT);
     if(!g.isNull()){
@@ -286,7 +223,13 @@ namespace CasADi{
     Mat rode = rdae_out[RDAE_ODE];
     Mat ralg = rdae_out[RDAE_ALG];
     Mat rquad = rdae_out[RDAE_QUAD];
-  
+
+    // Get offset for nondifferentiated problem
+    if( nx_>0) xf_offset.push_back(x.size1());
+    if( nq_>0) qf_offset.push_back(quad.size1());
+    if(nrx_>0) rxf_offset.push_back(rx.size1());
+    if(nrq_>0) rqf_offset.push_back(rquad.size1());
+
     // Function evaluating f and g
     vector<Mat> fg_out(DAE_NUM_OUT+RDAE_NUM_OUT);
     copy(dae_out.begin(),dae_out.end(),fg_out.begin());
@@ -320,6 +263,12 @@ namespace CasADi{
       fseed[dir][RDAE_RX] = fwd_rx[dir];
       fseed[dir][RDAE_RZ] = fwd_rz[dir];
       fseed[dir][RDAE_RP] = fwd_rp[dir];
+
+      // Save number of rows
+      if( nx_>0) xf_offset.push_back(x.size1());
+      if( nq_>0) qf_offset.push_back(quad.size1());
+      if(nrx_>0) rxf_offset.push_back(rx.size1());
+      if(nrq_>0) rqf_offset.push_back(rquad.size1());
     }
 
     // Adjoint seeds
@@ -332,7 +281,19 @@ namespace CasADi{
       aseed[dir][DAE_NUM_OUT+RDAE_ODE] = adj_rode[dir];
       aseed[dir][DAE_NUM_OUT+RDAE_ALG] = adj_ralg[dir];
       aseed[dir][DAE_NUM_OUT+RDAE_QUAD] = adj_rquad[dir];
+
+      // Save number of rows
+      if( nx_>0) rxf_offset.push_back(x.size1());
+      if( np_>0) rqf_offset.push_back(p.size1());
+      if(nrx_>0) xf_offset.push_back(rx.size1());
+      if(nrp_>0) qf_offset.push_back(rp.size1());
     }
+
+    // Get cummulative offsets
+    for(int i=1; i<xf_offset.size(); ++i) xf_offset[i] += xf_offset[i-1];
+    for(int i=1; i<qf_offset.size(); ++i) qf_offset[i] += qf_offset[i-1];
+    for(int i=1; i<rxf_offset.size(); ++i) rxf_offset[i] += rxf_offset[i-1];
+    for(int i=1; i<rqf_offset.size(); ++i) rqf_offset[i] += rqf_offset[i-1];
   
     // Calculate forward and adjoint sensitivities
     vector<vector<Mat> > fsens(fseed.size(),fg_out);
@@ -540,8 +501,10 @@ namespace CasADi{
 
   FX IntegratorInternal::getDerivative(int nfwd, int nadj){
     log("IntegratorInternal::getDerivative","begin");
+
     // Generate augmented DAE
-    std::pair<FX,FX> aug_dae = getAugmented(nfwd,nadj);
+    vector<int> xf_offset, qf_offset, rxf_offset, rqf_offset;
+    std::pair<FX,FX> aug_dae = getAugmented(nfwd,nadj,xf_offset,qf_offset,rxf_offset,rqf_offset);
   
     // Create integrator for augmented DAE
     Integrator integrator;
@@ -647,26 +610,27 @@ namespace CasADi{
     vector<MX> integrator_out = integrator.call(integrator_in);
   
     // Augmented results
-    MX xf_aug = integrator_out[INTEGRATOR_XF];
-    MX rxf_aug = integrator_out[INTEGRATOR_RXF];
-    MX qf_aug = integrator_out[INTEGRATOR_QF];
-    MX rqf_aug = integrator_out[INTEGRATOR_RQF];
-  
-    // Offset in each of the above vectors
-    int xf_offset = 0, rxf_offset = 0, qf_offset = 0, rqf_offset = 0;
-  
+    vector<MX> xf_aug = vertsplit(integrator_out[INTEGRATOR_XF],xf_offset);
+    vector<MX> rxf_aug = vertsplit(integrator_out[INTEGRATOR_RXF],rxf_offset);
+    vector<MX> qf_aug = vertsplit(integrator_out[INTEGRATOR_QF],qf_offset);
+    vector<MX> rqf_aug = vertsplit(integrator_out[INTEGRATOR_RQF],rqf_offset);
+    vector<MX>::const_iterator xf_aug_it = xf_aug.begin();
+    vector<MX>::const_iterator rxf_aug_it = rxf_aug.begin();
+    vector<MX>::const_iterator qf_aug_it = qf_aug.begin();
+    vector<MX>::const_iterator rqf_aug_it = rqf_aug.begin();
+
     // All outputs of the return function
     vector<MX> ret_out;
     ret_out.reserve(INTEGRATOR_NUM_OUT*(1+nfwd) + INTEGRATOR_NUM_IN*nadj);
-  
+
     // Collect the nondifferentiated results and forward sensitivities
     dd.resize(INTEGRATOR_NUM_OUT);
     fill(dd.begin(),dd.end(),MX());
     for(int dir=-1; dir<nfwd; ++dir){
-      if( nx_>0){ dd[INTEGRATOR_XF]  =  xf_aug[Slice(  xf_offset, xf_offset +  nx_)];  xf_offset +=  nx_;}
-      if( nq_>0){ dd[INTEGRATOR_QF]  =  qf_aug[Slice(  qf_offset, qf_offset +  nq_)];  qf_offset +=  nq_; }
-      if(nrx_>0){ dd[INTEGRATOR_RXF] = rxf_aug[Slice( rxf_offset,rxf_offset + nrx_)]; rxf_offset += nrx_; }
-      if(nrq_>0){ dd[INTEGRATOR_RQF] = rqf_aug[Slice( rqf_offset,rqf_offset + nrq_)]; rqf_offset += nrq_; }
+      if( nx_>0) dd[INTEGRATOR_XF]  = *xf_aug_it++;
+      if( nq_>0) dd[INTEGRATOR_QF]  = *qf_aug_it++;
+      if(nrx_>0) dd[INTEGRATOR_RXF] = *rxf_aug_it++;
+      if(nrq_>0) dd[INTEGRATOR_RQF] = *rqf_aug_it++;
       ret_out.insert(ret_out.end(),dd.begin(),dd.end());
     }
   
@@ -674,10 +638,10 @@ namespace CasADi{
     dd.resize(INTEGRATOR_NUM_IN);
     fill(dd.begin(),dd.end(),MX());
     for(int dir=0; dir<nadj; ++dir){
-      if(  nx_>0){ dd[INTEGRATOR_X0]  = rxf_aug[Slice(rxf_offset, rxf_offset + nx_ )]; rxf_offset += nx_;  }
-      if(  np_>0){ dd[INTEGRATOR_P]   = rqf_aug[Slice(rqf_offset, rqf_offset + np_ )]; rqf_offset += np_;  }
-      if( nrx_>0){ dd[INTEGRATOR_RX0] =  xf_aug[Slice(xf_offset,   xf_offset + nrx_)];  xf_offset += nrx_; }
-      if( nrp_>0){ dd[INTEGRATOR_RP]  =  qf_aug[Slice(qf_offset,   qf_offset + nrp_)];  qf_offset += nrp_; }
+      if( nx_>0) dd[INTEGRATOR_X0]  = *rxf_aug_it++;
+      if( np_>0) dd[INTEGRATOR_P]   = *rqf_aug_it++;
+      if(nrx_>0) dd[INTEGRATOR_RX0] = *xf_aug_it++;
+      if(nrp_>0) dd[INTEGRATOR_RP]  = *qf_aug_it++;
       ret_out.insert(ret_out.end(),dd.begin(),dd.end());
     }
     log("IntegratorInternal::getDerivative","end");
@@ -691,27 +655,16 @@ namespace CasADi{
     vector<MX> res = shared_from_this<FX>().call(arg);
     MXFunction f(arg,res);
     f.setOption("ad_mode","forward");
-    f.setOption("numeric_jacobian", false);
     f.init();
     return f.jacobian(iind,oind,compact,symmetric);
   }
 
-  void IntegratorInternal::reset(int nsens, int nsensB, int nsensB_store){
+  void IntegratorInternal::reset(){
     log("IntegratorInternal::reset","begin");
-    // Make sure that the numbers are consistent
-    casadi_assert_message(nsens<=nfdir_,"Too many sensitivities going forward");
-    casadi_assert_message(nsensB<=nfdir_,"Too many sensitivities going backward");
-    casadi_assert_message(nsensB_store<=nsens,"Too many sensitivities stored going forward");
-    casadi_assert_message(nsensB_store<=nsensB,"Too many sensitivities stored going backward");
-  
-    nsens_ = nsens;
-    nsensB_ = nsensB;
-    nsensB_store_ = nsensB_store;
-  
+    
     // Initialize output (relevant for integration with a zero advance time )
     copy(input(INTEGRATOR_X0).begin(),input(INTEGRATOR_X0).end(),output(INTEGRATOR_XF).begin());
-    for(int i=0; i<nfdir_; ++i)
-      copy(fwdSeed(INTEGRATOR_X0,i).begin(),fwdSeed(INTEGRATOR_X0,i).end(),fwdSens(INTEGRATOR_XF,i).begin());
+    
     log("IntegratorInternal::reset","end");
   }
 

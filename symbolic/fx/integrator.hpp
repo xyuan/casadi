@@ -178,12 +178,8 @@ namespace CasADi{
   
     /** \brief Reset the forward problem
      * Time will be set to t0 and state to input(INTEGRATOR_X0)
-     * \param nsens        Number of sensitivities to be propagated along with the integration forward in time
-     * \param nsensB       Number of sensitivities to be propagated along with the integration backward in time
-     * \param nsensB_store Number of sensitivities to be propagated along with the integration backward in time 
-     *                     that depend on sensitivities propagated along with the integration forward in time
      */
-    void reset(int nsens=0, int nsensB=0, int nsensB_store=0);
+    void reset();
 
     /// Integrate forward until a specified time point 
     void integrate(double t_out);
@@ -195,6 +191,22 @@ namespace CasADi{
 
     /// Integrate backward until a specified time point
     void integrateB(double t_out);
+
+    //@{
+    /** \brief Access the current value of the algebraic variable for the forward integration
+     * DAE integrators typically (but not necessarily) calculate the states sequentially, reusing the last value of the algebraic variable.
+     */
+    DMatrix& z();
+    const DMatrix& z() const;
+    //@}
+
+    //@{
+    /** \brief Access the current value of the algebraic variable for the backward integration
+     * DAE integrators typically (but not necessarily) calculate the states sequentially, reusing the last value of the algebraic variable.
+     */
+    DMatrix& rz();
+    const DMatrix& rz() const;
+    //@}
 
     /// Check if the node is pointing to the right type of object
     virtual bool checkNode() const;

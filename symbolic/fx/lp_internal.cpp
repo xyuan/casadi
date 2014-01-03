@@ -56,8 +56,8 @@ LPSolverInternal::LPSolverInternal(const std::vector<CRSSparsity> &st) : st_(st)
   output(LP_SOLVER_LAM_X) = DMatrix::zeros(n_);
   output(LP_SOLVER_LAM_A) = DMatrix::zeros(nc_);
   
-  inputScheme_ = SCHEME_LPSolverInput;
-  outputScheme_ = SCHEME_LPSolverOutput;
+  input_.scheme = SCHEME_LPSolverInput;
+  output_.scheme = SCHEME_LPSolverOutput;
 }
     
 void LPSolverInternal::init() {
@@ -68,7 +68,7 @@ void LPSolverInternal::init() {
 LPSolverInternal::~LPSolverInternal(){
 }
  
-void LPSolverInternal::evaluate(int nfdir, int nadir){
+void LPSolverInternal::evaluate(){
   throw CasadiException("LPSolverInternal::evaluate: Not implemented");
 }
  

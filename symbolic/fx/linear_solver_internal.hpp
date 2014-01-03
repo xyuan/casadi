@@ -44,7 +44,7 @@ namespace CasADi{
     virtual void init();
     
     // Solve the system of equations
-    virtual void evaluate(int nfdir, int nadir);
+    virtual void evaluate();
 
     // Prepare the factorization
     virtual void prepare() = 0;
@@ -59,7 +59,7 @@ namespace CasADi{
     MX solve(const MX& A, const MX& B, bool transpose);
 
     // Evaluate numerically, possibly transposed
-    void evaluateDGen(const DMatrixPtrV& input, DMatrixPtrV& output, const DMatrixPtrVV& fwdSeed, DMatrixPtrVV& fwdSens, const DMatrixPtrVV& adjSeed, DMatrixPtrVV& adjSens, bool tr);
+    void evaluateDGen(const DMatrixPtrV& input, DMatrixPtrV& output, bool tr);
 
     // Evaluate MX, possibly transposed
     void evaluateMXGen(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed, MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens, bool output_given, bool tr);

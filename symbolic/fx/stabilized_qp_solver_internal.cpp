@@ -80,8 +80,8 @@ StabilizedQPSolverInternal::StabilizedQPSolverInternal(const std::vector<CRSSpar
   output(QP_SOLVER_LAM_X) = DMatrix(x_sparsity);
   output(QP_SOLVER_LAM_A) = DMatrix(bounds_sparsity);
   
-  inputScheme_ = SCHEME_StabilizedQPSolverInput;
-  outputScheme_ = SCHEME_QPSolverOutput;
+  input_.scheme = SCHEME_StabilizedQPSolverInput;
+  output_.scheme = SCHEME_QPSolverOutput;
 }
     
 void StabilizedQPSolverInternal::init() {
@@ -92,7 +92,7 @@ void StabilizedQPSolverInternal::init() {
 StabilizedQPSolverInternal::~StabilizedQPSolverInternal(){
 }
  
-void StabilizedQPSolverInternal::evaluate(int nfdir, int nadir){
+void StabilizedQPSolverInternal::evaluate(){
   throw CasadiException("StabilizedQPSolverInternal::evaluate: Not implemented");
 }
  

@@ -1,3 +1,21 @@
+/** \class CasADi::QPLPInternal
+\n
+\par
+<a name='stats'></a><table>
+<caption>List of available stats</caption>
+<tr><th>Id</th><th>Used in</th></tr>
+<tr><td>qp_solver_stats</td><td>CasADi::QPLPInternal</td></tr>
+</table>
+*/
+/** \class CasADi::QPLPSolver
+\n
+\par
+<a name='stats'></a><table>
+<caption>List of available stats</caption>
+<tr><th>Id</th><th>Used in</th></tr>
+<tr><td>qp_solver_stats</td><td>CasADi::QPLPInternal</td></tr>
+</table>
+*/
 /** \class CasADi::NLPImplicitInternal
 \n
 \par
@@ -40,7 +58,6 @@
 <a name='stats'></a><table>
 <caption>List of available stats</caption>
 <tr><th>Id</th><th>Used in</th></tr>
-<tr><td>augmented_stats</td><td>CasADi::IntegratorInternal</td></tr>
 <tr><td>nlinsetups</td><td>CasADi::CVodesInternal</td></tr>
 <tr><td>nlinsetupsB</td><td>CasADi::CVodesInternal</td></tr>
 <tr><td>nsteps</td><td>CasADi::CVodesInternal</td></tr>
@@ -53,7 +70,6 @@
 <a name='stats'></a><table>
 <caption>List of available stats</caption>
 <tr><th>Id</th><th>Used in</th></tr>
-<tr><td>augmented_stats</td><td>CasADi::IntegratorInternal</td></tr>
 <tr><td>nlinsetups</td><td>CasADi::CVodesInternal</td></tr>
 <tr><td>nlinsetupsB</td><td>CasADi::CVodesInternal</td></tr>
 <tr><td>nsteps</td><td>CasADi::CVodesInternal</td></tr>
@@ -184,7 +200,6 @@
 <a name='stats'></a><table>
 <caption>List of available stats</caption>
 <tr><th>Id</th><th>Used in</th></tr>
-<tr><td>augmented_stats</td><td>CasADi::IntegratorInternal</td></tr>
 <tr><td>nlinsetups</td><td>CasADi::IdasInternal</td></tr>
 <tr><td>nlinsetupsB</td><td>CasADi::IdasInternal</td></tr>
 <tr><td>nsteps</td><td>CasADi::IdasInternal</td></tr>
@@ -197,7 +212,6 @@
 <a name='stats'></a><table>
 <caption>List of available stats</caption>
 <tr><th>Id</th><th>Used in</th></tr>
-<tr><td>augmented_stats</td><td>CasADi::IntegratorInternal</td></tr>
 <tr><td>nlinsetups</td><td>CasADi::IdasInternal</td></tr>
 <tr><td>nlinsetupsB</td><td>CasADi::IdasInternal</td></tr>
 <tr><td>nsteps</td><td>CasADi::IdasInternal</td></tr>
@@ -242,42 +256,6 @@
 <tr><th>Id</th><th>Used in</th></tr>
 <tr><td>iter_count</td><td>CasADi::StabilizedSQPInternal</td></tr>
 <tr><td>return_status</td><td>CasADi::StabilizedSQPInternal</td></tr>
-</table>
-*/
-/** \class CasADi::QPLPInternal
-\n
-\par
-<a name='stats'></a><table>
-<caption>List of available stats</caption>
-<tr><th>Id</th><th>Used in</th></tr>
-<tr><td>qp_solver_stats</td><td>CasADi::QPLPInternal</td></tr>
-</table>
-*/
-/** \class CasADi::QPLPSolver
-\n
-\par
-<a name='stats'></a><table>
-<caption>List of available stats</caption>
-<tr><th>Id</th><th>Used in</th></tr>
-<tr><td>qp_solver_stats</td><td>CasADi::QPLPInternal</td></tr>
-</table>
-*/
-/** \class CasADi::IntegratorInternal
-\n
-\par
-<a name='stats'></a><table>
-<caption>List of available stats</caption>
-<tr><th>Id</th><th>Used in</th></tr>
-<tr><td>augmented_stats</td><td>CasADi::IntegratorInternal</td></tr>
-</table>
-*/
-/** \class CasADi::Integrator
-\n
-\par
-<a name='stats'></a><table>
-<caption>List of available stats</caption>
-<tr><th>Id</th><th>Used in</th></tr>
-<tr><td>augmented_stats</td><td>CasADi::IntegratorInternal</td></tr>
 </table>
 */
 /** \class CasADi::SQPInternal

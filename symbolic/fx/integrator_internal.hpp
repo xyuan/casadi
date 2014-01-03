@@ -55,7 +55,7 @@ namespace CasADi{
     virtual void printStats(std::ostream &stream) const{}
 
     /** \brief  Reset the forward problem and bring the time back to t0 */
-    virtual void reset(int nsens, int nsensB, int nsensB_store) = 0;
+    virtual void reset() = 0;
 
     /** \brief  Reset the backward problem and take time to tf */
     virtual void resetB() = 0;
@@ -67,7 +67,7 @@ namespace CasADi{
     virtual void integrateB(double t_out) = 0;
 
     /** \brief  evaluate */
-    virtual void evaluate(int nfdir, int nadir);
+    virtual void evaluate();
 
     /** \brief  Initialize */
     virtual void init();
@@ -85,11 +85,11 @@ namespace CasADi{
     virtual FX getJacobian(int iind, int oind, bool compact, bool symmetric);
 
     /// Generate a augmented DAE system with nfwd forward sensitivities and nadj adjoint sensitivities
-    virtual std::pair<FX,FX> getAugmented(int nfwd, int nadj);
+    virtual std::pair<FX,FX> getAugmented(int nfwd, int nadj, std::vector<int>& xf_offset, std::vector<int>& qf_offset, std::vector<int>& rxf_offset, std::vector<int>& rqf_offset);
   
     /// Generate a augmented DAE system with nfwd forward sensitivities and nadj adjoint sensitivities (generic)
     template<class Mat,class XFunc>
-    std::pair<FX,FX> getAugmentedGen(int nfwd, int nadj);
+    std::pair<FX,FX> getAugmentedGen(int nfwd, int nadj, std::vector<int>& xf_offset, std::vector<int>& qf_offset, std::vector<int>& rxf_offset, std::vector<int>& rqf_offset);
   
     /// Integration horizon
     double t0_, tf_;
@@ -99,19 +99,9 @@ namespace CasADi{
   
     /// ODE/DAE backward integration function, if any
     FX g_;
-  
-    /// Number of sensitivities to be propagated along with the integration forward in time
-    int nsens_;
-  
-    /// Number of sensitivities to be propagated along with the integration backward in time
-    int nsensB_;
-  
-    /// Number of sensitivities to be propagated along with the integration backward in time  that depend on sensitivities propagated along with the integration forward in time
-    int nsensB_store_;
-  
-    /// Generate new functions for calculating forward/adjoint directional derivatives
-    bool fwd_via_sct_;
-  
+    
+    /// Algebraic variable
+    DMatrix z_, rz_;
   };
   
 } // namespace CasADi

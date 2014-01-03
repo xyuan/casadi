@@ -37,11 +37,6 @@ namespace CasADi{
     
   };
   
-  class SparsityGeneratorInternal : public FunctorInternal {
-    friend class SparsityGenerator;
-    virtual CRSSparsity call(FX& fcn, int iind, int oind, void* user_data)=0;
-  };
-  
   template<typename P>
   class FunctorCInternal {
     public:
@@ -49,39 +44,17 @@ namespace CasADi{
     protected:
       P ptr_;
   };
-
-  class SparsityGeneratorCInternal : public SparsityGeneratorInternal, FunctorCInternal<SparsityGeneratorCPtr> {
-    friend class SparsityGenerator;
-    
-    SparsityGeneratorCInternal(SparsityGeneratorCPtr ptr);
-    virtual CRSSparsity call(FX& fcn, int iind, int oind, void* user_data);
-    virtual SparsityGeneratorCInternal* clone() const;
-
-  };
-
-  class JacobianGeneratorInternal : public FunctorInternal {
-    friend class JacobianGenerator;
-    virtual FX call(FX& fcn, int iind, int oind, void* user_data)=0;
-  };
-
-  class JacobianGeneratorCInternal : public JacobianGeneratorInternal, FunctorCInternal<JacobianGeneratorCPtr> {
-    friend class JacobianGenerator;
-    
-    JacobianGeneratorCInternal(JacobianGeneratorCPtr ptr);
-    virtual FX call(FX& fcn, int iind, int oind, void* user_data);
-    virtual JacobianGeneratorCInternal* clone() const;
-  };
   
   class CustomEvaluateInternal : public FunctorInternal {
     friend class CustomEvaluate;
-    virtual void call(CustomFunction& fcn, int nfdir, int nadir, void* user_data)=0;
+    virtual void call(CustomFunction& fcn, void* user_data)=0;
   };
 
   class CustomEvaluateCInternal : public CustomEvaluateInternal, FunctorCInternal<CustomEvaluateCPtr> {
     friend class CustomEvaluate;
     
     CustomEvaluateCInternal(CustomEvaluateCPtr ptr);
-    virtual void call(CustomFunction& fcn, int nfdir, int nadir, void* user_data);
+    virtual void call(CustomFunction& fcn, void* user_data);
     virtual CustomEvaluateCInternal* clone() const;
   };
   
