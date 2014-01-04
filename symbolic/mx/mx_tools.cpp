@@ -42,7 +42,9 @@ namespace CasADi{
     casadi_assert(isMonotone(offset));
     
     // Trivial return if possible
-    if(offset.size()==1 || (offset.size()==2 && offset.back()==x.size1())){
+    if(offset.size()==1 && offset.back()==x.size1()){
+      return vector<MX>(0);
+    } else if(offset.size()==1 || (offset.size()==2 && offset.back()==x.size1())){
       return vector<MX>(1,x);
     } else {
       return x->getVertsplit(offset);
@@ -982,6 +984,28 @@ namespace CasADi{
     s.init();
 
     return s.eval(graph_substitute(v,syms,boundary));
+  }
+  
+  MX kron(const MX& a, const MX& b) {
+    const CRSSparsity &a_sp = a.sparsity();
+    MX filler(b.size1(),b.size2());
+    std::vector< std::vector< MX > > blocks(a.size1(),std::vector< MX >(a.size2(),filler));
+    for (int i=0;i<a.size1();++i) {
+      for (int j=0;j<a.size2();++j) {
+        int k = a_sp.getNZ(i,j);
+        if (k!=-1) {
+          blocks[i][j] = a[k]*b;
+        }
+      }
+    }
+    return blockcat(blocks);
+  }
+
+  MX solve(const MX& A, const MX& b, linearSolverCreator lsolver, const Dictionary& dict) {
+    LinearSolver mysolver = lsolver(A.sparsity(),1);
+    mysolver.setOption(dict);
+    mysolver.init();
+    return trans(mysolver.solve(A,trans(b),true));
   }
   
 } // namespace CasADi
