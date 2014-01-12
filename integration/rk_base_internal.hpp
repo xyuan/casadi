@@ -52,17 +52,17 @@ namespace CasADi{
     /// Initialize stage
     virtual void init();
   
-    /// Reset the forward problem and bring the time back to t0
-    virtual void reset();
-
-    /// Reset the backward problem and take time to tf
-    virtual void resetB();
-
     ///  Integrate until a specified time point
     virtual void integrate(double t_out);
 
     /// Integrate backward in time until a specified time point
     virtual void integrateB(double t_out);
+
+    /// Reset the forward problem and bring the time back to t0
+    virtual void reset();
+
+    /// Reset the backward problem and take time to tf 
+    virtual void resetB();
 
     // Discrete time dynamics
     FX F_, G_;
@@ -70,11 +70,14 @@ namespace CasADi{
     // Number of finite elements 
     int nk_;
 
+    // Discrete time
+    int k_;
+
     // Time step size
     double h_;
 
-    // Current time
-    double t_;
+    // Tape
+    std::vector<std::vector<double> > x_tape_, z_tape_;
   };
 
 } // namespace CasADi
