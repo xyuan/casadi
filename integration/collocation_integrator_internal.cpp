@@ -22,6 +22,7 @@
 
 #include "collocation_integrator_internal.hpp"
 #include "symbolic/stl_vector_tools.hpp"
+#include "symbolic/polynomial.hpp"
 #include "symbolic/matrix/sparsity_tools.hpp"
 #include "symbolic/matrix/matrix_tools.hpp"
 #include "symbolic/sx/sx_tools.hpp"
@@ -54,7 +55,6 @@ namespace CasADi{
     IntegratorInternal::deepCopyMembers(already_copied);
     startup_integrator_ = deepcopy(startup_integrator_,already_copied);
     implicit_solver_ = deepcopy(implicit_solver_,already_copied);
-    explicit_fcn_ = deepcopy(explicit_fcn_,already_copied);
   }
 
   CollocationIntegratorInternal::~CollocationIntegratorInternal(){
@@ -98,46 +98,39 @@ namespace CasADi{
     // Coefficients of the collocation equation as DMatrix
     DMatrix D_num = DMatrix(deg+1,1,0);
 
-    // Collocation point
-    SXMatrix tau = ssym("tau");
+    // Coefficients of the quadratures
+    DMatrix Q = DMatrix(deg+1,1,0);
 
     // For all collocation points
     for(int j=0; j<deg+1; ++j){
+
       // Construct Lagrange polynomials to get the polynomial basis at the collocation point
-      SXMatrix L = 1;
-      for(int j2=0; j2<deg+1; ++j2){
-        if(j2 != j){
-          L *= (tau-tau_root[j2])/(tau_root[j]-tau_root[j2]);
+      Polynomial p = 1;
+      for(int r=0; r<deg+1; ++r){
+        if(r!=j){
+          p *= Polynomial(-tau_root[r],1)/(tau_root[j]-tau_root[r]);
         }
       }
     
-      SXFunction lfcn(tau,L);
-      lfcn.init();
-  
       // Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-      lfcn.setInput(1.0);
-      lfcn.evaluate();
-      D[j] = lfcn.output();
-      D_num(j) = lfcn.output();
-
+      D_num(j) = p(1.0);
+      D[j] = D_num(j);
+    
       // Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
-      FX tfcn = lfcn.tangent();
-      tfcn.init();
-      for(int j2=0; j2<deg+1; ++j2){
-        tfcn.setInput(tau_root[j2]);        
-        tfcn.evaluate();
-        C[j][j2] = tfcn.output();
-        C_num(j,j2) = tfcn.output();
+      Polynomial dp = p.derivative();
+      for(int r=0; r<deg+1; ++r){
+        C_num(j,r) = dp(tau_root[r]);
+        C[j][r] = C_num(j,r);
       }
+        
+      // Integrate polynomial to get the coefficients of the quadratures
+      Polynomial ip = p.anti_derivative();
+      Q(j) = ip(1.0);
     }
-
 
     C_num(std::vector<int>(1,0),ALL) = 0;
     C_num(0,0)   = 1;
-  
-    // Coefficients of the quadrature
-    DMatrix Q = solve(C_num,D_num);
-  
+    
     casadi_assert_message(fabs(sumAll(Q)-1).at(0)<1e-9,"Check on quadrature coefficients");
     casadi_assert_message(fabs(sumAll(D_num)-1).at(0)<1e-9,"Check on collocation coefficients");
   
@@ -329,7 +322,13 @@ namespace CasADi{
     ifcn_in[1+INTEGRATOR_P] = P;
     ifcn_in[1+INTEGRATOR_RX0] = RX0;
     ifcn_in[1+INTEGRATOR_RP] = RP;
-    FX ifcn = MXFunction(ifcn_in,gv);
+    vector<MX> ifcn_out(1+INTEGRATOR_NUM_OUT);
+    ifcn_out[0] = gv;
+    ifcn_out[1+INTEGRATOR_XF] = X[nk][0];
+    ifcn_out[1+INTEGRATOR_QF] = QF;
+    ifcn_out[1+INTEGRATOR_RXF] = RX[0][0];
+    ifcn_out[1+INTEGRATOR_RQF] = RQF;
+    FX ifcn = MXFunction(ifcn_in,ifcn_out);
     std::stringstream ss_ifcn;
     ss_ifcn << "collocation_implicit_residual_" << getOption("name");
     ifcn.setOption("name",ss_ifcn.str());
@@ -338,24 +337,6 @@ namespace CasADi{
       ifcn = SXFunction(shared_cast<MXFunction>(ifcn));
       ifcn.setOption("name",ss_ifcn.str());
       ifcn.init();
-    }
-  
-    // Auxiliary output function
-    vector<MX> afcn_out(1+INTEGRATOR_NUM_OUT);
-    afcn_out[0] = V;
-    afcn_out[1+INTEGRATOR_XF] = X[nk][0];
-    afcn_out[1+INTEGRATOR_QF] = QF;
-    afcn_out[1+INTEGRATOR_RXF] = RX[0][0];
-    afcn_out[1+INTEGRATOR_RQF] = RQF;
-    FX afcn = MXFunction(ifcn_in,afcn_out);
-    std::stringstream ss_afcn;
-    ss_afcn << "collocation_output_" << getOption("name");
-    afcn.setOption("name",ss_afcn.str());
-    afcn.init();
-    if(expand_f){
-      afcn = SXFunction(shared_cast<MXFunction>(afcn));
-      afcn.setOption("name",ss_afcn.str());
-      afcn.init();
     }
   
     // Get the NLP creator function
@@ -375,20 +356,7 @@ namespace CasADi{
   
     // Initialize the solver
     implicit_solver_.init();
-  
-    // Nonlinear constraint function input
-    vector<MX> gfcn_in(INTEGRATOR_NUM_IN);
-    gfcn_in[INTEGRATOR_X0] = X0;
-    gfcn_in[INTEGRATOR_P] = P;
-    gfcn_in[INTEGRATOR_RX0] = RX0;
-    gfcn_in[INTEGRATOR_RP] = RP;
-    ifcn_in[0] = implicit_solver_.call(gfcn_in).front();
-    explicit_fcn_ = MXFunction(gfcn_in,afcn.call(ifcn_in));
-    std::stringstream ss_explicit_fcn;
-    ss_explicit_fcn << "collocation_explicit_" << getOption("name");
-    explicit_fcn_.setOption("name",ss_explicit_fcn.str());
-    explicit_fcn_.init();
-  
+    
     if(hasSetOption("startup_integrator")){
     
       // Create the linear solver
@@ -433,19 +401,12 @@ namespace CasADi{
   
     // Pass the inputs
     for(int iind=0; iind<INTEGRATOR_NUM_IN; ++iind){
-      explicit_fcn_.input(iind).set(input(iind));
+      implicit_solver_.input(1+iind).set(input(iind));
     }
-  
-    // // Pass the forward seeds
-    // for(int dir=0; dir<nsens; ++dir){
-    //   for(int iind=0; iind<INTEGRATOR_NUM_IN; ++iind){
-    //     explicit_fcn_.fwdSeed(iind,dir).set(fwdSeed(iind,dir));
-    //   }
-    // }
-    
+      
     // Pass solution guess (if this is the first integration or if hotstart is disabled)
     if(hotstart_==false || integrated_once_==false){
-      vector<double>& v = implicit_solver_.output().data();
+      vector<double>& v = implicit_solver_.input().data();
       
       // Check if an integrator for the startup trajectory has been supplied
       bool has_startup_integrator = !startup_integrator_.isNull();
@@ -514,12 +475,15 @@ namespace CasADi{
     }
     
     // Solve the system of equations
-    explicit_fcn_.evaluate();
+    implicit_solver_.evaluate();
+
+    // Save the result
+    implicit_solver_.output().set(implicit_solver_.input());
     
     // Write out profiling information
     if (CasadiOptions::profiling) {
       time_stop = getRealTime(); // Stop timer
-      CasadiOptions::profilingLog  << double(time_stop-time_start)*1e6 << " ns | " << double(time_stop-time_zero)*1e3 << " ms | " << this << ":" << getOption("name") << ":0|" << explicit_fcn_.get() << ":" << explicit_fcn_.getOption("name") << "|solve system" << std::endl;
+      CasadiOptions::profilingLog  << double(time_stop-time_start)*1e6 << " ns | " << double(time_stop-time_zero)*1e3 << " ms | " << this << ":" << getOption("name") << ":0|" << implicit_solver_.get() << ":" << implicit_solver_.getOption("name") << "|solve system" << std::endl;
     }
   
     // Mark the system integrated at least once
@@ -528,7 +492,7 @@ namespace CasADi{
 
   void CollocationIntegratorInternal::integrate(double t_out){
     for(int oind=0; oind<INTEGRATOR_NUM_OUT; ++oind){
-      output(oind).set(explicit_fcn_.output(1+oind));
+      output(oind).set(implicit_solver_.output(1+oind));
     }
   }
 

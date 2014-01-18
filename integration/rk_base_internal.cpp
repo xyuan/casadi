@@ -33,10 +33,13 @@ namespace CasADi{
 
   RKBaseInternal::RKBaseInternal(const FX& f, const FX& g) : IntegratorInternal(f,g){
     addOption("number_of_finite_elements",     OT_INTEGER,  20, "Number of finite elements");
+    addOption("implicit_solver",               OT_IMPLICITFUNCTION,  GenericType(), "An implicit function solver");
+    addOption("implicit_solver_options",       OT_DICTIONARY, GenericType(), "Options to be passed to the NLP Solver");
   }
 
   void RKBaseInternal::deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied){    
     IntegratorInternal::deepCopyMembers(already_copied);
+    implicit_solver_ = deepcopy(implicit_solver_,already_copied);
   }
 
   RKBaseInternal::~RKBaseInternal(){
@@ -49,13 +52,41 @@ namespace CasADi{
     // Number of finite elements and time steps
     nk_ = getOption("number_of_finite_elements");
     casadi_assert(nk_>0);
-    
     h_ = (tf_ - t0_)/nk_;
+    
+    // Setup discrete time dynamics
+    setupFG();
+
+    // Get discrete time dimensions
+    nZ_ = F_.input(DAE_Z).size();
+    nRZ_ = G_.isNull() ? 0 : G_.input(RDAE_RZ).size();
 
     // Allocate tape if backward states are present
     if(nrx_>0){
       x_tape_.resize(nk_+1,vector<double>(nx_));
-      z_tape_.resize(nk_+1,vector<double>(nz_));
+      z_tape_.resize(nk_+1,vector<double>(nZ_));
+    }
+
+    // Allocate a root-finding solver, if needed
+    if(nZ_>0){
+
+      // Get the NLP creator function
+      implicitFunctionCreator implicit_function_creator = getOption("implicit_solver");
+  
+      // Allocate an NLP solver
+      implicit_solver_ = implicit_function_creator(F_,FX(),LinearSolver());
+      implicit_solver_.setOption("name",string(getOption("name")) + "_implicit_solver");
+      implicit_solver_.setOption("implicit_input",DAE_Z);
+      implicit_solver_.setOption("implicit_output",DAE_ALG);
+    
+      // Pass options
+      if(hasSetOption("implicit_solver_options")){
+        const Dictionary& implicit_solver_options = getOption("implicit_solver_options");
+        implicit_solver_.setOption(implicit_solver_options);
+      }
+  
+      // Initialize the solver
+      implicit_solver_.init();
     }
   }
 
@@ -65,17 +96,20 @@ namespace CasADi{
     k_out = std::min(k_out,nk_); //  make sure that rounding errors does not result in k_out>nk_
     casadi_assert(k_out>=0);
 
+    // Explicit discrete time dynamics
+    FX& F = nZ_>0 ? implicit_solver_ : F_;
+
     // Take time steps until end time has been reached
     while(k_<k_out){
       // Take step
-      F_.input(DAE_T).set(t_);
-      F_.input(DAE_X).set(output(INTEGRATOR_XF));
-      F_.input(DAE_Z).set(z_);
-      F_.input(DAE_P).set(input(INTEGRATOR_P));
-      F_.evaluate();
-      F_.output(DAE_ODE).get(output(INTEGRATOR_XF));
-      F_.output(DAE_ALG).get(z_);
-      transform(F_.output(DAE_QUAD).begin(),F_.output(DAE_QUAD).end(),output(INTEGRATOR_QF).begin(),output(INTEGRATOR_QF).begin(),std::plus<double>());
+      F.input(DAE_T).set(t_);
+      F.input(DAE_X).set(output(INTEGRATOR_XF));
+      F.input(DAE_Z).set(z_);
+      F.input(DAE_P).set(input(INTEGRATOR_P));
+      F.evaluate();
+      F.output(DAE_ODE).get(output(INTEGRATOR_XF));
+      F.output(DAE_ALG).get(z_);
+      transform(F.output(DAE_QUAD).begin(),F.output(DAE_QUAD).end(),output(INTEGRATOR_QF).begin(),output(INTEGRATOR_QF).begin(),std::plus<double>());
 
       // Advance time
       k_++;

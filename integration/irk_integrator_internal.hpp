@@ -51,37 +51,13 @@ namespace CasADi{
 
     /// Initialize stage
     virtual void init();
-  
-    /// Reset the forward problem and bring the time back to t0
-    virtual void reset();
 
-    /// Reset the backward problem and take time to tf
-    virtual void resetB(){}
-
-    ///  Integrate until a specified time point
-    virtual void integrate(double t_out);
-
-    /// Integrate backwards in time until a specified time point
-    virtual void integrateB(double t_out);
-
-    // Startup integrator (generates an initial trajectory guess)
-    Integrator startup_integrator_;
+    /// Setup F and G
+    virtual void setupFG();
   
-    // Implicit function solver
-    ImplicitFunction implicit_solver_;
-  
-    // Explicit function
-    FX explicit_fcn_;
-
-    // With hotstart
-    bool hotstart_;
-  
-    // Has the system been integrated once
-    bool integrated_once_;
-  
-    // Collocated times
-    std::vector<std::vector<double> > coll_time_;
-  
+    // Return zero if smaller than machine epsilon
+    static double zeroIfSmall(double x);
+    
   };
 
 } // namespace CasADi
