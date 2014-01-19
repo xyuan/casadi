@@ -22,7 +22,9 @@
 
 %{
 #include "control/dple_solver.hpp"
+#include "control/simple_indef_dple_solver.hpp"
 %}
 
 %include "control/dple_solver.hpp"
+%include "control/simple_indef_dple_solver.hpp"
 
