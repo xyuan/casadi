@@ -67,8 +67,14 @@ namespace CasADi{
     /// Reset the backward problem and take time to tf 
     virtual void resetB();
 
+    /// Get initial guess for the algebraic variable
+    virtual void calculateInitialConditions();
+
+    /// Get initial guess for the algebraic variable (backward problem)
+    virtual void calculateBackwardInitialConditions();
+
     // Implicit function solver
-    ImplicitFunction implicit_solver_;
+    ImplicitFunction implicit_solver_, backward_implicit_solver_;
 
     // Discrete time dynamics
     FX F_, G_;
@@ -85,8 +91,11 @@ namespace CasADi{
     /// Number of algebraic variables for the discrete time integration
     int nZ_, nRZ_;
 
+    /// Algebraic variables for the discrete time integration
+    DMatrix Z_, RZ_;
+
     // Tape
-    std::vector<std::vector<double> > x_tape_, z_tape_;
+    std::vector<std::vector<double> > x_tape_, Z_tape_;
   };
 
 } // namespace CasADi
