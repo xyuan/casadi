@@ -32,14 +32,14 @@
 using namespace std;
 namespace CasADi{
 
-  IRKIntegratorInternal::IRKIntegratorInternal(const FX& f, const FX& g) : RKBaseInternal(f,g){
+  IRKIntegratorInternal::IRKIntegratorInternal(const FX& f, const FX& g) : ImplicitFixedStepIntegratorInternal(f,g){
     addOption("interpolation_order",           OT_INTEGER,  3,  "Order of the interpolating polynomials");
     addOption("collocation_scheme",            OT_STRING,  "radau",  "Collocation scheme","radau|legendre");
     setOption("name","unnamed_irk_integrator");
   }
 
   void IRKIntegratorInternal::deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied){
-    RKBaseInternal::deepCopyMembers(already_copied);
+    ImplicitFixedStepIntegratorInternal::deepCopyMembers(already_copied);
   }
 
   IRKIntegratorInternal::~IRKIntegratorInternal(){
@@ -48,7 +48,7 @@ namespace CasADi{
   void IRKIntegratorInternal::init(){
   
     // Call the base class init
-    RKBaseInternal::init();
+    ImplicitFixedStepIntegratorInternal::init();
   
   }
 
@@ -112,7 +112,6 @@ namespace CasADi{
     // Collocated states
     vector<MX> x(deg_+1), z(deg_+1);
     for(int d=1; d<=deg_; ++d){
-      //for(int d=deg_; d>=1; --d){
       x[d] = *vv_it++;
       z[d] = *vv_it++;
     }
@@ -178,6 +177,7 @@ namespace CasADi{
     F_.init();
 
     // Backwards dynamics
+    // NOTE: The following is derived so that it will give the exact adjoint sensitivities whenever g is the reverse mode derivative of f.
     if(!g_.isNull()){
       // Symbolic inputs
       MX rx0 = msym("x0",g_.input(RDAE_RX).sparsity());
@@ -221,13 +221,13 @@ namespace CasADi{
         g_arg[RDAE_Z] = z[j];
         g_arg[RDAE_RX] = rx[j];
         g_arg[RDAE_RZ] = rz[j];
-        g_arg[RDAE_RP] = rp;
+        g_arg[RDAE_RP] = (-B[j]*h_)*rp; // why minus?
         vector<MX> g_res = g_.call(g_arg);
 
         // Get an expression for the state derivative at the collocation point
-        MX rxp_j = (C[0][j]/h_) * rx0;
+        MX rxp_j = D[j]*rx0;
         for(int r=1; r<deg_+1; ++r){
-          rxp_j += (C[r][j]/h_) * rx[r];
+          rxp_j += (C[j][r]/h_) * rx[r];
         }
 
         // Add collocation equation
@@ -237,10 +237,10 @@ namespace CasADi{
         eq.push_back(g_res[RDAE_ALG]);
 
         // Add contribution to the final state
-        rxf += D[j]*rx[j];
+        rxf += (C[0][j]/h_)*rx[j];
         
         // Add contribution to quadratures
-        rqf += (B[j]*h_)*g_res[RDAE_QUAD];
+        rqf += g_res[RDAE_QUAD];
       }
 
       // Form backward discrete time dynamics
@@ -255,7 +255,7 @@ namespace CasADi{
       vector<MX> G_out(RDAE_NUM_OUT);
       G_out[RDAE_ODE] = rxf;
       G_out[RDAE_ALG] = vertcat(eq);
-      G_out[RDAE_QUAD] = rqf;
+      G_out[RDAE_QUAD] = -rqf; // why minus?
       G_ = MXFunction(G_in,G_out);
       G_.init();
     }
@@ -279,7 +279,7 @@ namespace CasADi{
     casadi_assert(Z_it==Z_.end());
   }
 
-  void IRKIntegratorInternal::calculateBackwardInitialConditions(){
+  void IRKIntegratorInternal::calculateInitialConditionsB(){
     vector<double>::const_iterator rx0_it = input(INTEGRATOR_RX0).begin();
     vector<double>::const_iterator rz_it = rz_.begin();
     vector<double>::iterator RZ_it = RZ_.begin();

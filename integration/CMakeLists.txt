@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 2.6)
 SET(INTEGRATION_SRCS
-  rk_base.hpp
-  rk_base.cpp
-  rk_base_internal.hpp
-  rk_base_internal.cpp
-  collocation_integrator.hpp
-  collocation_integrator.cpp
-  collocation_integrator_internal.hpp
-  collocation_integrator_internal.cpp
+  fixed_step_integrator.hpp
+  fixed_step_integrator.cpp
+  fixed_step_integrator_internal.hpp
+  fixed_step_integrator_internal.cpp
+  implicit_fixed_step_integrator.hpp
+  implicit_fixed_step_integrator.cpp
+  implicit_fixed_step_integrator_internal.hpp
+  implicit_fixed_step_integrator_internal.cpp
+  old_collocation_integrator.hpp
+  old_collocation_integrator.cpp
+  old_collocation_integrator_internal.hpp
+  old_collocation_integrator_internal.cpp
   rk_integrator.hpp
   rk_integrator.cpp
   rk_integrator_internal.hpp
