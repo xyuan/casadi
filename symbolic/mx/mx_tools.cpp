@@ -113,6 +113,16 @@ namespace CasADi{
     MX (&f)(const MX&) = vecNZ;
     return vertcat(applymap(vecNZ,comp));
   }
+  
+  MX flattencat(const vector<MX>& comp) {
+        MX (&f)(const MX&) = flatten;
+    return vertcat(applymap(f,comp));
+  }
+
+  MX flattenNZcat(const vector<MX>& comp) {
+    MX (&f)(const MX&) = flattenNZ;
+    return vertcat(applymap(flattenNZ,comp));
+  }
 
   MX norm_2(const MX &x){
     return x->getNorm2();
@@ -241,6 +251,14 @@ namespace CasADi{
       return vec(x);
     } else {
       return trans(x)->getGetNonzeros(sp_dense(x.size()),range(x.size()));
+    }
+  }
+  
+  MX flattenNZ(const MX& x) {
+    if(x.dense()){
+      return flatten(x);
+    } else {
+      return x->getGetNonzeros(sp_dense(x.size()),range(x.size()));
     }
   }
 
@@ -1007,6 +1025,15 @@ namespace CasADi{
     mysolver.init();
     return trans(mysolver.solve(A,trans(b),true));
   }
+  
+  MX pinv(const MX& A, linearSolverCreator lsolver, const Dictionary& dict) {
+    if (A.size2()>=A.size1()) {
+      return trans(solve(mul(A,trans(A)),A,lsolver,dict));
+    } else {
+      return solve(mul(trans(A),A),trans(A),lsolver,dict);
+    }
+  }
+
   
 } // namespace CasADi
 

@@ -102,9 +102,15 @@ namespace CasADi{
 
   /** \brief  concatenate vertically while vectorizing all arguments with vec */
   MX veccat(const std::vector<MX>& comp);
+  
+  /** \brief  concatenate vertically while flattening all arguments with flatten */
+  MX flattencat(const std::vector<MX>& comp);
 
   /** \brief  concatenate vertically while vectorizing all arguments with vecNZ */
   MX vecNZcat(const std::vector<MX>& comp);
+  
+  /** \brief  concatenate vertically while flattening all arguments with flattenNZ */
+  MX flattenNZcat(const std::vector<MX>& comp);
 
 #ifndef SWIG
   /** \brief  concatenate vertically, two matrices */
@@ -212,6 +218,10 @@ namespace CasADi{
   /** \brief Returns a flattened version of the MX, preserving only nonzeros
    */
   MX vecNZ(const MX &x);
+  
+  /** \brief Returns a flattened version of the MX, prseverving only nonzeros
+  */
+  MX flattenNZ(const MX &x);
 
   /** \brief  Unite two matrices no overlapping sparsity */
   MX unite(const MX& A, const MX& B);
@@ -448,6 +458,13 @@ namespace CasADi{
   */
   MX solve(const MX& A, const MX& b, linearSolverCreator lsolver, const Dictionary& dict = Dictionary());
 
+  /** \brief Computes the Moore-Penrose pseudo-inverse
+  * 
+  * If the matrix A is fat (size2>size1), mul(A,pinv(A)) is unity.
+  * If the matrix A is slender (size1<size2), mul(pinv(A),A) is unity.
+  *
+  */
+  MX pinv(const MX& A, linearSolverCreator lsolver, const Dictionary& dict = Dictionary());
 
 } // namespace CasADi
 
