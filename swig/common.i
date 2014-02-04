@@ -313,7 +313,8 @@ memberbinopsr_custom(Type,ne,!=) \
 memberbinopsr_un(Type,fmin) \
 memberbinopsr_un(Type,fmax) \
 memberbinopsr_nn(Type,mul) \
-memberbinopsr_un(Type,arctan2)
+memberbinopsr_un(Type,arctan2) \
+memberbinopsr(Type,copysign)
 
 #define memberbinops(uname,argtype,argCast,selfCast,returntype) \
 returntype __##uname##__ (argtype) const{ return selfCast(*$self).__##uname##__(argCast(b));} \
@@ -338,6 +339,7 @@ memberbinops_un(fmin,argtype,argCast,selfCast,returntype) \
 memberbinops_un(fmax,argtype,argCast,selfCast,returntype) \
 memberbinops(constpow,argtype,argCast,selfCast,returntype) \
 memberbinops_un(arctan2,argtype,argCast,selfCast,returntype) \
+memberbinops(copysign,argtype,argCast,selfCast,returntype) \
 memberbinops(pow,argtype,argCast,selfCast,returntype) \
 memberbinops(add,argtype,argCast,selfCast,returntype) \
 memberbinops(sub,argtype,argCast,selfCast,returntype) \
@@ -461,4 +463,3 @@ void dummy(CasADi::SX foo,
 	int &bar,
 	double &baz);
 };
-

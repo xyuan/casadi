@@ -20,33 +20,11 @@
  *
  */
 
-#ifndef GENERIC_INTEGRATOR_HPP
-#define GENERIC_INTEGRATOR_HPP
+#include <cmath>
 
-#include "fx.hpp"
-#include "linear_solver.hpp"
-
-namespace CasADi{
-
-  /// Forward declaration of internal class
-  class GenericIntegratorInternal;
-
-  class GenericIntegrator : public FX{
-  public:
-
-    /// Default constructor
-    GenericIntegrator();
+int main(){
+  std::erf(2.0);
   
-    /// Access functions of the node
-    GenericIntegratorInternal* operator->();
-
-    /// Access functions of the node
-    const GenericIntegratorInternal* operator->() const;
+  return 0;
   
-    /// Check if the node is pointing to the right type of object
-    virtual bool checkNode() const;
-  };
-
-} // namespace CasADi
-
-#endif //GENERIC_INTEGRATOR_HPP
+}

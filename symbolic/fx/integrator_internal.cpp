@@ -35,7 +35,7 @@ OUTPUTSCHEME(IntegratorOutput)
 using namespace std;
 namespace CasADi{
 
-  IntegratorInternal::IntegratorInternal(const FX& f, const FX& g) : GenericIntegratorInternal(f,g), f_(f), g_(g){
+  IntegratorInternal::IntegratorInternal(const FX& f, const FX& g) : f_(f), g_(g){
     // set default options
     setOption("name","unnamed_integrator"); // name of the function 
   
@@ -74,7 +74,7 @@ namespace CasADi{
     }
       
     // Print statistics
-    if(getOption("print_stats")) printStats(std::cout);
+    if(print_stats_) printStats(std::cout);
   }
 
   void IntegratorInternal::init(){
@@ -107,40 +107,40 @@ namespace CasADi{
 
     // Allocate space for inputs
     setNumInputs(INTEGRATOR_NUM_IN);
-    input(INTEGRATOR_X0)  = DMatrix::zeros(f_.input(DAE_X).sparsity());
-    input(INTEGRATOR_P)   = DMatrix::zeros(f_.input(DAE_P).sparsity());
-    input(INTEGRATOR_Z0)   = DMatrix::zeros(f_.input(DAE_Z).sparsity());
+    x0()  = DMatrix::zeros(f_.input(DAE_X).sparsity());
+    p()   = DMatrix::zeros(f_.input(DAE_P).sparsity());
+    z0()   = DMatrix::zeros(f_.input(DAE_Z).sparsity());
     if(!g_.isNull()){
-      input(INTEGRATOR_RX0)  = DMatrix::zeros(g_.input(RDAE_RX).sparsity());
-      input(INTEGRATOR_RP)  = DMatrix::zeros(g_.input(RDAE_RP).sparsity());
-      input(INTEGRATOR_RZ0)  = DMatrix::zeros(g_.input(RDAE_RZ).sparsity());
+      rx0()  = DMatrix::zeros(g_.input(RDAE_RX).sparsity());
+      rp()  = DMatrix::zeros(g_.input(RDAE_RP).sparsity());
+      rz0()  = DMatrix::zeros(g_.input(RDAE_RZ).sparsity());
     }
   
     // Allocate space for outputs
     setNumOutputs(INTEGRATOR_NUM_OUT);
-    output(INTEGRATOR_XF) = input(INTEGRATOR_X0);
-    output(INTEGRATOR_QF) = DMatrix::zeros(f_.output(DAE_QUAD).sparsity());
-    output(INTEGRATOR_ZF) = input(INTEGRATOR_Z0);
+    xf() = x0();
+    qf() = DMatrix::zeros(f_.output(DAE_QUAD).sparsity());
+    zf() = z0();
     if(!g_.isNull()){
-      output(INTEGRATOR_RXF)  = input(INTEGRATOR_RX0);
-      output(INTEGRATOR_RQF)  = DMatrix::zeros(g_.output(RDAE_QUAD).sparsity());
-      output(INTEGRATOR_RZF)  = input(INTEGRATOR_RZ0);
+      rxf()  = rx0();
+      rqf()  = DMatrix::zeros(g_.output(RDAE_QUAD).sparsity());
+      rzf()  = rz0();
     }
 
     // Warn if sparse inputs (was previously an error)
     casadi_assert_warning(f_.input(DAE_X).dense(),"Sparse states in integrators are experimental");
 
     // Consistency checks
-    casadi_assert_message(f_.output(DAE_ODE).shape()==input(INTEGRATOR_X0).shape(),"Inconsistent dimensions. Expecting DAE_ODE output of shape " << input(INTEGRATOR_X0).shape() << ", but got " << f_.output(DAE_ODE).shape() << " instead.");
-    casadi_assert(f_.output(DAE_ODE).sparsity()==input(INTEGRATOR_X0).sparsity());
-    casadi_assert_message(f_.output(DAE_ALG).shape()==input(INTEGRATOR_Z0).shape(),"Inconsistent dimensions. Expecting DAE_ALG output of shape " << input(INTEGRATOR_Z0).shape() << ", but got " << f_.output(DAE_ALG).shape() << " instead.");
-    casadi_assert(f_.output(DAE_ALG).sparsity()==input(INTEGRATOR_Z0).sparsity());
+    casadi_assert_message(f_.output(DAE_ODE).shape()==x0().shape(),"Inconsistent dimensions. Expecting DAE_ODE output of shape " << x0().shape() << ", but got " << f_.output(DAE_ODE).shape() << " instead.");
+    casadi_assert(f_.output(DAE_ODE).sparsity()==x0().sparsity());
+    casadi_assert_message(f_.output(DAE_ALG).shape()==z0().shape(),"Inconsistent dimensions. Expecting DAE_ALG output of shape " << z0().shape() << ", but got " << f_.output(DAE_ALG).shape() << " instead.");
+    casadi_assert(f_.output(DAE_ALG).sparsity()==z0().sparsity());
     if(!g_.isNull()){
-      casadi_assert(g_.input(RDAE_P).sparsity()==input(INTEGRATOR_P).sparsity());
-      casadi_assert(g_.input(RDAE_X).sparsity()==input(INTEGRATOR_X0).sparsity());
-      casadi_assert(g_.input(RDAE_Z).sparsity()==input(INTEGRATOR_Z0).sparsity());
-      casadi_assert(g_.output(RDAE_ODE).sparsity()==input(INTEGRATOR_RX0).sparsity());
-      casadi_assert(g_.output(RDAE_ALG).sparsity()==input(INTEGRATOR_RZ0).sparsity());
+      casadi_assert(g_.input(RDAE_P).sparsity()==p().sparsity());
+      casadi_assert(g_.input(RDAE_X).sparsity()==x0().sparsity());
+      casadi_assert(g_.input(RDAE_Z).sparsity()==z0().sparsity());
+      casadi_assert(g_.output(RDAE_ODE).sparsity()==rx0().sparsity());
+      casadi_assert(g_.output(RDAE_ALG).sparsity()==rz0().sparsity());
     }
   
     // Call the base class method
@@ -155,6 +155,7 @@ namespace CasADi{
     // read options
     t0_ = getOption("t0");
     tf_ = getOption("tf");
+    print_stats_ = getOption("print_stats");
 
     // Form a linear solver for the sparsity propagation
     linsol_f_ = LinearSolver(spJacF());
@@ -186,12 +187,12 @@ namespace CasADi{
 
     // Create augmented problem
     MX aug_t = msym("aug_t",f_.input(DAE_T).sparsity());
-    MX aug_x = msym("aug_x",offset.x.back(),input(INTEGRATOR_X0).size2());
-    MX aug_z = msym("aug_z",offset.z.back(),std::max(input(INTEGRATOR_Z0).size2(),input(INTEGRATOR_RZ0).size2()));
-    MX aug_p = msym("aug_p",offset.p.back(),std::max(input(INTEGRATOR_P).size2(),input(INTEGRATOR_RP).size2()));
-    MX aug_rx = msym("aug_rx",offset.rx.back(),input(INTEGRATOR_X0).size2());
-    MX aug_rz = msym("aug_rz",offset.rz.back(),std::max(input(INTEGRATOR_Z0).size2(),input(INTEGRATOR_RZ0).size2()));
-    MX aug_rp = msym("aug_rp",offset.rp.back(),std::max(output(INTEGRATOR_QF).size2(),input(INTEGRATOR_RP).size2()));
+    MX aug_x = msym("aug_x",offset.x.back(),x0().size2());
+    MX aug_z = msym("aug_z",offset.z.back(),std::max(z0().size2(),rz0().size2()));
+    MX aug_p = msym("aug_p",offset.p.back(),std::max(p().size2(),rp().size2()));
+    MX aug_rx = msym("aug_rx",offset.rx.back(),x0().size2());
+    MX aug_rz = msym("aug_rz",offset.rz.back(),std::max(z0().size2(),rz0().size2()));
+    MX aug_rp = msym("aug_rp",offset.rp.back(),std::max(qf().size2(),rp().size2()));
 
     // Split up the augmented vectors
     vector<MX> aug_x_split = vertsplit(aug_x,offset.x);     vector<MX>::const_iterator aug_x_split_it = aug_x_split.begin();
@@ -456,226 +457,153 @@ namespace CasADi{
   void IntegratorInternal::spEvaluate(bool fwd){
     log("IntegratorInternal::spEvaluate","begin");
     
-    // Get pointers to integrator data structures
-    bvec_t *x0, *p, *rx0, *rp, *xf, *qf, *rxf, *rqf, *z0, *rz0, *zf, *rzf;
-    x0 = reinterpret_cast<bvec_t*>(input(INTEGRATOR_X0).ptr());
-    p = reinterpret_cast<bvec_t*>(input(INTEGRATOR_P).ptr());
-    z0 = reinterpret_cast<bvec_t*>(input(INTEGRATOR_Z0).ptr());
-    rx0 = reinterpret_cast<bvec_t*>(input(INTEGRATOR_RX0).ptr());
-    rp = reinterpret_cast<bvec_t*>(input(INTEGRATOR_RP).ptr());
-    rz0 = reinterpret_cast<bvec_t*>(input(INTEGRATOR_RZ0).ptr());
-    xf = reinterpret_cast<bvec_t*>(output(INTEGRATOR_XF).ptr());    
-    qf = reinterpret_cast<bvec_t*>(output(INTEGRATOR_QF).ptr());
-    zf = reinterpret_cast<bvec_t*>(output(INTEGRATOR_ZF).ptr());    
-    rxf = reinterpret_cast<bvec_t*>(output(INTEGRATOR_RXF).ptr());
-    rqf = reinterpret_cast<bvec_t*>(output(INTEGRATOR_RQF).ptr());
-    rzf = reinterpret_cast<bvec_t*>(output(INTEGRATOR_RZF).ptr());
-
-    // Get pointers to DAE callback data structures
-    bvec_t *f_t, *f_x, *f_z, *f_p, *f_ode, *f_alg, *f_quad;
-    f_t = reinterpret_cast<bvec_t*>(f_.input(DAE_T).ptr());
-    f_x = reinterpret_cast<bvec_t*>(f_.input(DAE_X).ptr());
-    f_z = reinterpret_cast<bvec_t*>(f_.input(DAE_Z).ptr());
-    f_p = reinterpret_cast<bvec_t*>(f_.input(DAE_P).ptr());
-    f_ode = reinterpret_cast<bvec_t*>(f_.output(DAE_ODE).ptr());
-    f_alg = reinterpret_cast<bvec_t*>(f_.output(DAE_ALG).ptr());
-    f_quad = reinterpret_cast<bvec_t*>(f_.output(DAE_QUAD).ptr());
-    
-    // Get pointers to DAE callback data structures (backward problem)
-    bvec_t *g_t, *g_x, *g_z, *g_p, *g_rx, *g_rz, *g_rp, *g_ode, *g_alg, *g_quad;
-    if(!g_.isNull()){
-      g_t = reinterpret_cast<bvec_t*>(g_.input(RDAE_T).ptr());
-      g_x = reinterpret_cast<bvec_t*>(g_.input(RDAE_X).ptr());
-      g_z = reinterpret_cast<bvec_t*>(g_.input(RDAE_Z).ptr());
-      g_p = reinterpret_cast<bvec_t*>(g_.input(RDAE_P).ptr());
-      g_rx = reinterpret_cast<bvec_t*>(g_.input(RDAE_RX).ptr());
-      g_rz = reinterpret_cast<bvec_t*>(g_.input(RDAE_RZ).ptr());
-      g_rp = reinterpret_cast<bvec_t*>(g_.input(RDAE_RP).ptr());
-      g_ode = reinterpret_cast<bvec_t*>(g_.output(RDAE_ODE).ptr());
-      g_alg = reinterpret_cast<bvec_t*>(g_.output(RDAE_ALG).ptr());
-      g_quad = reinterpret_cast<bvec_t*>(g_.output(RDAE_QUAD).ptr());
-    }
-
     // Temporary vectors
     bvec_t *tmp_f1, *tmp_f2, *tmp_g1, *tmp_g2;
+    casadi_assert(!linsol_f_.isNull());
     tmp_f1 = reinterpret_cast<bvec_t*>(linsol_f_.input(LINSOL_B).ptr());
     tmp_f2 = reinterpret_cast<bvec_t*>(linsol_f_.output(LINSOL_X).ptr());
     if(!g_.isNull()){
+      casadi_assert(!linsol_g_.isNull());
       tmp_g1 = reinterpret_cast<bvec_t*>(linsol_g_.input(LINSOL_B).ptr());
       tmp_g2 = reinterpret_cast<bvec_t*>(linsol_g_.output(LINSOL_X).ptr());
     }
 
+    // Initialize the callback functions for sparsity propagation
+    f_.spInit(fwd);
+    if(!g_.isNull()){
+      g_.spInit(fwd);
+    }
+
     if(fwd){
+
       // Propagate through the DAE
-      if(f_t!=0) *f_t = 0;
-      std::copy(x0,x0+nx_,f_x);
-      std::copy(p,p+np_,f_p);
-      std::fill(f_z,f_z+nz_,0);
-      f_.spInit(true);
+      f_.input(DAE_T).setZeroBV();
+      f_.input(DAE_X).setBV(x0());
+      f_.input(DAE_P).setBV(p());
+      f_.input(DAE_Z).setZeroBV();
       f_.spEvaluate(true);
-      
+      f_.output(DAE_ODE).getArrayBV(tmp_f1,nx_);
+      f_.output(DAE_ALG).getArrayBV(tmp_f1+nx_,nz_);
+
       // Propagate interdependencies
-      std::copy(f_ode,f_ode+nx_,tmp_f1);
-      std::copy(f_alg,f_alg+nz_,tmp_f1+nx_);
-      std::copy(x0,x0+nx_,tmp_f2);
+      x0().getArrayBV(tmp_f2,nx_);
       std::fill(tmp_f2+nx_,tmp_f2+nx_+nz_,0);
       linsol_f_.spSolve(tmp_f2,tmp_f1,true);
-      std::copy(tmp_f2,tmp_f2+nx_,xf);
-      std::copy(tmp_f2+nx_,tmp_f2+nx_+nz_,zf);
+      xf().setArrayBV(tmp_f2,nx_);
+      zf().setArrayBV(tmp_f2+nx_,nz_);
 
       // Get influence on the quadratures
       if(nq_>0){
-        std::copy(tmp_f2,tmp_f2+nx_,f_x);
-        std::copy(zf,zf+nz_,f_z);
+        f_.input(DAE_X).setArrayBV(tmp_f2,nx_);
+        f_.input(DAE_Z).setBV(zf());
         f_.spEvaluate(true);
-        std::copy(f_quad,f_quad+nq_,qf);
+        f_.output(DAE_QUAD).getBV(qf());
       }
-      
+
       // Propagate through g
       if(!g_.isNull()){
         
         // Propagate through the backward DAE
-        if(g_t!=0) *g_t = 0;
-        std::copy(xf,xf+nx_,g_x);
-        std::copy(p,p+np_,g_p);
-        std::copy(zf,zf+nz_,g_z);
-        std::copy(rx0,rx0+nrx_,g_rx);
-        std::copy(rp,rp+nrp_,g_rp);
-        std::fill(g_rz,g_rz+nrz_,0);
-        g_.spInit(true);
+        g_.input(RDAE_T).setZeroBV();
+        g_.input(RDAE_X).setBV(xf());
+        g_.input(RDAE_P).setBV(p());
+        g_.input(RDAE_Z).setBV(zf());
+        g_.input(RDAE_RX).setBV(rx0());
+        g_.input(RDAE_RP).setBV(rp());
+        g_.input(RDAE_RZ).setZeroBV();
         g_.spEvaluate(true);
+        g_.output(RDAE_ODE).getArrayBV(tmp_g1,nrx_);
+        g_.output(RDAE_ALG).getArrayBV(tmp_g1+nrx_,nrz_);
         
         // Propagate interdependencies
-        std::copy(g_ode,g_ode+nrx_,tmp_g1);
-        std::copy(g_alg,g_alg+nrz_,tmp_g1+nrx_);
-        std::copy(rx0,rx0+nrx_,tmp_g2);
+        rx0().getArrayBV(tmp_g2,nrx_);
         std::fill(tmp_g2+nrx_,tmp_g2+nrx_+nrz_,0);
         linsol_g_.spSolve(tmp_g2,tmp_g1,true);
-        std::copy(tmp_g2,tmp_g2+nrx_,rxf);
-        std::copy(tmp_g2+nrx_,tmp_g2+nrx_+nrz_,rzf);
+        rxf().setArrayBV(tmp_g2,nrx_);
+        rzf().setArrayBV(tmp_g2+nrx_,nrz_);
 
         // Get influence on the backward quadratures
         if(nrq_>0){
-          std::copy(tmp_g2,tmp_g2+nrx_,g_rx);
-          std::copy(rzf,rzf+nrz_,g_rz);
+          g_.input(RDAE_RX).setBV(rxf());
+          g_.input(RDAE_RZ).setBV(rzf());
           g_.spEvaluate(true);
-          std::copy(g_quad,g_quad+nrq_,rqf);
+          g_.output(RDAE_QUAD).getBV(rqf());
         }
       }
-    } else {
+    } else { // reverse mode
+      
+      // Clear adjoint sensitivities
+      x0().setBV(xf());
+      p().setZeroBV();
+      z0().setBV(zf());
+      rx0().setBV(rxf());
+      rp().setZeroBV();
+      rz0().setBV(rzf());
+      
+      // Propagate through g
+      if(!g_.isNull()){
+
+        // Propagate influence from the backward quadratures
+        if(nrq_>0){
+          g_.output(RDAE_ODE).setZeroBV();
+          g_.output(RDAE_ALG).setZeroBV();
+          g_.output(RDAE_QUAD).setBV(rqf());
+          g_.spEvaluate(false);
+          rx0().borBV(g_.input(RDAE_RX));
+          rz0().borBV(g_.input(RDAE_RZ));
+        }
+
+        // Propagate interdependencies
+        rx0().getArrayBV(tmp_g2,nrx_);
+        rz0().getArrayBV(tmp_g2+nrx_,nrz_);
+        std::fill(tmp_g1,tmp_g1+nrx_+nrz_,0);
+        linsol_g_.spSolve(tmp_g1,tmp_g2,false);
+
+        // Propagate through the backward DAE
+        g_.output(RDAE_ODE).setArrayBV(tmp_g1,nrx_);
+        g_.output(RDAE_ODE).borBV(rx0());
+        g_.output(RDAE_ALG).setArrayBV(tmp_g1+nrx_,nrz_);
+        g_.output(RDAE_ALG).borBV(rz0());
+        g_.spEvaluate(false);
+        x0().borBV(g_.input(RDAE_X));
+        p().borBV(g_.input(RDAE_P));
+        z0().borBV(g_.input(RDAE_Z));
+        rx0().borBV(g_.input(RDAE_RX));
+        rp().borBV(g_.input(RDAE_RP));
+
+        // No dependency on initial guess
+        rz0().setZeroBV();
+      }
+
+      // Propagate influence from the quadratures
+      if(nq_>0){
+        f_.output(DAE_ODE).setZeroBV();
+        f_.output(DAE_ALG).setZeroBV();
+        f_.output(DAE_QUAD).setBV(qf());
+        f_.spEvaluate(false);
+        x0().borBV(f_.input(DAE_X));
+        z0().borBV(f_.input(DAE_Z));
+      }
+      
+      // Propagate interdependencies
+      x0().getArrayBV(tmp_f2,nx_);
+      z0().getArrayBV(tmp_f2+nx_,nz_);
+      std::fill(tmp_f1,tmp_f1+nx_+nz_,0);
+      linsol_f_.spSolve(tmp_f1,tmp_f2,false);
+      
+      // Propagate through the DAE
+      f_.output(DAE_ODE).setArrayBV(tmp_f1,nx_);
+      f_.output(DAE_ODE).borBV(x0());
+      f_.output(DAE_ALG).setArrayBV(tmp_f1+nx_,nz_);
+      f_.output(DAE_ALG).borBV(z0());
+      f_.spEvaluate(false);
+      x0().borBV(f_.input(DAE_X));
+      p().borBV(f_.input(DAE_P));
+      
       // No dependency on initial guess
-      std::fill(z0,z0+nz_,0);
-      std::fill(rz0,rz0+nrz_,0);
+      z0().setZeroBV();
     }
 
-
-
-
-
-
-
-
-
-    /**  This is a bit better than the FXInternal implementation: XF and QF never depend on RX0 and RP, 
-     *   i.e. the worst-case structure of the Jacobian is:
-     *        x0  p rx0 rp
-     *        --------------
-     *   xf  | x  x        |
-     *   qf  | x  x        |
-     *  rxf  | x  x  x  x  |
-     *  rqf  | x  x  x  x  |
-     *        --------------
-     * 
-     *  An even better structure of the Jacobian can be obtained by propagating sparsity through the callback functions.
-     */
-  
-    // Variable which depends on all states and parameters
-    bvec_t all_depend(0);
-  
-    if(fwd){
-    
-      // Have dependency on anything in x0 or p
-      for(int k=0; k<2; ++k){
-        int iind = k==0 ? INTEGRATOR_X0 : INTEGRATOR_P;
-        const DMatrix& m = inputNoCheck(iind);
-        const bvec_t* v = reinterpret_cast<const bvec_t*>(m.ptr());
-        for(int i=0; i<m.size(); ++i){
-          all_depend |= v[i];
-        }
-      }
-    
-      // Propagate to xf and qf (that only depend on x0 and p)
-      for(int k=0; k<2; ++k){
-        int oind = k==0 ? INTEGRATOR_XF : INTEGRATOR_QF;
-        DMatrix& m = outputNoCheck(oind);
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for(int i=0; i<m.size(); ++i){
-          //          v[i] = all_depend;
-        }
-      }
-    
-      // Add dependency on rx0 or rp
-      for(int k=0; k<2; ++k){
-        int iind = k==0 ? INTEGRATOR_RX0 : INTEGRATOR_RP;
-        const DMatrix& m = inputNoCheck(iind);
-        const bvec_t* v = reinterpret_cast<const bvec_t*>(m.ptr());
-        for(int i=0; i<m.size(); ++i){
-          all_depend |= v[i];
-        }
-      }
-    
-      // Propagate to rxf and rqf
-      for(int k=0; k<2; ++k){
-        int oind = k==0 ? INTEGRATOR_RXF : INTEGRATOR_RQF;
-        DMatrix& m = outputNoCheck(oind);
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for(int i=0; i<m.size(); ++i){
-          //v[i] = all_depend;
-        }
-      }
-    
-    } else {
-    
-      // First find out what influences only rxf and rqf
-      for(int k=0; k<2; ++k){
-        int oind = k==0 ? INTEGRATOR_RXF : INTEGRATOR_RQF;
-        const DMatrix& m = outputNoCheck(oind);
-        const bvec_t* v = get_bvec_t(m.data());
-        for(int i=0; i<m.size(); ++i){
-          all_depend |= v[i];
-        }
-      }
-    
-      // Propagate to rx0 and rp
-      for(int k=0; k<2; ++k){
-        int iind = k==0 ? INTEGRATOR_RX0 : INTEGRATOR_RP;
-        DMatrix& m = inputNoCheck(iind);
-        bvec_t* v = get_bvec_t(m.data());
-        for(int i=0; i<m.size(); ++i){
-          v[i] = all_depend;
-        }
-      }
-    
-      // Add dependencies to xf and qf
-      for(int k=0; k<2; ++k){
-        int oind = k==0 ? INTEGRATOR_XF : INTEGRATOR_QF;
-        const DMatrix& m = outputNoCheck(oind);
-        const bvec_t* v = get_bvec_t(m.data());
-        for(int i=0; i<m.size(); ++i){
-          all_depend |= v[i];
-        }
-      }
-    
-      // Propagate to x0 and p
-      for(int k=0; k<2; ++k){
-        int iind = k==0 ? INTEGRATOR_X0 : INTEGRATOR_P;
-        DMatrix& m = inputNoCheck(iind);
-        bvec_t* v = get_bvec_t(m.data());
-        for(int i=0; i<m.size(); ++i){
-          v[i] = all_depend;
-        }
-      }
-    }
     log("IntegratorInternal::spEvaluate","end");
   }
 
@@ -693,26 +621,26 @@ namespace CasADi{
 
     // Count nondifferentiated and forward sensitivities 
     for(int dir=-1; dir<nfwd; ++dir){
-      if( nx_>0) ret.x.push_back(input(INTEGRATOR_X0).size1());
-      if( nz_>0) ret.z.push_back(input(INTEGRATOR_Z0).size1());
-      if( nq_>0) ret.q.push_back(output(INTEGRATOR_QF).size1());
-      if( np_>0) ret.p.push_back(input(INTEGRATOR_P).size1());
-      if(nrx_>0) ret.rx.push_back(input(INTEGRATOR_RX0).size1());
-      if(nrz_>0) ret.rz.push_back(input(INTEGRATOR_RZ0).size1());
-      if(nrq_>0) ret.rq.push_back(output(INTEGRATOR_RQF).size1());
-      if(nrp_>0) ret.rp.push_back(input(INTEGRATOR_RP).size1());
+      if( nx_>0) ret.x.push_back(x0().size1());
+      if( nz_>0) ret.z.push_back(z0().size1());
+      if( nq_>0) ret.q.push_back(qf().size1());
+      if( np_>0) ret.p.push_back(p().size1());
+      if(nrx_>0) ret.rx.push_back(rx0().size1());
+      if(nrz_>0) ret.rz.push_back(rz0().size1());
+      if(nrq_>0) ret.rq.push_back(rqf().size1());
+      if(nrp_>0) ret.rp.push_back(rp().size1());
     }
 
     // Count adjoint sensitivities
     for(int dir=0; dir<nadj; ++dir){
-      if( nx_>0) ret.rx.push_back(input(INTEGRATOR_X0).size1());
-      if( nz_>0) ret.rz.push_back(input(INTEGRATOR_Z0).size1());
-      if( np_>0) ret.rq.push_back(input(INTEGRATOR_P).size1());
-      if( nq_>0) ret.rp.push_back(output(INTEGRATOR_QF).size1());
-      if(nrx_>0) ret.x.push_back(input(INTEGRATOR_RX0).size1());
-      if(nrz_>0) ret.z.push_back(input(INTEGRATOR_RZ0).size1());
-      if(nrp_>0) ret.q.push_back(input(INTEGRATOR_RP).size1());
-      if(nrq_>0) ret.p.push_back(output(INTEGRATOR_RQF).size1());
+      if( nx_>0) ret.rx.push_back(x0().size1());
+      if( nz_>0) ret.rz.push_back(z0().size1());
+      if( np_>0) ret.rq.push_back(p().size1());
+      if( nq_>0) ret.rp.push_back(qf().size1());
+      if(nrx_>0) ret.x.push_back(rx0().size1());
+      if(nrz_>0) ret.z.push_back(rz0().size1());
+      if(nrp_>0) ret.q.push_back(rp().size1());
+      if(nrq_>0) ret.p.push_back(rqf().size1());
     }
     
     // Get cummulative offsets
@@ -771,42 +699,42 @@ namespace CasADi{
       ss.clear();
       ss << "x0";
       if(dir>=0) ss << "_" << dir;
-      dd[INTEGRATOR_X0] = msym(ss.str(),input(INTEGRATOR_X0).sparsity());
+      dd[INTEGRATOR_X0] = msym(ss.str(),x0().sparsity());
       x0_aug.append(dd[INTEGRATOR_X0]);
 
       // Parameter
       ss.clear();
       ss << "p";
       if(dir>=0) ss << "_" << dir;
-      dd[INTEGRATOR_P] = msym(ss.str(),input(INTEGRATOR_P).sparsity());
+      dd[INTEGRATOR_P] = msym(ss.str(),p().sparsity());
       p_aug.append(dd[INTEGRATOR_P]);
 
       // Initial guess for algebraic variable
       ss.clear();
       ss << "r0";
       if(dir>=0) ss << "_" << dir;
-      dd[INTEGRATOR_Z0] = msym(ss.str(),input(INTEGRATOR_Z0).sparsity());
+      dd[INTEGRATOR_Z0] = msym(ss.str(),z0().sparsity());
       z0_aug.append(dd[INTEGRATOR_Z0]);
     
       // Backward state
       ss.clear();
       ss << "rx0";
       if(dir>=0) ss << "_" << dir;
-      dd[INTEGRATOR_RX0] = msym(ss.str(),input(INTEGRATOR_RX0).sparsity());
+      dd[INTEGRATOR_RX0] = msym(ss.str(),rx0().sparsity());
       rx0_aug.append(dd[INTEGRATOR_RX0]);
 
       // Backward parameter
       ss.clear();
       ss << "rp";
       if(dir>=0) ss << "_" << dir;
-      dd[INTEGRATOR_RP] = msym(ss.str(),input(INTEGRATOR_RP).sparsity());
+      dd[INTEGRATOR_RP] = msym(ss.str(),rp().sparsity());
       rp_aug.append(dd[INTEGRATOR_RP]);
 
       // Initial guess for backward algebraic variable
       ss.clear();
       ss << "rz0";
       if(dir>=0) ss << "_" << dir;
-      dd[INTEGRATOR_RZ0] = msym(ss.str(),input(INTEGRATOR_RZ0).sparsity());
+      dd[INTEGRATOR_RZ0] = msym(ss.str(),rz0().sparsity());
       rz0_aug.append(dd[INTEGRATOR_RZ0]);
     
       // Add to input vector
@@ -820,37 +748,37 @@ namespace CasADi{
       // Differential states become backward differential state
       ss.clear();
       ss << "xf" << "_" << dir;
-      dd[INTEGRATOR_XF] = msym(ss.str(),output(INTEGRATOR_XF).sparsity());
+      dd[INTEGRATOR_XF] = msym(ss.str(),xf().sparsity());
       rx0_aug.append(dd[INTEGRATOR_XF]);
 
       // Quadratures become backward parameters
       ss.clear();
       ss << "qf" << "_" << dir;
-      dd[INTEGRATOR_QF] = msym(ss.str(),output(INTEGRATOR_QF).sparsity());
+      dd[INTEGRATOR_QF] = msym(ss.str(),qf().sparsity());
       rp_aug.append(dd[INTEGRATOR_QF]);
 
       // Algebraic variables become backward algebraic variables
       ss.clear();
       ss << "zf" << "_" << dir;
-      dd[INTEGRATOR_ZF] = msym(ss.str(),output(INTEGRATOR_ZF).sparsity());
+      dd[INTEGRATOR_ZF] = msym(ss.str(),zf().sparsity());
       rz0_aug.append(dd[INTEGRATOR_ZF]);
 
       // Backward differential states becomes forward differential states
       ss.clear();
       ss << "rxf" << "_" << dir;
-      dd[INTEGRATOR_RXF] = msym(ss.str(),output(INTEGRATOR_RXF).sparsity());
+      dd[INTEGRATOR_RXF] = msym(ss.str(),rxf().sparsity());
       x0_aug.append(dd[INTEGRATOR_RXF]);
     
       // Backward quadratures becomes (forward) parameters
       ss.clear();
       ss << "rqf" << "_" << dir;
-      dd[INTEGRATOR_RQF] = msym(ss.str(),output(INTEGRATOR_RQF).sparsity());
+      dd[INTEGRATOR_RQF] = msym(ss.str(),rqf().sparsity());
       p_aug.append(dd[INTEGRATOR_RQF]);
 
       // Backward differential states becomes forward differential states
       ss.clear();
       ss << "rzf" << "_" << dir;
-      dd[INTEGRATOR_RZF] = msym(ss.str(),output(INTEGRATOR_RZF).sparsity());
+      dd[INTEGRATOR_RZF] = msym(ss.str(),rzf().sparsity());
       z0_aug.append(dd[INTEGRATOR_RZF]);
     
       // Add to input vector
@@ -932,11 +860,11 @@ namespace CasADi{
     t_ = t0_;
     
     // Initialize output
-    output(INTEGRATOR_XF).set(input(INTEGRATOR_X0));
-    output(INTEGRATOR_ZF).set(input(INTEGRATOR_Z0));
+    xf().set(x0());
+    zf().set(z0());
     
     // Reset summation states
-    output(INTEGRATOR_QF).set(0.0);
+    qf().set(0.0);
 
     log("IntegratorInternal::reset","end");
   }
@@ -948,11 +876,11 @@ namespace CasADi{
     t_ = tf_;
 
     // Initialize output
-    output(INTEGRATOR_RXF).set(input(INTEGRATOR_RX0));
-    output(INTEGRATOR_RZF).set(input(INTEGRATOR_RZ0));
+    rxf().set(rx0());
+    rzf().set(rz0());
     
     // Reset summation states
-    output(INTEGRATOR_RQF).set(0.0);
+    rqf().set(0.0);
     
     log("IntegratorInternal::resetB","end");
   }

@@ -163,12 +163,10 @@ namespace CasADi{
     int nadj = aseed.size();
     if(nfwd==0 && nadj==0) return;
 
-    // Auxiliary outputs not yet supported
-    casadi_assert_message(getNumOutputs()==1, "Not implemented");
-
     // Temporaries
     vector<int> row_offset(1,0);
     vector<MX> rhs;
+    vector<int> rhs_loc;
 
     // Arguments when calling f/f_der
     vector<MX> v;
@@ -192,13 +190,25 @@ namespace CasADi{
     // Adjoint sensitivities, solve to get arguments for calling f_der
     if(nadj>0){
       for(int d=0; d<nadj; ++d){
-        rhs.push_back(trans(*aseed[d][iout_]));
-        row_offset.push_back(row_offset.back()+1);
-        *aseed[d][iout_] = MX();
+        for(int i=0; i<getNumOutputs(); ++i){
+          if(aseed[d][i]!=0){
+            if(i==iout_){
+              rhs.push_back(trans(*aseed[d][i]));
+              row_offset.push_back(row_offset.back()+1);
+              rhs_loc.push_back(v.size()); // where to store it
+              v.push_back(MX());
+            } else {
+              v.push_back(*aseed[d][i]);
+            }
+          }
+          *aseed[d][i] = MX();
+        }
       }
+
+      // Solve for all right-hand-sides at once
       rhs = vertsplit(J->getSolve(vertcat(rhs),false,linsol_),row_offset);
-      for(int d=0; d<nadj; ++d){
-        v.push_back(trans(rhs[d]));
+      for(int d=0; d<rhs.size(); ++d){
+        v[rhs_loc[d]] = trans(rhs[d]);
       }
       row_offset.resize(1);
       rhs.clear();
@@ -211,18 +221,31 @@ namespace CasADi{
     // Discard non-differentiated evaluation (change?)
     v_it += getNumOutputs();
 
-    // Solve for the forward sensitivities
+    // Forward directional derivatives
     if(nfwd>0){
       for(int d=0; d<nfwd; ++d){
-        rhs.push_back(trans(*v_it++));
-        row_offset.push_back(row_offset.back()+1);        
+        for(int i=0; i<getNumOutputs(); ++i){
+          if(i==iout_){
+            // Collect the arguments
+            rhs.push_back(trans(*v_it++));
+            row_offset.push_back(row_offset.back()+1);        
+          } else {
+            // Auxiliary output
+            if(fsens[d][i]!=0){
+              *fsens[d][i] = *v_it++;
+            }
+          }
+        }
       }
+        
+      // Solve for all the forward derivatives at once
       rhs = vertsplit(J->getSolve(vertcat(rhs),true,linsol_),row_offset);
       for(int d=0; d<nfwd; ++d){
         if(fsens[d][iout_]!=0){
           *fsens[d][iout_] = -trans(rhs[d]);
         }
       }
+      
       row_offset.resize(1);
       rhs.clear();
     }
@@ -240,55 +263,68 @@ namespace CasADi{
 
   void ImplicitFunctionInternal::spEvaluate(bool fwd){
 
-    // Get arrays
-    bvec_t* z0 = reinterpret_cast<bvec_t*>(input(iin_).ptr());
-    bvec_t* z = reinterpret_cast<bvec_t*>(output(iout_).ptr());
-    bvec_t* zf = reinterpret_cast<bvec_t*>(f_.input(iin_).ptr());
-    bvec_t* rf = reinterpret_cast<bvec_t*>(f_.output(iout_).ptr());
-
     // Initialize the callback for sparsity propagation
     f_.spInit(fwd);
 
     if(fwd){
 
       // Pass inputs to function
-      fill(zf,zf+n_,0);
+      f_.input(iin_).setZeroBV();
       for(int i=0; i<getNumInputs(); ++i){
-        if(i!=iin_) f_.input(i).set(input(i));
+        if(i!=iin_) f_.input(i).setBV(input(i));
       }
 
       // Propagate dependencies through the function
       f_.spEvaluate(true);
       
       // "Solve" in order to propagate to z
-      fill(z,z+n_,0);
-      linsol_.spSolve(z,rf,true);
+      output(iout_).setZeroBV();
+      linsol_.spSolve(output(iout_),f_.output(iout_),true);
       
       // Propagate to auxiliary outputs
       if(getNumOutputs()>1){
-        copy(z,z+n_,zf);
+        f_.output(iout_).setBV(output(iout_));
         f_.spEvaluate(true);
         for(int i=0; i<getNumOutputs(); ++i){
-          if(i!=iout_) f_.output(i).get(output(i));
+          if(i!=iout_) output(i).setBV(f_.output(i));
         }
       }
 
     } else {
-      // Auxiliary outputs not yet supported
-      casadi_assert_message(getNumOutputs()==1, "Not implemented");
+      
+      // Propagate dependencies from auxiliary outputs
+      if(getNumOutputs()>1){
+        f_.output(iout_).setZeroBV();
+        for(int i=0; i<getNumOutputs(); ++i){
+          if(i!=iout_) f_.output(i).setBV(output(i));
+        }
+        f_.spEvaluate(false);
+        for(int i=0; i<getNumInputs(); ++i){
+          input(i).setBV(f_.input(i));
+        }
+      } else {
+        for(int i=0; i<getNumInputs(); ++i){
+          input(i).setZeroBV();
+        }
+      }
+      
+      // Add dependency on implicitly defined variable
+      input(iin_).borBV(output(iout_));      
 
       // "Solve" in order to get seed
-      fill(rf,rf+n_,0);
-      linsol_.spSolve(rf,z,false);
+      f_.output(iout_).setZeroBV();
+      linsol_.spSolve(f_.output(iout_),input(iin_),false);
       
       // Propagate dependencies through the function
       f_.spEvaluate(false);
 
       // Collect influence on inputs
-      fill(z0,z0+n_,0);
       for(int i=0; i<getNumInputs(); ++i){
-        if(i!=iin_) f_.input(i).get(input(i));
+        if(i!=iin_) input(i).borBV(f_.input(i));
       }
+      
+      // No dependency on the initial guess
+      input(iin_).setZeroBV();
     }
   }
 

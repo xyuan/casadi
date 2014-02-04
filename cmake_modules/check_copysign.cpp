@@ -20,39 +20,11 @@
  *
  */
 
-#include "generic_integrator_internal.hpp"
-#include "../stl_vector_tools.hpp"
-#include "../matrix/matrix_tools.hpp"
-#include "../mx/mx_tools.hpp"
-#include "../sx/sx_tools.hpp"
-#include "mx_function.hpp"
-#include "sx_function.hpp"
+#include <cmath>
 
-//INPUTSCHEME(IntegratorInput)
-//OUTPUTSCHEME(IntegratorOutput)
-
-using namespace std;
-namespace CasADi{
-
-  GenericIntegratorInternal::GenericIntegratorInternal(const FX& f, const FX& g){
-    //inputScheme_ = SCHEME_IntegratorInput;
-    //outputScheme_ = SCHEME_IntegratorOutput;
-  }
-
-  GenericIntegratorInternal::~GenericIntegratorInternal(){ 
-  }
-
-  void GenericIntegratorInternal::init(){
-    
-    // Call the base class method
-    FXInternal::init();
-  }
-
-  void GenericIntegratorInternal::deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied){
-    FXInternal::deepCopyMembers(already_copied);
-  }
-
-
-} // namespace CasADi
-
-
+int main(){
+  std::copysign(2.0,0.3);
+  
+  return 0;
+  
+}

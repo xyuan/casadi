@@ -54,38 +54,110 @@ try:
 except:
   pass
   
+def nullspacewrapper(sp):
+  a = ssym("a",sp)
+  f = SXFunction([a],[nullspace(a)])
+  f.init()
+  return f
+  
+nsolvers.append((nullspacewrapper,{}))
+  
 print lsolvers
 
-@run_only(['nullspace'])
 class LinearSolverTests(casadiTestCase):
 
   def test_nullspace(self):
-    A = DMatrix([[1,1.3],[2,5],[1,0.5],[1.8,1.7]])
-
-    for Solver, options in nsolvers:
-      solver = Solver(A.T.sparsity())
-      solver.setOption(options)
-      solver.init()
-      solver.setInput(A.T)
-
-      solver.evaluate()
-      
-      self.checkarray(mul(A.T,solver.output()),DMatrix.zeros(2,2))
-      self.checkarray(mul(solver.output().T,solver.output()),DMatrix.eye(2))
   
-    A = DMatrix([[1,1.3],[2,5],[1,0.5]])
+    for A in  [
+                  DMatrix([[1,1.3],[2,5],[1,0.5],[1.8,1.7]]),
+                  DMatrix([[1,1.3],[2,5],[1,0.5]]),
+                  DMatrix([[1,1.3],[2,5],[1,0.5],[0.2,0.3],[-0.3,0.7]]),
+                  DMatrix([[1,0],[0,0],[0,1],[0,0]]),
+                  DMatrix([[1.3,0,0.4,1],[0.2,0.1,11,0],[0,1,0,0],[0.7,0.9,0,0],[1.1,0.99,0,0]])
+              ]:
+      n ,m = A.shape
+      for Solver, options in nsolvers:
+        solver = Solver(A.T.sparsity())
+        solver.setOption(options)
+        solver.init()
+        solver.setInput(A.T)
 
-    for Solver, options in nsolvers:
-      solver = Solver(A.T.sparsity())
-      solver.setOption(options)
-      solver.init()
-      solver.setInput(A.T)
+        solver.evaluate()
+        
+        self.checkarray(mul(A.T,solver.output()),DMatrix.zeros(m,n-m))
+        self.checkarray(mul(solver.output().T,solver.output()),DMatrix.eye(n-m))
+        
+        solver.setOption("ad_mode","forward")
+        solver.init()
+        
+        Jf = solver.jacobian()
+        Jf.init()
 
-      solver.evaluate()
-      
-      self.checkarray(mul(A.T,solver.output()),DMatrix.zeros(2,1))
-      self.checkarray(mul(solver.output().T,solver.output()),DMatrix.eye(1))
-  
+        solver.setOption("ad_mode","reverse")
+        solver.init()
+        
+        Jb = solver.jacobian()
+        Jb.init()
+        
+        Jf.setInput(A.T)
+        Jb.setInput(A.T)
+        
+        Jf.evaluate()
+        Jb.evaluate()
+
+        self.checkarray(Jf.output(),Jb.output())
+        self.checkarray(Jf.output(1),Jb.output(1))
+        
+        d = solver.derivative(1,0)
+        d.init()
+        
+        r = numpy.random.rand(*A.shape)
+        
+        d.setInput(A.T,0)
+        d.setInput(r.T,1)
+        
+        d.evaluate()
+        
+        exact = d.getOutput(1)
+        
+        solver.setInput(A.T,0)
+        solver.evaluate()
+        nom = solver.getOutput()
+        
+        eps = 1e-6
+        solver.setInput((A+eps*r).T,0)
+        solver.evaluate()
+        pert = solver.getOutput()
+        
+        fd = (pert-nom)/eps
+        
+        #print exact, fd
+        
+        #print numpy.linalg.svd(horzcat([exact, fd]).T)[1]
+        
+        #print "fd:", mul(fd.T,fd), numpy.linalg.eig(mul(fd.T,fd))[0]
+        #print "exact:", mul(exact.T,exact), numpy.linalg.eig(mul(exact.T,exact))[0]
+        #print "fd:", mul(fd,fd.T), numpy.linalg.eig(mul(fd,fd.T))[0]
+        #print "exact:", mul(exact,exact.T), numpy.linalg.eig(mul(exact,exact.T))[0]
+        
+        V = numpy.random.rand(A.shape[0]-A.shape[1],A.shape[0]-A.shape[1])
+        V = V+V.T
+        print V
+        #V = DMatrix.eye(A.shape[0]-A.shape[1])
+        a = mul([nom,V,fd.T])+mul([fd,V,nom.T])
+        b = mul([nom,V,exact.T])+mul([exact,V,nom.T])
+        
+        print "here:", a-b
+        
+        #self.checkarray(a,b,digits=5)
+    
+        V = numpy.random.rand(A.shape[0],A.shape[0])
+        V = V+V.T
+        V = DMatrix.eye(A.shape[0])
+        a = mul([nom.T,V,fd])+mul([fd.T,V,nom])
+        b = mul([nom.T,V,exact])+mul([exact.T,V,nom])
+        
+        self.checkarray(a,b,digits=5)
   
   def test_simple_solve(self):
     A_ = DMatrix([[3,7],[1,2]])

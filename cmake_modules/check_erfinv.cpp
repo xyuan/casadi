@@ -20,27 +20,11 @@
  *
  */
 
-#include "generic_integrator.hpp"
-#include "generic_integrator_internal.hpp"
-#include <cassert>
+#include <cmath>
 
-using namespace std;
-namespace CasADi{
-
-  GenericIntegrator::GenericIntegrator(){
-  }
+int main(){
+  std::erfinv(2.0);
   
-  GenericIntegratorInternal* GenericIntegrator::operator->(){
-    return static_cast<GenericIntegratorInternal*>(FX::operator->());
-  }
-
-  const GenericIntegratorInternal* GenericIntegrator::operator->() const{
-    return static_cast<const GenericIntegratorInternal*>(FX::operator->()); 
-  }
-      
-  bool GenericIntegrator::checkNode() const{
-    return dynamic_cast<const GenericIntegratorInternal*>(get())!=0;
-  }
- 
-} // namespace CasADi
-
+  return 0;
+  
+}

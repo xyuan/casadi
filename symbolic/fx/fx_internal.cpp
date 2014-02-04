@@ -67,10 +67,12 @@ namespace CasADi{
     OptionsFunctionalityNode::deepCopyMembers(already_copied);
     for(vector<vector<WeakRef> >::iterator i=derivative_fcn_.begin(); i!=derivative_fcn_.end(); ++i){
       for(vector<WeakRef>::iterator j=i->begin(); j!=i->end(); ++j){
-        FX temp = deepcopy(shared_cast<FX>((*j).shared()),already_copied);
-        *j = temp;        
+        if(!j->isNull()){
+          *j = getcopy(j->shared(),already_copied);
+        }
       }
     }
+    full_jacobian_ = getcopy(full_jacobian_,already_copied);
   }
 
   void FXInternal::init(){
@@ -1487,8 +1489,8 @@ namespace CasADi{
       derivative_fcn_[nfwd].resize(nadj+1);
     }
     
+    // Quick return if already cached
     if (derivative_fcn_[nfwd][nadj].alive()) {
-      // Quick return if already cached
       return shared_cast<FX>(derivative_fcn_[nfwd][nadj].shared());
     }
  
@@ -1622,7 +1624,10 @@ namespace CasADi{
       }
     }
 
-    // Return cached or generated function
+    // Save to cache
+    derivative_fcn_[nfwd][nadj] = ret;
+
+    // Return generated function
     return ret;
   }
 
