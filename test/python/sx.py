@@ -553,7 +553,7 @@ class SXtests(casadiTestCase):
    
   def test_primitivefunctions(self):
     self.message("Primitive functions")
-    x=SXElement.sym("x")
+    x=SX.sym("x")
     
     nums = [-2,-1.5,-1,-0.5,-0.25,0,0.25,0.5,1,1.5,2]
     

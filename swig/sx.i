@@ -84,8 +84,6 @@
 
 #endif // SWIGPYTHON
 
-VECTOR_REPR(CasADi::SXElement)
-VECTOR_REPR(std::vector<CasADi::SXElement>)
 VECTOR_REPR(CasADi::Matrix<CasADi::SXElement>)
 
 #ifdef SWIGPYTHON
@@ -168,44 +166,6 @@ except:
 #endif // SWIGPYTHON
 
 namespace CasADi {
-
-
-%extend SXElement {
-#ifdef SWIGPYTHON
-
-  %python_array_wrappers(1000.0)
-  
-  %pythoncode %{
-
-  def toArray(self):
-    import numpy as n
-    r = n.array((),dtype=object)
-    r.resize(1,1)
-    r[0,0] = self
-    return r
-  %}
-  
-  
-
-  #endif // SWIGPYTHON
-  
-  #ifdef SWIGOCTAVE
-  std::vector<int> __dims__() const {
-    std::vector<int> ret(2);
-    ret[0] = 1;
-    ret[1] = 1;
-    return ret;
-  }
-  
-  #endif // SWIGOCTAVE
-  
-  binopsrFull(CasADi::SXElement)
-  // a+b when a is SXElement, b is numpy.array. __array_priority works, but does not suffice to yield implicit casting
-  binopsFull(const CasADi::Matrix<CasADi::SXElement> & b,,CasADi::Matrix<CasADi::SXElement>,CasADi::Matrix<CasADi::SXElement>)
-
-};
-
-
 
 %extend Matrix<SXElement>{
     

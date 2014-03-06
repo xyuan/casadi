@@ -118,14 +118,14 @@ class typemaptests(casadiTestCase):
   def test_autoconversionMX(self):
     self.message("Auto conversion MX")
     s = DMatrix([[1,2],[3,4]])
-    x = SXElement(3)
+    x = SX(3)
     y = MX(3)
     
     def doit(z,s,fun):
       function = None
       
-      if type(z) in [type(SXElement()),type(SX())]:
-        ztype = [type(SXElement()),type(SX())]
+      if type(z) in [type(SX())]:
+        ztype = [type(SX())]
         function = SXFunction
       
       if type(z) in [type(MX())]:
@@ -133,15 +133,11 @@ class typemaptests(casadiTestCase):
         function = MXFunction
         
       r = fun(z,s)
-            
-      if type(z) is type(SXElement()) and type(s) is type(SXElement()):
-        self.assertTrue(type(r) is type(SXElement()))
-        
 
       self.assertTrue(type(r) in ztype)
       
       hasNum = True
-      if type(s) in [type(SXElement()),type(MX()),type(SX())]:
+      if type(s) in [type(MX()),type(SX())]:
         hasNum = False
       
       if hasNum:
@@ -201,7 +197,7 @@ class typemaptests(casadiTestCase):
         
     ## numeric & SX
     for s in nums:
-      for z in [SXElement.sym("x"), SX.sym("x"), SX.sym("x",2,2)]:
+      for z in [SX.sym("x"), SX.sym("x",2,2)]:
         print "z = %s, s = %s" % (str(z),str(s))
         print "  z = %s, s = %s" % (type(z),type(s))
         tests(z,s)
@@ -213,9 +209,9 @@ class typemaptests(casadiTestCase):
         print "  z = %s, s = %s" % (type(z),type(s))
         tests(z,s)
         
-    # SXElement & SX
-    for s in [SXElement.sym("x"), SX.sym("x"), SX.sym("x",2,2)]:
-      for z in [SXElement.sym("x"),SX.sym("x"), SX.sym("x",2,2)]:
+    # SX
+    for s in [SX.sym("x"), SX.sym("x",2,2)]:
+      for z in [SX.sym("x"), SX.sym("x",2,2)]:
         print "z = %s, s = %s" % (str(z),str(s))
         print "  z = %s, s = %s" % (type(z),type(s))
         tests(z,s)
@@ -230,7 +226,7 @@ class typemaptests(casadiTestCase):
     for (s,x,y) in [
                   (matrix([[1,2],[3,4]]),SX.sym("x",2,2),MX.sym("x",2,2))    
                   ]:
-      for z,ztype in zip([x,y],[[type(SX()),type(SXElement())],[type(MX())]]):
+      for z,ztype in zip([x,y],[[type(SX())],[type(MX())]]):
         print "z = %s, s = %s" % (str(z),str(s))
         print "  z = %s, s = %s" % (type(z),type(s))
         doit(z,s,lambda z,s: -z)
