@@ -240,12 +240,6 @@ namespace CasADi{
     SXElement logic_and(const SXElement& y) const;
     SXElement logic_or(const SXElement& y) const;
     SXElement if_else_zero(const SXElement& y) const;
-
-    Matrix<SXElement> fmin(const Matrix<SXElement>& b) const;
-    Matrix<SXElement> fmax(const Matrix<SXElement>& b) const;
-    Matrix<SXElement> constpow(const Matrix<SXElement>& n) const;
-    Matrix<SXElement> __copysign__(const Matrix<SXElement>& n) const;
-    Matrix<SXElement> arctan2(const Matrix<SXElement>& b) const;
         
     // Get the temporary variable
     int getTemp() const;

@@ -228,8 +228,6 @@ template <> bool meta< CasADi::Matrix<CasADi::SXElement> >::couldbe(const octave
 
 meta_vector(CasADi::Matrix<CasADi::SXElement>);
 meta_vector(std::vector< CasADi::Matrix<CasADi::SXElement> >);
-meta_vector(std::vector<CasADi::SXElement>);
-meta_vector(CasADi::SXElement);
 
 
 /// CasADi::MX

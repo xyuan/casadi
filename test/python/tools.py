@@ -160,7 +160,7 @@ class Toolstests(casadiTestCase):
       p.y = SX.sym("y",3,2)
 
       xother = Variables()
-      xother.a = SXElement.sym("x")
+      xother.a = SX.sym("x")
       xother.b = diag(SX.sym("[a,b]"))
       xother.freeze()
       
@@ -206,7 +206,9 @@ class Toolstests(casadiTestCase):
       self.assertTrue(p.lookup(('z',)) is p.z)
       self.assertTrue(p.lookup(('xother',)) is p.xother)
       self.assertTrue(p.lookup(('xother','a')) is p.xother.a)
-      self.assertTrue(p.lookup(('xother','a',(0,))).isEqual(p.xother.a))
+      print p.lookup(('xother','a',(0,))), type(p.lookup(('xother','a',(0,))))
+      print p.xother.a, type(p.xother.a)
+      self.assertTrue(p.lookup(('xother','a',(0,))).toScalar().isEqual(p.xother.a.toScalar()))
       self.assertTrue(p.lookup(('xother','b')) is p.xother.b)
       self.assertTrue(p.lookup(('xother','b',(1,1))).toScalar().isEqual(p.xother.b[1].toScalar()))
       

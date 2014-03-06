@@ -883,7 +883,6 @@ template<> char meta< CasADi::Matrix<CasADi::SXElement> >::expected_message[] = 
 template <>
 int meta< CasADi::Matrix<CasADi::SXElement> >::as(PyObject * p,CasADi::Matrix<CasADi::SXElement> &m) {
   NATIVERETURN(CasADi::Matrix<CasADi::SXElement>, m)
-  NATIVERETURN(CasADi::SXElement, m)
   if(meta< CasADi::Matrix<double> >::couldbe(p)) {
     CasADi::DMatrix mt;
     bool result=meta< CasADi::Matrix<double> >::as(p,mt);
@@ -940,11 +939,9 @@ bool meta< CasADi::Matrix<CasADi::SXElement> >::couldbe(PyObject * p) {
     return true;
   }
   
-  return meta< CasADi::Matrix<CasADi::SXElement> >::isa(p) || meta< CasADi::SXElement >::couldbe(p) || meta< CasADi::Matrix<double> >::couldbe(p) || PyObject_HasAttrString(p,"__SX__");
+  return meta< CasADi::Matrix<CasADi::SXElement> >::isa(p) || meta< CasADi::Matrix<double> >::couldbe(p) || PyObject_HasAttrString(p,"__SX__");
 }
 
-meta_vector(std::vector<CasADi::SXElement>);
-meta_vector(CasADi::SXElement);
 meta_vector(CasADi::Matrix< CasADi::SXElement >);
 meta_vector(std::vector< CasADi::Matrix< CasADi::SXElement > >);
 

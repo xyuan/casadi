@@ -325,23 +325,6 @@ namespace CasADi{
     }
   }
 
-  Matrix<SXElement> SXElement::fmin(const Matrix<SXElement>& b) const { 
-    return Matrix<SXElement>(*this).fmin(b);
-  }
-  Matrix<SXElement> SXElement::fmax(const Matrix<SXElement>& b) const {
-    return Matrix<SXElement>(*this).fmax(b);
-  }
-  Matrix<SXElement> SXElement::constpow(const Matrix<SXElement>& n) const {
-    return Matrix<SXElement>(*this).__constpow__(n);
-  }
-  Matrix<SXElement> SXElement::__copysign__(const Matrix<SXElement>& n) const {
-    return Matrix<SXElement>(*this).__copysign__(n);
-  }
-
-  Matrix<SXElement> SXElement::arctan2(const Matrix<SXElement>& b) const { 
-    return Matrix<SXElement>(*this).arctan2(b);
-  }
-
   SXElement SXElement::__le__(const SXElement& y) const{
     if((y-(*this)).isNonNegative())
       return 1;

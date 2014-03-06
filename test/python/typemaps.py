@@ -428,7 +428,7 @@ class typemaptests(casadiTestCase):
       
   def testGenericType(self):
     self.message("Generic type")
-    x=SXElement.sym("x")
+    x=SX.sym("x")
     f=SXFunction([x],[2*x])
     f.setOption("name","foo")
     self.assertEquals(f.getOption("name"),"foo")
@@ -487,7 +487,7 @@ class typemaptests(casadiTestCase):
 	    
     a = GenericType(["foo","bar"])
     self.assertTrue(a.isStringVector())
-    x = SXElement.sym("x")
+    x = SX.sym("x")
     f = SXFunction([x],[x])
     #f.setOption("monitor",["foo","bar"])
     #self.assertEqual(f.getOption("monitor")[0],"foo")
@@ -496,10 +496,10 @@ class typemaptests(casadiTestCase):
     #self.assertEqual(f.getOption("monitor")[0],"foo")
     #f.setOption("monitor",[])
     
-    t=SXElement.sym("t")
+    t=SX.sym("t")
 
-    x=SXElement.sym("x") 
-    dx=SXElement.sym("dx")
+    x=SX.sym("x") 
+    dx=SX.sym("dx")
 
     f=SXFunction(daeIn(t=t, x=vertcat([x,dx])),[vertcat([dx,-x])])
     f.init()
@@ -520,23 +520,23 @@ class typemaptests(casadiTestCase):
 
   @requires("IpoptSolver")
   def testGenericTypeBoolean(self):
-    x=SXElement.sym("x")
+    x=SX.sym("x")
 
     nlp = SXFunction(nlpIn(x=x),nlpOut(f=x**2))
     nlp.init()
 
     nlp_solver = IpoptSolver(nlp)
     
-    self.assertRaises(RuntimeError,lambda : nlp_solver.setOption('acceptable_tol',SXElement.sym("x")))
+    self.assertRaises(RuntimeError,lambda : nlp_solver.setOption('acceptable_tol',SX.sym("x")))
     nlp_solver.setOption('acceptable_tol',DMatrix(1))
 	    
   def test_operators(self):
     self.message("Test operators on mixed numpy.array/Matrix")
     self.message(":SX")
-    x=SXElement.sym("x")
-    y=SXElement.sym("y")
+    x=SX.sym("x")
+    y=SX.sym("y")
 
-    C=SX([x,y])
+    C=vertcat([x,y])
     N=matrix([x,y]).T
     
     self.assertTrue(isinstance(N+C,SX))
@@ -599,7 +599,7 @@ class typemaptests(casadiTestCase):
     self.message("Casting DMatrix to SX")
     
     w = DMatrix([[1,2,3],[4,5,6]])
-    x = SXElement.sym("x")
+    x = SX.sym("x")
     
     f = SXFunction([x],[w])
     
