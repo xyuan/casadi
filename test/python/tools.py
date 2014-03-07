@@ -33,13 +33,13 @@ class Toolstests(casadiTestCase):
       self.message("Collection")
 
       p = Collection()
-      p.x = ssym("x",2)
-      p.z = ssym("z",2,4)
-      p.y = ssym("y",3,2)
+      p.x = SX.sym("x",2)
+      p.z = SX.sym("z",2,4)
+      p.y = SX.sym("y",3,2)
 
       p.freeze()
       
-      self.assertTrue(isinstance(p[...],SXMatrix))
+      self.assertTrue(isinstance(p[...],SX))
       self.assertEqual(p.size,16)
       self.assertEqual(p[...].shape[0],16)
       self.assertEqual(p[...].shape[1],1)
@@ -56,13 +56,13 @@ class Toolstests(casadiTestCase):
       self.checkarray(p.iv_x,list(IMatrix([0,1])),"")
       
       p = Collection()
-      p.x = [ssym("x")]
-      p.z = [ssym("z%d" % i) for i in range(2)]
-      p.y = [[ssym("y%d%d"% (i,j)) for i in range(2)] for j in range(3)]
+      p.x = [SX.sym("x")]
+      p.z = [SX.sym("z%d" % i) for i in range(2)]
+      p.y = [[SX.sym("y%d%d"% (i,j)) for i in range(2)] for j in range(3)]
       p.setOrder(["x","y","z"])
       p.freeze()
       
-      self.assertTrue(isinstance(p[...],SXMatrix))
+      self.assertTrue(isinstance(p[...],SX))
       self.assertEqual(p.size,9)
 
       if CasadiOptions.getSimplificationOnTheFly():
@@ -92,13 +92,13 @@ class Toolstests(casadiTestCase):
       #self.checkarray(p._i["y",:,0],[1,3,5],"")
       
       p = Collection()
-      p.x = [ssym("x")]
-      p.z = [ssym("z%d" % i) for i in range(2)]
-      p.y = [[ssym("y%d%d"% (i,j)) for i in range(2)] for j in range(3)]
+      p.x = [SX.sym("x")]
+      p.z = [SX.sym("z%d" % i) for i in range(2)]
+      p.y = [[SX.sym("y%d%d"% (i,j)) for i in range(2)] for j in range(3)]
       p.setOrder(["x",("y","z")])
       p.freeze()
       
-      self.assertTrue(isinstance(p[...],SXMatrix))
+      self.assertTrue(isinstance(p[...],SX))
       self.assertEqual(p.size,9)
 
       if CasadiOptions.getSimplificationOnTheFly():
@@ -120,14 +120,14 @@ class Toolstests(casadiTestCase):
       self.checkarray(p.i_y[...],IMatrix([1,2,4,5,7,8]),"")
     
       p = Collection()
-      p.a = ssym("a")
-      p.b = ssym("b")
+      p.a = SX.sym("a")
+      p.b = SX.sym("b")
       p.freeze()
 
       g = Collection()
-      g.c = ssym("c")
+      g.c = SX.sym("c")
       g.d = p
-      g.e = ssym("e")
+      g.e = SX.sym("e")
       g.freeze()
        
       self.assertEqual(g.size,4)
@@ -155,13 +155,13 @@ class Toolstests(casadiTestCase):
              
       p = Variables()
 
-      p.x = ssym("x",2)
-      p.z = ssym("z",2,4)
-      p.y = ssym("y",3,2)
+      p.x = SX.sym("x",2)
+      p.z = SX.sym("z",2,4)
+      p.y = SX.sym("y",3,2)
 
       xother = Variables()
-      xother.a = SX("x")
-      xother.b = diag(ssym("[a,b]"))
+      xother.a = SXElement.sym("x")
+      xother.b = diag(SX.sym("[a,b]"))
       xother.freeze()
       
       p.xother = xother
@@ -213,7 +213,7 @@ class Toolstests(casadiTestCase):
       
       for k in range(p.getSize()):
         roundtrip = p.lookup(p.reverselookup(k))
-        if not(isinstance(roundtrip,SX)):
+        if not(isinstance(roundtrip,SXElement)):
           roundtrip = roundtrip.toScalar()
         self.assertTrue(roundtrip.isEqual(p.vecNZcat()[k].toScalar()))
       
@@ -235,12 +235,12 @@ class Toolstests(casadiTestCase):
       self.checkarray(A[p.o_xother + p.xother.i_b],p.xother.b_,"indexing round trip 2")
 
       p = Variables()
-      p.a = ssym("a",2)
+      p.a = SX.sym("a",2)
       b = []
-      b.append(ssym("b1",3))
-      b.append(ssym("b2",3))
+      b.append(SX.sym("b1",3))
+      b.append(SX.sym("b2",3))
       p.b = b
-      p.c = ssym("c")
+      p.c = SX.sym("c")
       p.freeze()
       
 
@@ -277,7 +277,7 @@ class Toolstests(casadiTestCase):
             
       for k in range(p.getSize()):
         roundtrip = p.lookup(p.reverselookup(k))
-        if not(isinstance(roundtrip,SX)):
+        if not(isinstance(roundtrip,SXElement)):
           roundtrip = roundtrip.toScalar()
         self.assertTrue(roundtrip.isEqual(p.vecNZcat()[k].toScalar()))
         
@@ -294,12 +294,12 @@ class Toolstests(casadiTestCase):
       
       
       p = Variables()
-      p.a = ssym("a",2)
+      p.a = SX.sym("a",2)
       b = []
-      b.append(ssym("b1",3,2))
-      b.append(ssym("b2",3))
+      b.append(SX.sym("b1",3,2))
+      b.append(SX.sym("b2",3))
       p.b = b
-      p.c = ssym("c")
+      p.c = SX.sym("c")
       p.freeze()
       
 
@@ -332,12 +332,12 @@ class Toolstests(casadiTestCase):
       self.checkarray(A,DMatrix([0,0,3,3,9,3,3,3,4,4,4,0]),"vecNZcat")
 
       p = Variables()
-      p.a = msym("a",2)
+      p.a = MX.sym("a",2)
       b = []
-      b.append(msym("b1",3))
-      b.append(msym("b2",3))
+      b.append(MX.sym("b1",3))
+      b.append(MX.sym("b2",3))
       p.b = b
-      p.c = msym("c")
+      p.c = MX.sym("c")
       p.freeze()
       
       f = MXFunction([p.veccat()],[p.a,p.b[0],p.b[1],p.c])
@@ -348,13 +348,13 @@ class Toolstests(casadiTestCase):
       f.evaluate()
       
       p = Variables()
-      p.a = ssym("a",2)
+      p.a = SX.sym("a",2)
       b = []
-      b.append(ssym("b1",3))
-      b.append(ssym("b2",3))
-      b.append([ssym("b3",3),ssym("b4",3)])
+      b.append(SX.sym("b1",3))
+      b.append(SX.sym("b2",3))
+      b.append([SX.sym("b3",3),SX.sym("b4",3)])
       p.b = b
-      p.c = ssym("c")
+      p.c = SX.sym("c")
       p.freeze()
       
       self.checkarray(array(p.i_a),DMatrix([[0],[1]]),"index")
@@ -380,12 +380,12 @@ class Toolstests(casadiTestCase):
 
       for k in range(p.getSize()):
         roundtrip = p.lookup(p.reverselookup(k))
-        if not(isinstance(roundtrip,SX)):
+        if not(isinstance(roundtrip,SXElement)):
           roundtrip = roundtrip.toScalar()
         self.assertTrue(roundtrip.isEqual(p.vecNZcat()[k].toScalar()))
         
         
-      x = msym("a",2,3)
+      x = MX.sym("a",2,3)
       
       p = Variables()
       p.a = x**2.2 # Was x**2 which simplifies to the _unary_ operation sq(x)
@@ -398,13 +398,13 @@ class Toolstests(casadiTestCase):
   def test_Numbers(self):
       p = Variables()
 
-      p.x = ssym("x",2)
-      p.z = ssym("z",2,4)
-      p.y = ssym("y",3,2)
+      p.x = SX.sym("x",2)
+      p.z = SX.sym("z",2,4)
+      p.y = SX.sym("y",3,2)
 
       xother = Variables()
-      xother.a = SX("x")
-      xother.b = diag(ssym("[a,b]"))
+      xother.a = SXElement.sym("x")
+      xother.b = diag(SX.sym("[a,b]"))
       xother.freeze()
       
       p.xother = xother
@@ -429,13 +429,13 @@ class Toolstests(casadiTestCase):
     print s
   
     with self.assertRaises(Exception):
-      struct_ssym(['x','x','z'])
+      struct_symSX(['x','x','z'])
     with self.assertRaises(Exception): 
-      struct_ssym(['x','y','z','y'])
+      struct_symSX(['x','y','z','y'])
       
 
     
-    s = struct_ssym([('x','y'),'z'])
+    s = struct_symSX([('x','y'),'z'])
     self.assertEqual(s.size,3)
     
     init = s(0)
@@ -470,21 +470,21 @@ class Toolstests(casadiTestCase):
     f[0] = 5
     self.checkarray(init.cat,DMatrix([5,0,0]))
     
-    s = struct_ssym(['x','y','z'],order=['x','y','z'])
+    s = struct_symSX(['x','y','z'],order=['x','y','z'])
     with self.assertRaises(Exception): 
-      s = struct_ssym([('x','y'),'z'],order=['x','y','z'])
+      s = struct_symSX([('x','y'),'z'],order=['x','y','z'])
     
-    s = struct_ssym(['x','y','z'])
+    s = struct_symSX(['x','y','z'])
     self.assertEqual(s.size,3)
     self.assertEqual(s[vertcat,['x','y']].shape[0],2)
     self.assertTrue(isinstance(s[list,vertcat,['x','y']],list))
     
-    s = struct_ssym([entry('x',repeat=5),entry('y',repeat=6),entry('z')])
+    s = struct_symSX([entry('x',repeat=5),entry('y',repeat=6),entry('z')])
     self.assertEqual(s.size,12)
     self.assertEqual(len(s["x"]),5)
     self.assertEqual(len(s["y"]),6)
     self.assertTrue(s.cat.at(1).getName().startswith("x"))
-    s = struct_ssym([(entry('x',repeat=5),entry('y',repeat=[6,5])),entry('z')])
+    s = struct_symSX([(entry('x',repeat=5),entry('y',repeat=[6,5])),entry('z')])
     
         
     self.checkarray(s.f["x"],[0,6,12,18,24])
@@ -495,46 +495,46 @@ class Toolstests(casadiTestCase):
     self.assertEqual(len(s["x"]),5)
     self.assertEqual(len(s["y"]),6)
     self.assertTrue(s.cat.at(1).getName().startswith("y"))
-    s = struct_ssym([entry("x",shape=(3,2)),entry("y",shape=2),entry("z",shape=sp_dense(3)),entry("w",shape=sp_tril(5))])
+    s = struct_symSX([entry("x",shape=(3,2)),entry("y",shape=2),entry("z",shape=sp_dense(3)),entry("w",shape=sp_triu(5))])
     self.assertEqual(s.size,6+2+3+15)
     self.assertTrue(s["x"].sparsity()==sp_dense(3,2))
     self.assertTrue(s["y"].sparsity()==sp_dense(2,1))
     self.assertTrue(s["z"].sparsity()==sp_dense(3,1))
-    self.assertTrue(s["w"].sparsity()==sp_tril(5))
+    self.assertTrue(s["w"].sparsity()==sp_triu(5))
     
-    x  = ssym("x",2)
-    x2 = ssym("x2",2)
-    s = struct_ssym([entry('a',sym=x),'y','z'])
+    x  = SX.sym("x",2)
+    x2 = SX.sym("x2",2)
+    s = struct_symSX([entry('a',sym=x),'y','z'])
     self.assertTrue(s.cat.at(0).getName().startswith("x"))
     self.assertEqual(s.size,4)
     with self.assertRaises(Exception):
-      struct_ssym([entry('a',sym=x+x),'y','z'])
+      struct_symSX([entry('a',sym=x+x),'y','z'])
     with self.assertRaises(Exception):
-      struct_ssym([entry('a',sym=[x+x]),'y','z'])
-    s = struct_ssym([entry('a',sym=vertcat([x,x2])),'y','z'])
+      struct_symSX([entry('a',sym=[x+x]),'y','z'])
+    s = struct_symSX([entry('a',sym=vertcat([x,x2])),'y','z'])
     self.assertEqual(s.size,6)
     with self.assertRaises(Exception):
-      s = struct_ssym([entry('a',repeat=6,sym=x),'y','z'])
+      s = struct_symSX([entry('a',repeat=6,sym=x),'y','z'])
     
-    s = struct_ssym(['x','y','z'])
+    s = struct_symSX(['x','y','z'])
  
-    S = struct_ssym([entry("X",sym=s)])
+    S = struct_symSX([entry("X",sym=s)])
     self.assertTrue(S.cat.at(0).getName()=="x")
-    S = struct_ssym([entry("X",struct=s)])
+    S = struct_symSX([entry("X",struct=s)])
     self.assertTrue(S.cat.at(0).getName()=="X_x")
-    S = struct_ssym([entry("X",repeat=[5],struct=s)])
+    S = struct_symSX([entry("X",repeat=[5],struct=s)])
     self.assertEqual(S.size,15)
     
-    s0 = struct_ssym(['x','y','z'])
-    s1 = struct_ssym(['x','y'])
-    S0 = struct_ssym([entry("X",struct=s0),entry("Y",repeat=[5],struct=s0),entry("Z",struct=s0)])
-    S1 = struct_ssym([entry("X",struct=s1),entry("Y",repeat=[5],struct=s1)])
+    s0 = struct_symSX(['x','y','z'])
+    s1 = struct_symSX(['x','y'])
+    S0 = struct_symSX([entry("X",struct=s0),entry("Y",repeat=[5],struct=s0),entry("Z",struct=s0)])
+    S1 = struct_symSX([entry("X",struct=s1),entry("Y",repeat=[5],struct=s1)])
     num0 = S0(0)
     num1 = S1(1)
 
     num0[nesteddict] = num1[nesteddict]
     
-    S = struct_ssym([entry("P",shapestruct=(s0,s0))])
+    S = struct_symSX([entry("P",shapestruct=(s0,s0))])
  
     num = S(0)
     num["P"] = DMatrix([[1,2,3],[4,5,6],[7,8,9]])
@@ -548,7 +548,7 @@ class Toolstests(casadiTestCase):
     self.checkarray(num["P",index[list,vertcat,["x","y"]],index[list,vertcat,["z","x"]]],DMatrix([[3,1],[6,4]]))
     self.checkarray(num["P",index[vertcat,["x","y"]],index[vertcat,["z","x"]]],DMatrix([3,4]))
     
-    S = struct_ssym([entry("P",shapestruct=s0)])
+    S = struct_symSX([entry("P",shapestruct=s0)])
     
     num = S(0)
     num["P"] = DMatrix([1,2,3])
@@ -562,7 +562,7 @@ class Toolstests(casadiTestCase):
       num["P",:,index["x"]]
     
     
-    S = struct_ssym([entry("P",shapestruct=(3,s0))])
+    S = struct_symSX([entry("P",shapestruct=(3,s0))])
  
     num = S(0)
     num["P"] = DMatrix([[1,2,3],[4,5,6],[7,8,9]])
@@ -578,13 +578,13 @@ class Toolstests(casadiTestCase):
     self.checkarray(num["P",:,index[list,vertcat,["z","x"]]],DMatrix([[3,1],[6,4],[9,7]]))
     self.checkarray(num["P",:,index[vertcat,["z","x"]]],DMatrix([3,1,6,4,9,7]))
     
-    S = struct_ssym([entry("P",shapestruct=s0)])
+    S = struct_symSX([entry("P",shapestruct=s0)])
  
     
     
-    s0 = struct_ssym(['x','y',entry('q',shape=4),'z'])
+    s0 = struct_symSX(['x','y',entry('q',shape=4),'z'])
 
-    S = struct_ssym([entry("P",shapestruct=(s0,s0))])
+    S = struct_symSX([entry("P",shapestruct=(s0,s0))])
     
     num = S(0)
     num["P",indexf[["x","q"]],indexf[["x","q"]]] = 1
@@ -605,52 +605,52 @@ class Toolstests(casadiTestCase):
     self.checkarray(num["P"][[0,2,3,4,5],[0,2,3,4,5]],DMatrix.ones(5,5))
     
     with self.assertRaises(Exception):
-      struct_msym(['x','x','z'])
+      struct_symMX(['x','x','z'])
     with self.assertRaises(Exception): 
-      struct_msym(['x','y','z','y'])
+      struct_symMX(['x','y','z','y'])
     
-    s = struct_msym([('x','y'),'z'])
-    s = struct_msym(['x','y','z'],order=['x','y','z'])
+    s = struct_symMX([('x','y'),'z'])
+    s = struct_symMX(['x','y','z'],order=['x','y','z'])
     with self.assertRaises(Exception): 
-      s = struct_msym([('x','y'),'z'],order=['x','y','z'])
+      s = struct_symMX([('x','y'),'z'],order=['x','y','z'])
     
-    s = struct_msym(['x','y','z'])
+    s = struct_symMX(['x','y','z'])
     self.assertEqual(s.size,3)
-    s = struct_msym([entry('x',repeat=5),entry('y',repeat=6),entry('z')])
+    s = struct_symMX([entry('x',repeat=5),entry('y',repeat=6),entry('z')])
     self.assertEqual(s.size,12)
     self.assertEqual(len(s["x"]),5)
     self.assertEqual(len(s["y"]),6)
-    s = struct_msym([(entry('x',repeat=5),entry('y',repeat=[6,5])),entry('z')])
+    s = struct_symMX([(entry('x',repeat=5),entry('y',repeat=[6,5])),entry('z')])
     self.assertEqual(s.size,36)
     self.assertEqual(len(s["x"]),5)
     self.assertEqual(len(s["y"]),6)
    
     
-    s = struct_msym([entry("x",shape=(3,2)),entry("y",shape=2),entry("z",shape=sp_dense(3)),entry("w",shape=sp_tril(5))])
+    s = struct_symMX([entry("x",shape=(3,2)),entry("y",shape=2),entry("z",shape=sp_dense(3)),entry("w",shape=sp_triu(5))])
     self.assertEqual(s.size,6+2+3+15)
     self.assertTrue(s["x"].sparsity()==sp_dense(3,2))
     self.assertTrue(s["y"].sparsity()==sp_dense(2,1))
     self.assertTrue(s["z"].sparsity()==sp_dense(3,1))
-    self.assertTrue(s["w"].sparsity()==sp_tril(5))
+    self.assertTrue(s["w"].sparsity()==sp_triu(5))
     
-    x  = msym("x",2)
-    x2 = msym("x2",2)
+    x  = MX.sym("x",2)
+    x2 = MX.sym("x2",2)
     with self.assertRaises(Exception):
-      s = struct_msym([entry('x',sym=x),'y','z'])
+      s = struct_symMX([entry('x',sym=x),'y','z'])
     with self.assertRaises(Exception):
-      struct_msym([entry('x',sym=x+x),'y','z'])
+      struct_symMX([entry('x',sym=x+x),'y','z'])
     with self.assertRaises(Exception):
-      struct_msym([entry('x',sym=[x+x]),'y','z'])
+      struct_symMX([entry('x',sym=[x+x]),'y','z'])
     with self.assertRaises(Exception):
-      struct_msym([entry('x',sym=vertcat([x,x2])),'y','z'])
+      struct_symMX([entry('x',sym=vertcat([x,x2])),'y','z'])
     with self.assertRaises(Exception):
-      s = struct_,msym([(2,'x',[x,x2]),'y','z'])
+      s = struct_,MX.sym([(2,'x',[x,x2]),'y','z'])
     
-    s = struct_msym(['x','y','z'])
-    S = struct_msym([entry("X",struct=s)])
-    S = struct_msym([entry("X",repeat=[5],struct=s)])
+    s = struct_symMX(['x','y','z'])
+    S = struct_symMX([entry("X",struct=s)])
+    S = struct_symMX([entry("X",repeat=[5],struct=s)])
     
-    x = ssym("x",2)
+    x = SX.sym("x",2)
     y0 = sin(x) 
     y1 = cos(x)
     
@@ -661,8 +661,8 @@ class Toolstests(casadiTestCase):
     ])
     
     
-    x = msym("x",2)
-    m = struct_msym(['a','b'])
+    x = MX.sym("x",2)
+    m = struct_symMX(['a','b'])
     y0 = sin(x) 
     y1 = cos(x)
     
@@ -673,22 +673,37 @@ class Toolstests(casadiTestCase):
       )
     ])
     self.assertEqual(V.size,14)
-    
+
     self.assertTrue(isinstance(V.cat,MX)) 
-    if CasadiOptions.getSimplificationOnTheFly():   
-      self.assertTrue(isEqual(V["x"],x))
-      self.assertTrue(isEqual(V["y",0],y0))
-      self.assertTrue(isEqual(V["y",1],y1))
+    def isEqualV(a,b):
+      ft = MXFunction([x,m],[a-b])
+      ft.init()
+      for i in range(ft.getNumInputs()):
+        ft.setInput(numpy.random.rand(*ft.input(i).shape),i)
+      ft.evaluate()
+      self.checkarray(ft.output(),DMatrix.zeros(*ft.output().shape))
+    
+    isEqualV(V["x"],x)
+    isEqualV(V["y",0],y0)
+    isEqualV(V["y",1],y1)
     self.assertEqual(V["y",0,'a'].shape,(1,1))
     
     with self.assertRaises(Exception):
-      V["y",0] = msym("x",4) # shape mismatch
-    abc = msym("abc",2)
+      V["y",0] = MX.sym("x",4) # shape mismatch
+    abc = MX.sym("abc",2)
     V["y",0] = abc
-    if CasadiOptions.getSimplificationOnTheFly():
-      self.assertTrue(isEqual(V["y",0],abc))
+    
+    def isEqualV(a,b):
+      ft = MXFunction([x,m,abc],[a-b])
+      ft.init()
+      for i in range(ft.getNumInputs()):
+        ft.setInput(numpy.random.rand(*ft.input(i).shape),i)
+      ft.evaluate()
+      self.checkarray(ft.output(),DMatrix.zeros(*ft.output().shape))
+      
+    isEqualV(V["y",0],abc)
 
-    states = struct_ssym([
+    states = struct_symSX([
                 entry('x'),
                 entry('y'),
                 entry('z'),
@@ -698,7 +713,7 @@ class Toolstests(casadiTestCase):
                 entry('p',repeat=[9],shape=sp_dense(6))
              ],order=['x','y','z','u',('v','w'),'p'])
              
-    shooting = struct_ssym([entry('X',struct=states,repeat=[4,5]),entry('U',repeat=[3])],order=[('X','U')])
+    shooting = struct_symSX([entry('X',struct=states,repeat=[4,5]),entry('U',repeat=[3])],order=[('X','U')])
 
 
     
@@ -762,7 +777,7 @@ class Toolstests(casadiTestCase):
     
     print V
     
-    V = struct_msym(shooting)
+    V = struct_symMX(shooting)
     
     print V
     
@@ -816,7 +831,7 @@ class Toolstests(casadiTestCase):
     self.message("structure prefix")
     s = struct(["x","y","z"])
 
-    S = struct_ssym([entry("X",repeat=12,struct=s)])
+    S = struct_symSX([entry("X",repeat=12,struct=s)])
 
     print S.__class__
     print S.prefix
@@ -853,11 +868,22 @@ class Toolstests(casadiTestCase):
     a["x","y"] = 2
     a["y","x"] = 1
     
+    self.checkarray(a["x","y"],DMatrix([2]))
+    self.checkarray(a["y","x"],DMatrix([1]))
+    
     self.checkarray(d,DMatrix([[0,2,0],[1,0,0],[0,0,0]]))
 
   def test_structure_squared_repeated_dmatrix(self):
     self.message("squared repeated dmatrix")
     s = struct(["x","y","z"])
+    
+    d = DMatrix([[0,2,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,2,0],[1,0,0],[0,0,0]])
+    a = s.squared_repeated(d)
+    self.checkarray(a[0,"x","y"],DMatrix([2]))
+    self.checkarray(a[0,"y","x"],DMatrix([1]))
+    self.checkarray(a[-1,"x","y"],DMatrix([2]))
+    self.checkarray(a[-1,"y","x"],DMatrix([1]))
+    
     d = DMatrix.zeros(9,3)
     a = s.squared_repeated(d)
     
@@ -866,28 +892,29 @@ class Toolstests(casadiTestCase):
     a[-1,"x","y"] = 2
     a[-1,"y","x"] = 1
     self.checkarray(d,DMatrix([[0,2,0],[1,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,2,0],[1,0,0],[0,0,0]]))
-    
+
   def test_typemaps(self):
     self.message("typemaps")
     s = struct(["x","y","z"])
     d = DMatrix.zeros(3,3)
     a = s.squared(d)
     
+    print type(a)
     print sin(a)
     print a+1
     
   def test_sparse(self):
-    a = struct_ssym([entry("a",shape=sp_diag(5))])
-    b = struct_msym([(entry("b",struct=a))])
+    a = struct_symSX([entry("a",shape=sp_diag(5))])
+    b = struct_symMX([(entry("b",struct=a))])
 
     self.checkarray(b["b"].shape,(5,1))
     self.checkarray(b["b","a"].shape,(5,5))
     
   def test_symm(self):
-    a = struct_ssym([entry("P",shape=(3,3),type='symm')])
+    a = struct_symSX([entry("P",shape=(3,3),type='symm')])
     
     b = a()
-    b["P"] = DMatrix([[0,1,2],[3,4,5],[6,7,8]])
+    b["P"] = DMatrix([[0,3,6],[1,4,7],[2,5,8]])
     
     self.assertEqual(a.size,6)
     self.checkarray(a["P"].shape,(3,3))
@@ -901,12 +928,12 @@ class Toolstests(casadiTestCase):
     self.checkarray(b["P"],DMatrix([[0,3,6],[3,4,7],[6,7,8]]))
     self.checkarray(b.cat,DMatrix([0,3,4,6,7,8]))
     
-    states = struct_ssym(["x","y","z"])
+    states = struct_symSX(["x","y","z"])
 
-    a = struct_ssym([entry("P",shapestruct=(states,states),type='symm')])
+    a = struct_symSX([entry("P",shapestruct=(states,states),type='symm')])
 
     b = a()
-    b["P"] = DMatrix([[0,1,2],[3,4,5],[6,7,8]])
+    b["P"] = DMatrix([[0,3,6],[1,4,7],[2,5,8]])
 
     self.checkarray(b["P",["x","z"],["x","z"]] ,DMatrix([[0,6],[6,8]]))
 
@@ -924,7 +951,7 @@ class Toolstests(casadiTestCase):
     b["P",["x","z"],["x","z"]] = DMatrix([[11,0],[0,11]])
     self.checkarray(b["P"],DMatrix([[11,1,0],[1,4,7],[0,7,11]]))
     
-    a = struct_ssym([entry("P",shape=sp_banded(3,1),type='symm')])
+    a = struct_symSX([entry("P",shape=sp_banded(3,1),type='symm')])
 
     b = a()
     with self.assertRaises(Exception):
@@ -950,13 +977,13 @@ class Toolstests(casadiTestCase):
     self.checkarray(b["P"],DMatrix([[11,12,0],[12,4,5],[0,5,8]]))
     
   def test_callableExtraIndex(self):
-    a = struct_ssym([entry("a",shape=(5,3)),entry("b",shape=(4,3))])
+    a = struct_symSX([entry("a",shape=(5,3)),entry("b",shape=(4,3))])
     b = a()
     
-    b["a",flatten] = range(15)
+    b["a",vec] = range(15)
     self.checkarray(b.cat,DMatrix(range(15)+[0]*12))
     
-    self.checkarray(b["a",flatten],DMatrix(range(15)))
+    self.checkarray(b["a",vec],DMatrix(range(15)))
     
     b["a",vec] = range(15)
 
@@ -984,8 +1011,8 @@ class Toolstests(casadiTestCase):
     self.checkarray(w["b",:,2],DMatrix([12,12]))
     
   def test_numpyint(self):
-    state = struct_ssym(['x', 'y'])
-    x = struct_ssym([entry('states', struct=state, repeat=10)])
+    state = struct_symSX(['x', 'y'])
+    x = struct_symSX([entry('states', struct=state, repeat=10)])
     x_init = x()
     x_init['states', 0, 'x'] # OK
     a = [1,2,3]
@@ -993,14 +1020,14 @@ class Toolstests(casadiTestCase):
     x_init['states', int64(0), 'x']
     
   def test_numpyint(self):
-    s = struct_ssym(map(entry, 'xyz')) # OK 
+    s = struct_symSX(map(entry, 'xyz')) # OK 
     print s['x']
-    s = struct_ssym(map(entry, u'xyz')) # IndexError: list index out of range
+    s = struct_symSX(map(entry, u'xyz')) # IndexError: list index out of range
     print s[u'x']
     
   def test_pickling_null(self):
     import pickle
-    s = struct_msym([
+    s = struct_symMX([
       entry("a",shape=(2,3)),
       entry("b",shape=(0,0))
     ])
@@ -1011,12 +1038,12 @@ class Toolstests(casadiTestCase):
     
   def test_bug_structSXMX(self):
     n= 2
-    x_sx = struct_ssym([
+    x_sx = struct_symSX([
         entry("x",shape=n),
         entry("S",shape=(n,n))
     ])
     
-    x_mx = struct_ssym([
+    x_mx = struct_symSX([
         entry("x",shape=n),
         entry("S",shape=(n,n))
     ])
@@ -1034,7 +1061,7 @@ class Toolstests(casadiTestCase):
     self.checkarray(X_sx.cat,DMatrix(range(n+n*n)))
     self.checkarray(X_mx.cat,DMatrix(range(n+n*n)))
     
-    for s, S in [(x_sx,struct_ssym),(x_mx,struct_msym)]:
+    for s, S in [(x_sx,struct_symSX),(x_mx,struct_symMX)]:
       h = S([entry("w",struct=s)])
       hX = struct_SX(h)
       hX["w","x"] = DMatrix(range(n))
@@ -1051,12 +1078,12 @@ class Toolstests(casadiTestCase):
     
     n= 2
     m = 3
-    x_sx = struct_ssym([
+    x_sx = struct_symSX([
         entry("x",shape=n),
         entry("S",shape=(n,m))
     ])
     
-    x_mx = struct_ssym([
+    x_mx = struct_symSX([
         entry("x",shape=n),
         entry("S",shape=(n,m))
     ])
@@ -1075,26 +1102,26 @@ class Toolstests(casadiTestCase):
     self.checkarray(X_mx.cat,DMatrix(range(n+n*m)))
     
     n = 3
-    x_sx = struct_ssym([
+    x_sx = struct_symSX([
         entry("x",shape=n),
-        entry("S",shape=sp_tril(n))
+        entry("S",shape=sp_triu(n))
     ])
     
-    x_mx = struct_ssym([
+    x_mx = struct_symSX([
         entry("x",shape=n),
-        entry("S",shape=sp_tril(n))
+        entry("S",shape=sp_triu(n))
     ])
     
     X_sx = struct_SX(x_sx)
     X_sx["x"] = DMatrix(range(n))
-    X_sx["S"] = DMatrix(sp_tril(n),range(n,n+n*(n+1)/2))
+    X_sx["S"] = DMatrix(sp_triu(n),range(n,n+n*(n+1)/2))
    
     X_mx = struct_MX(x_sx)
     X_mx["x"] = DMatrix(range(n))
-    X_mx["S"] = DMatrix(sp_tril(n),range(n,n+n*(n+1)/2))
+    X_mx["S"] = DMatrix(sp_triu(n),range(n,n+n*(n+1)/2))
     
-    self.checkarray(x_sx.struct.map[("S",)],DMatrix(sp_tril(n),range(n,n+n*(n+1)/2)))
-    self.checkarray(x_mx.struct.map[("S",)],DMatrix(sp_tril(n),range(n,n+n*(n+1)/2)))
+    self.checkarray(x_sx.struct.map[("S",)],DMatrix(sp_triu(n),range(n,n+n*(n+1)/2)))
+    self.checkarray(x_mx.struct.map[("S",)],DMatrix(sp_triu(n),range(n,n+n*(n+1)/2)))
     self.checkarray(X_sx.cat,DMatrix(range(n+n*(n+1)/2)))
     self.checkarray(X_mx.cat,DMatrix(range(n+n*(n+1)/2)))
     

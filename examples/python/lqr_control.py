@@ -25,7 +25,6 @@ from casadi import *
 from casadi.tools import *
 import scipy.linalg
 import numpy as np
-from casadi import flatten
 
 """
 This example how an Linear Quadratic Regulator (LQR) can be designed
@@ -72,14 +71,14 @@ assert(rank==ns)
 # Simulation of the open-loop system
 # -----------------------------------
 
-y  = ssym("y",ns)
-u  = ssym("u",nu)
+y  = SX.sym("y",ns)
+u  = SX.sym("u",nu)
 
 x0 = DMatrix([1,0,0])
 # no control
 u_ = DMatrix([[ -1, 1 ],[1,-1]]*((N-1)/2))
 
-p = SX("p")
+p = SX.sym("p")
 
 tn = np.linspace(0,te,N)
 cdae = SXFunction(controldaeIn(x=y,u=u),[mul(A,y)+mul(B,u)])
@@ -171,7 +170,7 @@ plot(tf,sim.getOutput()-out,linewidth=3)
 
 # dev_est = []
 # for i in range(len(tf)):
-#   dev_est.append(mul(jacsim.getOutput()[i*ns:(i+1)*ns,:],flatten(u_perturb)))
+#   dev_est.append(mul(jacsim.getOutput()[i*ns:(i+1)*ns,:],vec(u_perturb)))
 
 # dev_est = horzcat(dev_est).T
 # plot(tf,dev_est,'+k')
@@ -191,7 +190,7 @@ plot(tf,sim.getOutput()-out,linewidth=3)
 x0 = vertcat([1,0,0])
 xref_e = vertcat([1,0,0])
 
-states = struct_ssym([
+states = struct_symSX([
            entry("eAt",shape=(ns,ns)),
            entry("Wt",shape=(ns,ns))
          ])
@@ -235,7 +234,7 @@ assert(e<1e-7)
 # Simulate with feedforward controls
 # -----------------------------------
 
-states = struct_ssym([
+states = struct_symSX([
           entry("y",shape=ns),      # The regular states of the LTI system
           entry("eAt",shape=(ns,ns))  # The matrix exponential exp(A*(t1-t))
          ])
@@ -294,11 +293,11 @@ Q = DMatrix.eye(ns)
 R = DMatrix.eye(nu)
 
 # Continuous Riccati equation
-P = ssym("P",ns,ns)
+P = SX.sym("P",ns,ns)
 
 ric = (Q + mul(A.T,P) + mul(P,A) - mul([P,B,inv(R),B.T,P]))
 
-dae = SXFunction(daeIn(x=flatten(P)),daeOut(ode=flatten(ric)))
+dae = SXFunction(daeIn(x=vec(P)),daeOut(ode=vec(ric)))
 dae.init()
 
 # We solve the ricatti equation by simulating backwards in time until steady state is reached.
@@ -310,7 +309,7 @@ integrator.init()
 u = DMatrix.eye(ns)
 makeDense(u)
 integrator.reset()
-integrator.setInput(flatten(u),"x0")
+integrator.setInput(vec(u),"x0")
 integrator.integrate(0)
 
 # Keep integrating until steady state is reached
@@ -348,14 +347,14 @@ print "feedback matrix= ", K
 print "Open-loop eigenvalues: ", D
 
 # Check what happens if we integrate the Riccati equation forward in time
-dae = SXFunction(daeIn(x = flatten(P)),daeOut(ode=flatten(-ric)))
+dae = SXFunction(daeIn(x = vec(P)),daeOut(ode=vec(-ric)))
 dae.init()
 
 integrator = CVodesIntegrator(dae)
 integrator.setOption("reltol",1e-16)
 integrator.setOption("stop_at_end",False)
 integrator.init()
-integrator.setInput(flatten(P_),"x0")
+integrator.setInput(vec(P_),"x0")
 integrator.input("x0")[0] += 1e-9 # Put a tiny perturbation
 integrator.reset()
 integrator.integrate(0)
@@ -387,7 +386,7 @@ print "Forward riccati eigenvalues = ", D
 
 x0 = DMatrix([1,0,0])
 
-y  = ssym("y",ns)
+y  = SX.sym("y",ns)
 
 C = DMatrix([[1,0,0],[0,1,0]])
 D = DMatrix([[0,0],[0,0]])
@@ -397,7 +396,7 @@ temp = inv(blockcat([[A,B],[C,D]]))
 F = temp[:ns,-ny:]
 Nm = temp[ns:,-ny:]
 
-t = SX("t")
+t = SX.sym("t")
 
 figure(6)
 
@@ -441,7 +440,7 @@ for k,yref in enumerate([ vertcat([-1,sqrt(t)]) , vertcat([-1,-0.5]), vertcat([-
 x0 = vertcat([1,0,0])
 
 # Now simulate with open-loop controls
-states = struct_ssym([
+states = struct_symSX([
            entry("y",shape=ns), # The regular states of the LTI system
            entry("yref",shape=ns), # States that constitute a tracking reference for the LTI system
            entry("eAt",shape=(ns,ns)) # The matrix exponential exp(A*(t1-t))
@@ -457,7 +456,7 @@ states_["yref"] = x0
 states_["eAt"]  = eAt_
 
 
-param = struct_ssym([entry("K",shape=(nu,ns))])
+param = struct_symSX([entry("K",shape=(nu,ns))])
 
 param_ = param(0)
 
@@ -540,14 +539,14 @@ u_ = horzcat([controls_,yref_])
 
 x0 = DMatrix([1,0,0])
 
-controls = struct_ssym([
+controls = struct_symSX([
              entry("uref",shape=nu),
              entry("yref",shape=ns)
            ])
 
-yref  = ssym("yref",ns)
-y     = ssym("y",ns)
-dy    = ssym("dy",ns)
+yref  = SX.sym("yref",ns)
+y     = SX.sym("y",ns)
+dy    = SX.sym("dy",ns)
 u     = controls["uref"]-mul(param["K"],y-controls["yref"])
 rhs   = mul(A,y)+mul(B,u)
 
@@ -602,7 +601,7 @@ title('controls (%s)' % caption)
 # discrete reference, discrete control action
 # -----------------------------------------------------------
 
-y0     = ssym("y0",ns)
+y0     = SX.sym("y0",ns)
 
 u     = controls["uref"]-mul(param["K"],y0-controls["yref"])
 rhs   = mul(A,y)+mul(B,u)
