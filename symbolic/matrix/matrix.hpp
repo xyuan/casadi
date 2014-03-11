@@ -162,12 +162,13 @@ namespace CasADi{
     using B::size1;
     using B::size2;
     using B::shape;
-    using B::empty;
-    using B::scalar;
-    using B::dense;
-    using B::vector;
+    using B::isEmpty;
+    using B::isScalar;
+    using B::isDense;
+    using B::isVector;
     using B::dimString;
     using B::sym;
+    using B::sparse;
     using B::zeros;
     using B::ones;
     using B::operator[];
@@ -577,10 +578,10 @@ namespace CasADi{
     const std::vector<T>& data() const;
     
     /// Get a pointer to the data
-    T* ptr(){ return empty() ? static_cast<T*>(0) : &front();}
+    T* ptr(){ return isEmpty() ? static_cast<T*>(0) : &front();}
     
     /// Get a const pointer to the data
-    const T* ptr() const{ return empty() ? static_cast<const T*>(0) : &front();}
+    const T* ptr() const{ return isEmpty() ? static_cast<const T*>(0) : &front();}
         
     /// Const access the sparsity - reference to data member
     const Sparsity& sparsity() const{ return sparsity_; }
@@ -662,20 +663,14 @@ namespace CasADi{
         ldres: The leading dimension in res 
         res:   The number of superdiagonals */
     void getBand(int kl, int ku, int ldres, T *res) const;
-    
-    //@{
-    /** \brief  create a sparse matrix with all zeros */
-    static Matrix<T> sparse(int nrow=1, int ncol=1);
-    static Matrix<T> sparse(const std::pair<int,int>& rc){ return sparse(rc.first,rc.second);}
-    //@}
-    
+        
     /* \brief Construct a sparse matrix from triplet form
      * Default matrix size is max(col) x max(row)
      */
     //@{
-    static Matrix<T> sparse(const std::vector<int>& row, const std::vector<int>& col, const std::vector<T>& d);
-    static Matrix<T> sparse(const std::vector<int>& row, const std::vector<int>& col, const std::vector<T>& d, int nrow, int ncol);
-    static Matrix<T> sparse(const std::vector<int>& row, const std::vector<int>& col, const std::vector<T>& d, const std::pair<int,int>& rc);
+    static Matrix<T> triplet(const std::vector<int>& row, const std::vector<int>& col, const std::vector<T>& d);
+    static Matrix<T> triplet(const std::vector<int>& row, const std::vector<int>& col, const std::vector<T>& d, int nrow, int ncol);
+    static Matrix<T> triplet(const std::vector<int>& row, const std::vector<int>& col, const std::vector<T>& d, const std::pair<int,int>& rc);
     //@}
     
     //@{
