@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef STL_VECTOR_TOOLS_HPP
-#define STL_VECTOR_TOOLS_HPP
+#ifndef STD_VECTOR_TOOLS_HPP
+#define STD_VECTOR_TOOLS_HPP
 
 
 #include <iostream>
@@ -37,7 +37,7 @@
 #include "casadi_exception.hpp"
 #include "casadi_types.hpp"
 
-/** \brief Convenience tools for STL vectors
+/** \brief Convenience tools for C++ Standard Library vectors
     \author Joel Andersson 
     \date 2010-2011
 */
@@ -45,15 +45,15 @@
 namespace std{
 
 #ifndef SWIG
-  /// Enables flushing an STL vector to a stream (prints representation)
+  /// Enables flushing an std::vector to a stream (prints representation)
   template<typename T>
   ostream& operator<<(ostream &stream, const vector<T> &v);
   
-  /// Enables flushing an STL pair to a stream (prints representation)
+  /// Enables flushing an std::pair to a stream (prints representation)
   template<typename T1, typename T2>
   ostream& operator<<(ostream &stream, const pair<T1,T2> &p);
   
-  /// Enables flushing an STL map to a stream (prints representation)
+  /// Enables flushing an std::map to a stream (prints representation)
   template<typename T1, typename T2>
   ostream& operator<<(ostream &stream, const std::map<T1,T2> &p);
   
@@ -268,6 +268,34 @@ namespace CasADi{
 %}
   #endif // SWIGPYTHON
   #endif // SWIG
+
+#ifndef SWIG
+  // Create a vector of length 1
+  template<typename T>
+  std::vector<T> toVector(const T& v0){ 
+    return std::vector<T>(1,v0);
+  }
+
+  // Create a vector of length 2
+  template<typename T>
+  std::vector<T> toVector(const T& v0, const T& v1){ 
+    std::vector<T> ret(2);
+    ret[0] = v0;
+    ret[1] = v1;
+    return ret;
+  }
+
+  // Create a vector of length 3
+  template<typename T>
+  std::vector<T> toVector(const T& v0, const T& v1, const T& v2){ 
+    std::vector<T> ret(3);
+    ret[0] = v0;
+    ret[1] = v1;
+    ret[2] = v2;
+    return ret;
+  }
+#endif // SWIG
+
   
   /// Checks if vector does not contain NaN or Inf
   template<typename T>
@@ -279,7 +307,7 @@ namespace CasADi{
 #ifndef SWIG
 namespace std{
 
-  /// Enables flushing an STL vector to a stream (prints representation)
+  /// Enables flushing an std::vector to a stream (prints representation)
   template<typename T>
   ostream& operator<<(ostream &stream, const vector<T> &v){
     CasADi::repr(v,stream);
@@ -682,4 +710,4 @@ VTT_INST(T,isRegular) \
 
 #endif //SWIG
 
-#endif // STL_VECTOR_TOOLS_HPP
+#endif // STD_VECTOR_TOOLS_HPP

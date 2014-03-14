@@ -28,7 +28,7 @@
 #include "symbolic_mx.hpp"
 #include "constant_mx.hpp"
 #include "mx_tools.hpp"
-#include "../stl_vector_tools.hpp"
+#include "../std_vector_tools.hpp"
 #include "../matrix/matrix_tools.hpp"
 #include "norm.hpp"
 #include "../casadi_math.hpp"
@@ -40,6 +40,14 @@ namespace CasADi{
   }
 
   MX::MX(){
+  }
+
+  MX::MX(MXNode* node, bool dummy1, bool dummy2, bool dummy3, bool dummy4){
+    assignNode(node);
+  }
+
+  MX MX::create(MXNode* node){
+    return MX(node,false,false,false,false);
   }
 
   MX::MX(double x){
@@ -108,19 +116,13 @@ namespace CasADi{
     assignNode(ConstantMX::create(sp,val));
   }
 
-  MX MX::create(MXNode* node){
-    MX ret;
-    ret.assignNode(node);
-    return ret;
-  }
-
   std::vector<MX> MX::createMultipleOutput(MXNode* node){
     casadi_assert(dynamic_cast<MultipleOutput*>(node)!=0);
     MX x =  MX::create(node);
     std::vector<MX> ret(x->getNumOutputs());
     for(int i=0; i<ret.size(); ++i){
       ret[i] = MX::create(new OutputNode(x, i));
-      if(ret[i].null()){
+      if(ret[i].isEmpty(true)){
         ret[i] = MX::sparse(0,0);
       } else if(ret[i].size()==0){
         ret[i] = MX::sparse(ret[i].shape());

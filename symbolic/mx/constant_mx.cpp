@@ -24,7 +24,7 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
-#include "../stl_vector_tools.hpp"
+#include "../std_vector_tools.hpp"
 #include "../matrix/matrix_tools.hpp"
 
 using namespace std;
@@ -92,20 +92,28 @@ namespace CasADi{
   }
 
   ConstantMX* ConstantMX::create(const Sparsity& sp, int val){
-    switch(val){
-    case 0: return new Constant<CompiletimeConst<0> >(sp);
-    case 1: return new Constant<CompiletimeConst<1> >(sp);
-    case -1: return new Constant<CompiletimeConst<(-1)> >(sp);
-    default: return new Constant<RuntimeConst<int> >(sp,val);        
+    if(sp.isEmpty(true)){
+      return ZeroByZero::getInstance();
+    } else {
+      switch(val){
+      case 0: return new Constant<CompiletimeConst<0> >(sp);
+      case 1: return new Constant<CompiletimeConst<1> >(sp);
+      case -1: return new Constant<CompiletimeConst<(-1)> >(sp);
+      default: return new Constant<RuntimeConst<int> >(sp,val);        
+      }
     }
   }
 
   ConstantMX* ConstantMX::create(const Sparsity& sp, double val){
-    int intval(val);
-    if(intval-val==0){
-      return create(sp,intval);
+    if(sp.isEmpty(true)){
+      return ZeroByZero::getInstance();
     } else {
-      return new Constant<RuntimeConst<double> >(sp,val);
+      int intval(val);
+      if(intval-val==0){
+        return create(sp,intval);
+      } else {
+        return new Constant<RuntimeConst<double> >(sp,val);
+      }
     }
   }
 
@@ -180,6 +188,40 @@ namespace CasADi{
     if(!std::equal(x_.begin(),x_.end(),n->x_.begin())) return false;
     
     return true;
+  }
+
+  void ZeroByZero::printPart(std::ostream &stream, int part) const{
+    stream << "0x0";
+  }
+
+  MX ZeroByZero::getSetSparse(const Sparsity& sp) const{
+    return shared_from_this<MX>();
+  }
+
+  MX ZeroByZero::getGetNonzeros(const Sparsity& sp, const std::vector<int>& nz) const{
+    casadi_assert(nz.empty());
+    return MX::zeros(sp);
+  }
+    
+  MX ZeroByZero::getSetNonzeros(const MX& y, const std::vector<int>& nz) const{
+    return shared_from_this<MX>();
+  }
+
+  MX ZeroByZero::getTranspose() const{
+    return shared_from_this<MX>();
+  }
+
+  MX ZeroByZero::getUnary(int op) const{
+    return shared_from_this<MX>();
+  }
+
+  MX ZeroByZero::getBinary(int op, const MX& y, bool ScX, bool ScY) const{
+    return shared_from_this<MX>();
+  }
+
+  MX ZeroByZero::getReshape(const Sparsity& sp) const{
+    casadi_assert(sp.isEmpty());
+    return MX::zeros(sp);
   }
 
 } // namespace CasADi

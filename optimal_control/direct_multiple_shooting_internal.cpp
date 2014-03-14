@@ -24,7 +24,7 @@
 #include "../symbolic/fx/integrator.hpp"
 #include "../symbolic/matrix/matrix_tools.hpp"
 #include "../symbolic/mx/mx_tools.hpp"
-#include "../symbolic/stl_vector_tools.hpp"
+#include "../symbolic/std_vector_tools.hpp"
 
 using namespace std;
 namespace CasADi{
@@ -155,7 +155,7 @@ void DirectMultipleShootingInternal::init(){
   // Objective function
   MX f;
   if (mfcn_.getNumInputs()==1) {
-    f = mfcn_.call(X.back()).front();
+    f = mfcn_(X.back()).front();
   } else {
     vector<MX> mfcn_argin(MAYER_NUM_IN); 
     mfcn_argin[MAYER_X] = X.back();

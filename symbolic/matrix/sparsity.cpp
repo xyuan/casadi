@@ -23,7 +23,7 @@
 #include "sparsity_internal.hpp"
 #include "sparsity_tools.hpp"
 #include "../matrix/matrix.hpp"
-#include "../stl_vector_tools.hpp"
+#include "../std_vector_tools.hpp"
 #include <climits>
 
 using namespace std;
@@ -127,14 +127,10 @@ namespace CasADi{
     return (*this)->numel();
   }
 
-  bool Sparsity::isEmpty() const{
-    return (*this)->isEmpty();
+  bool Sparsity::isEmpty(bool both) const{
+    return (*this)->isEmpty(both);
   }
-  
-  bool Sparsity::null() const{
-    return (*this)->null();
-  }
-    
+      
   int Sparsity::size() const{
     return (*this)->size();
   }

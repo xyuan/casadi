@@ -25,7 +25,7 @@
 #include "../casadi_math.hpp"
 #include "../casadi_exception.hpp"
 #include "../matrix/matrix_tools.hpp"
-#include "../stl_vector_tools.hpp"
+#include "../std_vector_tools.hpp"
 using namespace std;
 
 namespace CasADi{
@@ -42,7 +42,7 @@ namespace CasADi{
       SXFunction fcn(x,f);
       fcn.init();
 
-      return q1*gauss_quadrature(fcn.eval(q1*x+q2), x, -1, 1);
+      return q1*gauss_quadrature(fcn(q1*x+q2).at(0), x, -1, 1);
     }
 
     // Gauss points
@@ -65,7 +65,7 @@ namespace CasADi{
     SXFunction fcn(x,f);
     vector<SXElement> f_val(5);
     for(int i=0; i<5; ++i)
-      f_val[i] = fcn.eval(xi[i]).toScalar();
+      f_val[i] = fcn(SX(xi[i])).at(0).toScalar();
 
     // Weighted sum
     SXElement sum;
@@ -178,7 +178,7 @@ namespace CasADi{
     // Otherwise, evaluate symbolically     
     SXFunction F(v,ex);
     F.init();
-    return F.eval(vdef);
+    return F(vdef);
   }
 
   SX substitute(const SX &ex, const SX &v, const SX &vdef){
@@ -738,7 +738,7 @@ namespace CasADi{
             
         // Write the equation in matrix form
         SX Jb = fcnb.jac();
-        SX rb = -fcnb.eval(SX::zeros(1,xb_lin.size()));
+        SX rb = -fcnb(SX::zeros(1,xb_lin.size())).at(0);
       
         // Simple solve if there are no nonlinear variables
         if(xb_nonlin.empty()){
@@ -1048,7 +1048,7 @@ namespace CasADi{
     int mult = 1;
     bool success = false;
     for (int i=0;i<1000;++i) {
-      ret.append(f.eval(casadi_limits<SXElement>::zero)/mult);
+      ret.append(f(SX(0)).at(0)/mult);
       SX j = f.jac();
       if (j.size()==0) {
         success = true;

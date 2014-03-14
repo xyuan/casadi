@@ -1337,13 +1337,13 @@ class MXtests(casadiTestCase):
     f.evaluate()
     
     r = f.call([x,MX()])
-    self.assertTrue(r[1].null())
+    self.assertTrue(r[1].isEmpty(True))
 
     r = f.call([MX(),MX()])
-    self.assertTrue(r[1].null())
+    self.assertTrue(r[1].isEmpty(True))
     
-    #self.assertRaises(Exception,lambda : f.eval([x,x]))
-    #self.assertRaises(Exception,lambda : f.eval([[],[]]))
+    #self.assertRaises(Exception,lambda : f.call([x,x],True))
+    #self.assertRaises(Exception,lambda : f.call([[],[]],True))
     
   def test_issue184(self):
     self.message("Regression test issue #184")
@@ -1588,7 +1588,7 @@ class MXtests(casadiTestCase):
 
     Y = MX.sym("Y",10)
 
-    ff = MXFunction([Y],f.eval([Y]))
+    ff = MXFunction([Y],f.call([Y],True))
     ff.init()
     ff.setInput(range(10))
     ff.evaluate()
@@ -1634,7 +1634,7 @@ class MXtests(casadiTestCase):
 
     Y = MX.sym("Y",10)
 
-    ff = MXFunction([Y],f.eval([Y]))
+    ff = MXFunction([Y],f.call([Y],True))
     ff.init()
     ff.setInput(range(10))
     ff.evaluate()
@@ -1957,7 +1957,7 @@ class MXtests(casadiTestCase):
      self.assertEqual(c.size1(),5)
      self.assertEqual(c.size2(),0)
 
-     c = f.eval([b])[0]
+     c = f.call([b],True)[0]
 
      self.assertEqual(c.size1(),5)
      self.assertEqual(c.size2(),0)
@@ -1972,7 +1972,7 @@ class MXtests(casadiTestCase):
      self.assertEqual(c.size1(),0)
      self.assertEqual(c.size2(),0)
 
-     c = f.eval([b])[0]
+     c = f.call([b],True)[0]
 
      self.assertEqual(c.size1(),0)
      self.assertEqual(c.size2(),0)

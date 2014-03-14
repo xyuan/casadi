@@ -24,7 +24,7 @@
 #include "../sx/sx_tools.hpp"
 #include "../fx/mx_function.hpp"
 #include "../matrix/matrix_tools.hpp"
-#include "../stl_vector_tools.hpp"
+#include "../std_vector_tools.hpp"
 #include "../fx/mx_function_internal.hpp"
 
 using namespace std;
@@ -549,7 +549,7 @@ namespace CasADi{
     // Otherwise, evaluate symbolically     
     MXFunction F(v,ex);
     F.init();
-    return F.eval(vdef);
+    return F.call(vdef,true);
   }
   
   MX graph_substitute(const MX &ex, const std::vector<MX> &v, const std::vector<MX> &vdef) {
@@ -892,7 +892,7 @@ namespace CasADi{
     SXFunction s = f.expand();
     s.init();
 
-    return s.eval(graph_substitute(v,syms,boundary));
+    return s.call(graph_substitute(v,syms,boundary),true);
   }
   
   MX kron(const MX& a, const MX& b) {
@@ -929,7 +929,7 @@ namespace CasADi{
     SX n = SX::sym("A",A.sparsity());
     SXFunction f(n,nullspace(n));
     f.init();
-    return f.call(A)[0];
+    return f(A).at(0);
   }
   
 } // namespace CasADi

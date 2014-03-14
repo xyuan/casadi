@@ -23,7 +23,7 @@
 #include "fx_internal.hpp"
 #include "../mx/call_fx.hpp"
 #include <typeinfo> 
-#include "../stl_vector_tools.hpp"
+#include "../std_vector_tools.hpp"
 #include "mx_function.hpp"
 #include "../matrix/matrix_tools.hpp"
 #include "../sx/sx_tools.hpp"
@@ -1974,7 +1974,7 @@ namespace CasADi{
       MX J_simo_arg = horzcat(tmp);
 
       // Evaluate symbolically
-      jac_resv = J_simo.call(J_simo_arg);
+      jac_resv = J_simo(J_simo_arg);
     }
 
     // We are now ready to form the full Jacobian
@@ -2408,7 +2408,7 @@ namespace CasADi{
     // Store the adjoint sensitivities
     for(int d=0; d<adjSens.size(); ++d){
       for(int i=0; i<adjSens[d].size(); ++i){
-        if(adjSens[d][i]!=0 && !asens[d][i].isNull() && !(*adjSens[d][i]).null()){
+        if(adjSens[d][i]!=0 && !asens[d][i].isNull() && !(*adjSens[d][i]).isEmpty(true)){
           *adjSens[d][i] += asens[d][i];
         }
       }
