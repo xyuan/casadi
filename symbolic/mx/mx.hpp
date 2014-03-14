@@ -55,12 +55,14 @@ namespace CasADi{
     MX();
 
 #ifndef WITHOUT_PRE_1_9_X
-/** \brief [DEPRECATED] Replaced with MX::sym
+/** \brief [DEPRECATED]
 */
 //@{
     explicit MX(const std::string& name, int nrow=1, int ncol=1);
     explicit MX(const std::string& name, const std::pair<int,int> &rc);
     explicit MX(const std::string& name, const Sparsity& sp);
+    MX(int nrow, int ncol);
+    MX(int nrow, int ncol, const MX& val);
 //@}
 #endif
 
@@ -82,12 +84,6 @@ namespace CasADi{
     
     /** \brief  Create sparse matrix constant (also implicit type conversion) */
     MX(const Matrix<double> &x);
-
-    /** \brief  Matrix with all zeros */
-    MX(int nrow, int ncol);
-    
-    /** \brief  Dense matrix filled with value val */
-    MX(int nrow, int ncol, const MX& val);
     
     /** \brief  Destructor */
     virtual ~MX();
@@ -243,16 +239,16 @@ namespace CasADi{
     Matrix<double> getMatrixValue() const;
   
     /// Check if symbolic
-    bool isSymbolic () const;
+    bool isSymbolic() const;
   
     /// Check if constant
-    bool isConstant () const;
+    bool isConstant() const;
   
     /// Check if evaluation
-    bool isEvaluation () const;
+    bool isEvaluation() const;
   
     /// Check if evaluation output
-    bool isEvaluationOutput () const;
+    bool isEvaluationOutput() const;
   
     /// Get the index of evaluation output - only valid when isEvaluationoutput() is true
     int getEvaluationOutput() const;
@@ -267,7 +263,28 @@ namespace CasADi{
     bool isCommutative() const;
     
     /// Check if norm
-    bool isNorm () const;
+    bool isNorm() const;
+
+    /** \brief  check if all nonzeros are symbolic (this function is currently identical to isSymbolic) */
+    bool isSymbolicSparse() const;
+
+    /** \brief  check if identity */
+    bool isIdentity() const;
+
+    /** \brief  check if zero (note that false negative answers are possible) */
+    bool isZero() const;
+
+    /** \brief  check if zero (note that false negative answers are possible) */
+    bool isOne() const;
+
+    /** \brief  check if zero (note that false negative answers are possible) */
+    bool isMinusOne() const;
+
+    /** \brief  Is the expression a transpose? */
+    bool isTranspose() const;
+  
+    /// Checks if expression does not contain NaN or Inf
+    bool isRegular() const;
   
     /// Get function
     FX getFunction();
@@ -438,11 +455,19 @@ namespace CasADi{
     /** \brief Set sparse */
     MX setSparse(const Sparsity& sp, bool intersect=false) const;
 
-    /** \brief Make dense */
-    MX makeDense(const MX& val = 0) const;
+    /// Make the matrix dense
+    void densify(const MX& val = 0);
 
     /// Lift an expression
     void lift(const MX& x_guess);
+
+    /// Transpose the matrix
+    MX trans() const;
+    
+#ifndef SWIG
+    /// Transpose the matrix (shorthand)
+    MX T() const{ return trans();}
+#endif
 
     /** \brief Get an IMatrix representation of a GetNonzeros or SetNonzeros node */
     Matrix<int> mapping() const;

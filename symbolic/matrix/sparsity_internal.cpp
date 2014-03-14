@@ -121,7 +121,7 @@ namespace CasADi{
     vector<int> trans_row = getCol();
 
     // Create the sparsity pattern
-    return sp_triplet(ncol_,nrow_,trans_row,trans_col,mapping,invert_mapping);
+    return Sparsity::triplet(ncol_,nrow_,trans_row,trans_col,mapping,invert_mapping);
   }
 
   std::vector<int> SparsityInternal::eliminationTree(bool ata) const{
@@ -740,7 +740,7 @@ namespace CasADi{
 
   Sparsity SparsityInternal::permute(const std::vector<int>& pinv, const std::vector<int>& q, int values) const{
     // alloc result
-    Sparsity C(nrow_,ncol_);
+    Sparsity C = Sparsity::sparse(nrow_,ncol_);
   
     // Col offset
     vector<int>& colind_C = C.colindRef();
@@ -1699,7 +1699,7 @@ namespace CasADi{
     vector<int> w(m);
 
     // allocate result
-    Sparsity C(m,n);
+    Sparsity C = Sparsity::sparse(m,n);
     C.colindRef().resize(anz + bnz);
   
     int* Cp = &C.colindRef().front();
@@ -1768,10 +1768,10 @@ namespace CasADi{
     }
   }
 
-  Sparsity SparsityInternal::diag(std::vector<int>& mapping) const{
+  Sparsity SparsityInternal::getDiag(std::vector<int>& mapping) const{
     if (ncol_==nrow_) {
       // Return object
-      Sparsity ret(0,1);
+      Sparsity ret = Sparsity::sparse(0,1);
       ret.reserve(std::min(size(),ncol_),ncol_);
     
       // Mapping
@@ -1848,28 +1848,28 @@ namespace CasADi{
     return ss.str();
   }
 
-  Sparsity SparsityInternal::patternProduct(const Sparsity& y) const{
+  Sparsity SparsityInternal::patternProduct(const Sparsity& x_trans) const{
     // Dimensions
-    int x_ncol = ncol_;
-    int y_nrow = y.size2();
+    int x_nrow = x_trans.size2();
+    int y_ncol = ncol_;
 
     // Quick return if both are dense
-    if(isDense() && y.isDense()){
-      return Sparsity(y_nrow,x_ncol,!isEmpty() && !y.isEmpty());
+    if(isDense() && x_trans.isDense()){
+      return !isEmpty() && !x_trans.isEmpty() ? Sparsity::dense(x_nrow,y_ncol) : Sparsity::sparse(x_nrow,y_ncol);
     }
   
     // return object
-    Sparsity ret(y_nrow,x_ncol);
+    Sparsity ret = Sparsity::sparse(x_nrow,y_ncol);
   
     // Get the vectors for the return pattern
-    vector<int>& c = ret.rowRef();
-    vector<int>& r = ret.colindRef();
+    vector<int>& ret_row = ret.rowRef();
+    vector<int>& ret_colind = ret.colindRef();
   
     // Direct access to the arrays
-    const vector<int> &x_row = row_;
-    const vector<int> &y_col = y.row();
-    const vector<int> &x_colind = colind_;
-    const vector<int> &y_rowind = y.colind();
+    const vector<int> &x_col = x_trans.row();
+    const vector<int> &x_rowind = x_trans.colind();
+    const vector<int> &y_row = row_;
+    const vector<int> &y_colind = colind_;
 
     // If the compiler supports C99, we shall use the long long datatype, which is 64 bit, otherwise long
 #if __STDC_VERSION__ >= 199901L
@@ -1882,72 +1882,72 @@ namespace CasADi{
     int nr = CHAR_BIT*sizeof(int_t); // the size of int_t in bits (CHAR_BIT is the number of bits per byte, usually 8)
 
     // Number of such groups needed
-    int ng = x_ncol/nr;
-    if(ng*nr != x_ncol) ng++;
+    int ng = y_ncol/nr;
+    if(ng*nr != y_ncol) ng++;
   
     // Which rows exist in a col of the first factor
-    vector<int_t> in_x_col(nrow_);
-    vector<int_t> in_res_row(y_nrow);
+    vector<int_t> in_y_col(nrow_);
+    vector<int_t> in_res_row(x_nrow);
 
     // Loop over the cols of the resulting matrix, nr cols at a time
     for(int rr=0; rr<ng; ++rr){
 
       // Mark the elements in the x col
-      fill(in_x_col.begin(),in_x_col.end(),0); // NOTE: expensive?
+      fill(in_y_col.begin(),in_y_col.end(),0); // NOTE: expensive?
       int_t b=1;
-      for(int i=rr*nr; i<rr*nr+nr && i<x_ncol; ++i){
-        for(int el1=x_colind[i]; el1<x_colind[i+1]; ++el1){
-          in_x_col[x_row[el1]] |= b;
+      for(int i=rr*nr; i<rr*nr+nr && i<y_ncol; ++i){
+        for(int el1=y_colind[i]; el1<y_colind[i+1]; ++el1){
+          in_y_col[y_row[el1]] |= b;
         }
         b <<= 1;
       }
 
       // Get the sparsity pattern for the set of cols
       fill(in_res_row.begin(),in_res_row.end(),0); // NOTE: expensive?
-      for(int j=0; j<y_nrow; ++j){
+      for(int j=0; j<x_nrow; ++j){
       
         // Loop over the nonzeros of the row of the second factor
-        for(int el2=y_rowind[j]; el2<y_rowind[j+1]; ++el2){
+        for(int el2=x_rowind[j]; el2<x_rowind[j+1]; ++el2){
         
           // Get the col
-          int i_y = y_col[el2];
+          int i_y = x_col[el2];
         
           // Add nonzero if the element matches an element in the x col
-          in_res_row[j] |= in_x_col[i_y];
+          in_res_row[j] |= in_y_col[i_y];
         }
       }
 
       b = 1;
-      for(int i=rr*nr; i<rr*nr+nr && i<x_ncol; ++i){
+      for(int i=rr*nr; i<rr*nr+nr && i<y_ncol; ++i){
       
         // loop over the rows of the resulting matrix
-        for(int j=0; j<y_nrow; ++j){
+        for(int j=0; j<x_nrow; ++j){
         
           // Save nonzero, if any
           if(in_res_row[j] & b){
-            c.push_back(j);
+            ret_row.push_back(j);
           }
         }
-        r[i+1] = c.size();
+        ret_colind[i+1] = ret_row.size();
         b <<=1;
       }
     }
     return ret;
   }
 
-  Sparsity SparsityInternal::patternProduct(const Sparsity& y, vector< vector< pair<int,int> > >& mapping) const{
+  Sparsity SparsityInternal::patternProduct(const Sparsity& x_trans, vector< vector< pair<int,int> > >& mapping) const{
     // return object
-    Sparsity ret = patternProduct(y);
+    Sparsity ret = patternProduct(x_trans);
   
     // Get the vectors for the return pattern
-    const vector<int>& c = ret.row();
-    const vector<int>& r = ret.colind();
+    const vector<int>& ret_row = ret.row();
+    const vector<int>& ret_colind = ret.colind();
   
     // Direct access to the arrays
-    const vector<int> &x_row = row_;
-    const vector<int> &y_col = y.row();
-    const vector<int> &x_colind = colind_;
-    const vector<int> &y_rowind = y.colind();
+    const vector<int> &x_col = x_trans.row();
+    const vector<int> &y_colind = colind_;
+    const vector<int> &y_row = row_;
+    const vector<int> &x_rowind = x_trans.colind();
 
     // Clear the mapping
     mapping.resize(ret.size());
@@ -1958,14 +1958,14 @@ namespace CasADi{
     // loop over the col of the resulting matrix)
     for(int i=0; i<ncol_; ++i){
       // Loop over nonzeros
-      for(int el=r[i]; el<r[i+1]; ++el){
-        int j = c[el];
-        int el1 = x_colind[i];
-        int el2 = y_rowind[j];
+      for(int el=ret_colind[i]; el<ret_colind[i+1]; ++el){
+        int j = ret_row[el];
+        int el1 = y_colind[i];
+        int el2 = x_rowind[j];
         d.clear();
-        while(el1 < x_colind[i+1] && el2 < y_rowind[j+1]){ // loop over non-zero elements
-          int j1 = x_row[el1];
-          int i2 = y_col[el2];      
+        while(el1 < y_colind[i+1] && el2 < x_rowind[j+1]){ // loop over non-zero elements
+          int j1 = y_row[el1];
+          int i2 = x_col[el2];      
           if(j1==i2){
             d.push_back(pair<int,int>(el1++,el2++));
           } else if(j1<i2) {
@@ -2255,7 +2255,7 @@ namespace CasADi{
   
     std::vector<int> sp_mapping;
     std::vector<int> mapping_ = mapping;
-    Sparsity ret = sp_triplet(jj.size(),ii.size(),rows,cols,sp_mapping);
+    Sparsity ret = Sparsity::triplet(jj.size(),ii.size(),rows,cols,sp_mapping);
   
     for (int i=0;i<mapping.size();++i)
       mapping[i] = mapping_[sp_mapping[i]];
@@ -2318,7 +2318,7 @@ namespace CasADi{
   
     std::vector<int> sp_mapping;
     std::vector<int> mapping_ = mapping;
-    Sparsity ret = sp_triplet(jj.size(),ii.size(),rows,cols,sp_mapping);
+    Sparsity ret = Sparsity::triplet(jj.size(),ii.size(),rows,cols,sp_mapping);
   
     for (int i=0;i<mapping.size();++i)
       mapping[i] = mapping_[sp_mapping[i]];
@@ -2436,8 +2436,8 @@ namespace CasADi{
   
   Sparsity SparsityInternal::patternInverse() const {
     // Quick return clauses
-    if (isEmpty()) return Sparsity(nrow_,ncol_,true);
-    if (isDense()) return Sparsity(nrow_,ncol_,false);
+    if (isEmpty()) return Sparsity::dense(nrow_,ncol_);
+    if (isDense()) return Sparsity::sparse(nrow_,ncol_);
     
     // Sparsity of the result
     std::vector<int> row_ret;
@@ -2593,7 +2593,7 @@ namespace CasADi{
       }
     }
   
-    return Sparsity(nrow_,ncol_,true);
+    return Sparsity::dense(nrow_,ncol_);
   }
 
   int SparsityInternal::getNZ(int rr, int cc) const{
@@ -2625,7 +2625,7 @@ namespace CasADi{
 
   Sparsity SparsityInternal::reshape(int nrow, int ncol) const{
     casadi_assert_message(numel() == nrow*ncol, "reshape: number of elements must remain the same. Old shape is " << dimString() << ". New shape is " << nrow << "x" << ncol << "=" << nrow*ncol << ".");
-    Sparsity ret(nrow,ncol);
+    Sparsity ret = Sparsity::sparse(nrow,ncol);
     ret.reserve(size(),ncol);
   
     std::vector<int> col(size());
@@ -2644,7 +2644,7 @@ namespace CasADi{
         row[el] = j_ret;
       }
     }
-    return sp_triplet(nrow,ncol,row,col);
+    return Sparsity::triplet(nrow,ncol,row,col);
   }
 
   void SparsityInternal::resize(int nrow, int ncol){
@@ -2908,7 +2908,7 @@ namespace CasADi{
     }
   
     // Create return sparsity containing the coloring
-    Sparsity ret(ncol_,forbiddenColors.size());
+    Sparsity ret = Sparsity::sparse(ncol_,forbiddenColors.size());
     vector<int>& colind = ret.colindRef();
     vector<int>& row = ret.rowRef();
   
@@ -3158,7 +3158,7 @@ namespace CasADi{
     }
     
     // Create return sparsity containing the coloring
-    Sparsity ret(ncol_,forbiddenColors.size());
+    Sparsity ret = Sparsity::sparse(ncol_,forbiddenColors.size());
     vector<int>& colind = ret.colindRef();
     vector<int>& row = ret.rowRef();
   
@@ -3294,7 +3294,7 @@ namespace CasADi{
     int num_colors = forbiddenColors.size();
 
     // Return sparsity in sparse triplet format
-    return sp_triplet(ncol_,num_colors,range(color.size()),color);
+    return Sparsity::triplet(ncol_,num_colors,range(color.size()),color);
   }
 
   std::vector<int> SparsityInternal::largestFirstOrdering() const{
@@ -3380,7 +3380,7 @@ namespace CasADi{
     }
   
     // Return permuted matrix
-    return sp_triplet(nrow_,ncol_,new_row,new_col);
+    return Sparsity::triplet(nrow_,ncol_,new_row,new_col);
   }
 
   bool SparsityInternal::isTranspose(const SparsityInternal& y) const{
@@ -3529,7 +3529,7 @@ namespace CasADi{
     return true;
   }
 
-  Sparsity SparsityInternal::lower(bool includeDiagonal) const{
+  Sparsity SparsityInternal::getTril(bool includeDiagonal) const{
     vector<int> colind, row;
     colind.reserve(ncol_+1);
     colind.push_back(0);
@@ -3545,7 +3545,7 @@ namespace CasADi{
     return Sparsity(nrow_,ncol_,colind,row);
   }
 
-  Sparsity SparsityInternal::upper(bool includeDiagonal) const{
+  Sparsity SparsityInternal::getTriu(bool includeDiagonal) const{
     vector<int> colind, row;
     colind.reserve(ncol_+1);
     colind.push_back(0);
@@ -3561,7 +3561,7 @@ namespace CasADi{
     return Sparsity(nrow_,ncol_,colind,row);
   }
 
-  std::vector<int> SparsityInternal::lowerNZ() const{
+  std::vector<int> SparsityInternal::getLowerNZ() const{
     vector<int> ret;
     for(int cc=0; cc<ncol_; ++cc){
       for(int el = colind_[cc]; el<colind_[cc+1]; ++el){
@@ -3573,7 +3573,7 @@ namespace CasADi{
     return ret;
   }
 
-  std::vector<int> SparsityInternal::upperNZ() const{
+  std::vector<int> SparsityInternal::getUpperNZ() const{
     vector<int> ret;
     for(int cc=0; cc<ncol_; ++cc){
       for(int el = colind_[cc]; el<colind_[cc+1] && row_[el]<=cc; ++el){

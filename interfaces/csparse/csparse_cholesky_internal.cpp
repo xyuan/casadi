@@ -30,7 +30,7 @@ namespace CasADi{
     L_ = 0;
     S_ = 0;
 
-    casadi_assert_message(sparsity==trans(sparsity),"CSparseCholeskyInternal: supplied sparsity must be symmetric, got " << sparsity.dimString() << ".");
+    casadi_assert_message(sparsity.isSymmetric(),"CSparseCholeskyInternal: supplied sparsity must be symmetric, got " << sparsity.dimString() << ".");
   }
 
   CSparseCholeskyInternal::CSparseCholeskyInternal(const CSparseCholeskyInternal& linsol) : LinearSolverInternal(linsol){
@@ -98,7 +98,7 @@ namespace CasADi{
     Lp [n] = S_->cp [n] ; 
     Sparsity ret(n, n, row, colind); // BUG?
 
-    return transpose? trans(ret) : ret;
+    return transpose? ret.T() : ret;
   
   }
   
@@ -116,7 +116,7 @@ namespace CasADi{
     std::copy(L->x,L->x+nz,data.begin());
     DMatrix ret(Sparsity(n, m, colind, row),data); 
     
-    return transpose? trans(ret) : ret;
+    return transpose? ret.T() : ret;
   }
   
   void CSparseCholeskyInternal::prepare(){
@@ -142,8 +142,8 @@ namespace CasADi{
     L_ = cs_chol(&AT_, S_) ;                 // numeric Cholesky factorization 
     if(L_==0){
       DMatrix temp = input();
-      makeSparse(temp);
-      if (isSingular(temp.sparsity())) {
+      temp.sparsify();
+      if(temp.sparsity().isSingular()){
         stringstream ss;
         ss << "CSparseCholeskyInternal::prepare: factorization failed due to matrix being singular. Matrix contains numerical zeros which are structurally non-zero. Promoting these zeros to be structural zeros, the matrix was found to be structurally rank deficient. sprank: " << rank(temp.sparsity()) << " <-> " << temp.size2() << endl;
         if(verbose()){

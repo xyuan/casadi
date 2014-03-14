@@ -43,7 +43,7 @@ namespace CasADi{
   }
 
   MX::MX(double x){
-    assignNode(ConstantMX::create(sp_dense(1,1),x));
+    assignNode(ConstantMX::create(Sparsity::dense(1,1),x));
   }
 
   MX::MX(const Matrix<double>& x){
@@ -66,20 +66,33 @@ namespace CasADi{
   MX::MX(const string& name, const Sparsity& sp){
     assignNode(new SymbolicMX(name,sp));
   }
-#endif
 
   MX::MX(int nrow, int ncol){
-    assignNode(new Constant<CompiletimeConst<0> >(Sparsity(nrow,ncol)));
+    assignNode(new Constant<CompiletimeConst<0> >(Sparsity::sparse(nrow,ncol)));
   }
+
+  MX::MX(int nrow, int ncol, const MX& val){
+    // Make sure that val is scalar
+    casadi_assert(val.isScalar());
+    casadi_assert(val.isDense());
+  
+    Sparsity sp = Sparsity::dense(nrow,ncol);
+    *this = val->getGetNonzeros(sp,std::vector<int>(sp.size(),0));
+  }
+#endif
 
   MX::MX(const Sparsity& sp, const MX& val){
     if(val.isScalar()){
       // Dense matrix if val dense
       if(val.isDense()){
-        *this = val->getGetNonzeros(sp,std::vector<int>(sp.size(),0));
+        if(val.isConstant()){
+          assignNode(ConstantMX::create(sp,val.getValue()));
+        } else {
+          *this = val->getGetNonzeros(sp,std::vector<int>(sp.size(),0));
+        }
       } else {
         // Empty matrix
-        *this = sparse(sp.size1(),sp.size2());
+        assignNode(ConstantMX::create(Sparsity::sparse(sp.shape()),0));
       }
     } else {
       casadi_assert(val.isVector() && sp.size()==val.size1());
@@ -414,7 +427,7 @@ namespace CasADi{
   }
 
   MX MX::getNZ(const std::vector<int>& k) const{
-    Sparsity sp(k.size(),1,true);
+    Sparsity sp = Sparsity::dense(k.size());
   
     for (int i=0;i<k.size();i++) {
       casadi_assert_message(k[i] < size(),"Mapping::assign: index vector reaches " << k[i] << ", while dependant is only of size " << size());
@@ -425,7 +438,7 @@ namespace CasADi{
   }
 
   MX MX::getNZ(const Matrix<int>& k) const{
-    Sparsity sp(k.size(),1,true);
+    Sparsity sp = Sparsity::dense(k.size());
     MX ret = (*this)->getGetNonzeros(sp,k.data());
     return ret;
   }
@@ -462,7 +475,7 @@ namespace CasADi{
 
     // Project scalars
     if(k.size()!=el.size() && el.isScalar() && el.isDense()){      
-      MX new_el = el->getGetNonzeros(sp_dense(1,k.size()),std::vector<int>(k.size(),0));
+      MX new_el = el->getGetNonzeros(Sparsity::dense(1,k.size()),std::vector<int>(k.size(),0));
       x = new_el->getSetNonzeros(*this,k);
     } else {
       // Create a nonzero assignment node
@@ -517,7 +530,7 @@ namespace CasADi{
 
   MX MX::repmat(const MX& x, int nrow, int ncol){
     if(x.isScalar()){
-      return MX(nrow,ncol,x);
+      return MX(Sparsity::dense(nrow,ncol),x);
     } else {
       casadi_assert_message(0,"not implemented");
       return MX();
@@ -525,7 +538,7 @@ namespace CasADi{
   }
 
   MX MX::inf(int nrow, int ncol){
-    return inf(sp_dense(nrow,ncol));
+    return inf(Sparsity::dense(nrow,ncol));
   }
 
   MX MX::inf(const std::pair<int, int> &rc){
@@ -537,7 +550,7 @@ namespace CasADi{
   }
 
   MX MX::nan(int nrow, int ncol){
-    return nan(sp_dense(nrow,ncol));
+    return nan(Sparsity::dense(nrow,ncol));
   }
 
   MX MX::nan(const std::pair<int, int>& rc){
@@ -549,7 +562,7 @@ namespace CasADi{
   }
 
   MX MX::eye(int n){
-    Matrix<double> I(Sparsity::createDiagonal(n),1);
+    Matrix<double> I(Sparsity::diag(n),1);
     return MX(I);
   }
 
@@ -601,15 +614,6 @@ namespace CasADi{
     *this = ret;
   }
 
-  MX::MX(int nrow, int ncol, const MX& val){
-    // Make sure that val is scalar
-    casadi_assert(val.isScalar());
-    casadi_assert(val.isDense());
-  
-    Sparsity sp(nrow,ncol,true);
-    *this = val->getGetNonzeros(sp,std::vector<int>(sp.size(),0));
-  }
-
   MX MX::mul_full(const MX& y, const Sparsity &z) const{
     const MX& x = *this;
     return x->getMultiplication(y,z);
@@ -624,7 +628,7 @@ namespace CasADi{
   }
 
   MX MX::outer_prod(const MX& y) const{
-    return mul(trans(y));
+    return mul(y.T());
   }
 
   MX MX::__pow__(const MX& n) const{
@@ -923,13 +927,16 @@ namespace CasADi{
     }
   }
 
- MX MX::makeDense(const MX& val) const{
+  void MX::densify(const MX& val){
+    casadi_assert(val.isScalar());
     if(isDense()){
-      return *this;
+      return; // Already ok
+    } else if(val->isZero()){
+      *this = setSparse(Sparsity::dense(shape()));
     } else {
-      MX ret = repmat(val,size1(),size2());
-      ret(sparsity()) = *this;
-      return ret;
+      MX new_this = repmat(val,shape());
+      new_this(sparsity()) = *this;
+      *this = new_this;
     }
   }
 
@@ -947,5 +954,67 @@ namespace CasADi{
   MX GenericMatrix<MX>::sym(const std::string& name, const Sparsity& sp){ 
     return MX::create(new SymbolicMX(name,sp));
   }
+
+  bool MX::isSymbolicSparse() const{
+    if(isNull()){
+      return false;
+    } else if(getOp()==OP_HORZCAT){
+      // Check if the expression is a horzcat where all components are symbolic primitives
+      for(int d=0; d<getNdeps(); ++d){
+        if(!getDep(d).isSymbolic()){
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return isSymbolic();
+    }
+  }
+
+  bool MX::isIdentity() const{
+    return !isNull() && (*this)->isIdentity();
+  }
+
+  bool MX::isZero() const{
+    if(size()==0){
+      return true;
+    } else {
+      return (*this)->isZero();
+    }
+  }
+
+  bool MX::isOne() const{
+    return !isNull() && (*this)->isOne();
+  }
+
+  bool MX::isMinusOne() const{
+    return !isNull() && (*this)->isValue(-1);
+  }
+
+  bool MX::isTranspose() const{
+    if(isNull()){
+      return false;
+    } else {
+      return getOp()==OP_TRANSPOSE;
+    }
+  }
+
+  bool MX::isRegular() const{
+    if (isConstant()) {
+      return getMatrixValue().isRegular();
+    } else {
+      casadi_error("Cannot check regularity for symbolic MX");
+    }
+  }
+
+  MX MX::trans() const{
+    // Quick return if null or scalar
+    if(isNull() || isScalar()){
+      return *this;
+    } else {
+      return (*this)->getTranspose();
+    }
+  }
+
           
 } // namespace CasADi

@@ -31,6 +31,7 @@
 #include "unary_sx.hpp"
 #include "binary_sx.hpp"
 #include "../casadi_options.hpp"
+#include "../fx/sx_function_internal.hpp"
 
 using namespace std;
 namespace CasADi{
@@ -325,21 +326,21 @@ namespace CasADi{
     }
   }
 
-  Matrix<SXElement> SXElement::fmin(const Matrix<SXElement>& b) const { 
-    return Matrix<SXElement>(*this).fmin(b);
+  SX SXElement::fmin(const SX& b) const { 
+    return SX(*this).fmin(b);
   }
-  Matrix<SXElement> SXElement::fmax(const Matrix<SXElement>& b) const {
-    return Matrix<SXElement>(*this).fmax(b);
+  SX SXElement::fmax(const SX& b) const {
+    return SX(*this).fmax(b);
   }
-  Matrix<SXElement> SXElement::constpow(const Matrix<SXElement>& n) const {
-    return Matrix<SXElement>(*this).__constpow__(n);
+  SX SXElement::constpow(const SX& n) const {
+    return SX(*this).__constpow__(n);
   }
-  Matrix<SXElement> SXElement::__copysign__(const Matrix<SXElement>& n) const {
-    return Matrix<SXElement>(*this).__copysign__(n);
+  SX SXElement::__copysign__(const SX& n) const {
+    return SX(*this).__copysign__(n);
   }
 
-  Matrix<SXElement> SXElement::arctan2(const Matrix<SXElement>& b) const { 
-    return Matrix<SXElement>(*this).arctan2(b);
+  SX SXElement::arctan2(const SX& b) const { 
+    return SX(*this).arctan2(b);
   }
 
   SXElement SXElement::__le__(const SXElement& y) const{
@@ -671,8 +672,8 @@ namespace CasADi{
       return UnarySX::create(OP_FABS,*this);
   }
 
-  SXElement::operator Matrix<SXElement>() const{
-    return Matrix<SXElement>(1,1,*this);
+  SXElement::operator SX() const{
+    return SX(Sparsity::scalar(),*this);
   }
 
   SXElement SXElement::fmin(const SXElement &b) const{
@@ -834,6 +835,68 @@ namespace CasADi{
     } else {
       return SX(sp,retv);
     }
+  }
+
+  bool SXElement::isRegular() const{
+    if (isConstant()) {
+      return !(isNan() || isInf() || isMinusInf());
+    } else {
+      casadi_error("Cannot check regularity for symbolic SXElement");
+    }
+  }
+
+  template<>
+  bool SX::isRegular() const{
+    // First pass: ignore symbolics
+    for(int i=0; i<size(); ++i){
+      const SXElement& x = at(i);
+      if(x.isConstant()) {
+        if(x.isNan() || x.isInf() || x.isMinusInf()) return false;
+      }
+    }
+    // Second pass: don't ignore symbolics
+    for (int i=0; i<size(); ++i) {
+      if(!at(i).isRegular()) return false;
+    }
+    return true;
+  }
+
+  template<>
+  bool SX::isSmooth() const{
+    // Make a function
+    SXFunction temp(SX(),*this);
+    temp.init();
+  
+    // Run the function on the temporary variable
+    return temp->isSmooth();
+  }
+
+  template<>
+  bool SX::isSymbolic() const{
+    if(isDense()){
+      return isSymbolicSparse();
+    } else {
+      return false;
+    }
+  }
+
+  template<>
+  bool SX::isSymbolicSparse() const{
+    for(int k=0; k<size(); ++k) // loop over non-zero elements
+      if(!at(k)->isSymbolic()) // if an element is not symbolic
+        return false;
+    
+    return true;
+  }
+
+  template<>
+  double SX::getValue() const{
+    return toScalar().getValue();
+  }
+
+  template<>
+  std::string SX::getName() const{
+    return toScalar().getName();
   }
 
 } // namespace CasADi

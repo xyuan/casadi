@@ -36,7 +36,7 @@ namespace CasADi{
     void sanityCheck(bool complete=false) const;
 
     /// Get the diagonal of the matrix/create a diagonal matrix (mapping will contain the nonzero mapping)
-    Sparsity diag(std::vector<int>& mapping) const;
+    Sparsity getDiag(std::vector<int>& mapping) const;
 
     /// Calculate the elimination tree: See cs_etree in CSparse
     std::vector<int> eliminationTree(bool ata) const;
@@ -184,25 +184,25 @@ namespace CasADi{
     /// is upper triangular?
     bool isTriu() const;
 
-    /// Get lower triangular part
-    Sparsity lower(bool includeDiagonal) const;
+    /// Get upper triangular part
+    Sparsity getTriu(bool includeDiagonal) const;
 
     /// Get lower triangular part
-    Sparsity upper(bool includeDiagonal) const;
+    Sparsity getTril(bool includeDiagonal) const;
 
     /// Get nonzeros in lower triangular part
-    std::vector<int> lowerNZ() const;
+    std::vector<int> getLowerNZ() const;
 
     /// Get nonzeros in upper triangular part
-    std::vector<int> upperNZ() const;
+    std::vector<int> getUpperNZ() const;
 
     /// Get the dimension as a string
     std::string dimString() const;
 
     //@{
     /// Sparsity pattern for a matrix-matrix product (details in public class)
-    Sparsity patternProduct(const Sparsity& y, std::vector< std::vector< std::pair<int,int> > >& mapping) const;
-    Sparsity patternProduct(const Sparsity& y) const;
+    Sparsity patternProduct(const Sparsity& x_trans, std::vector< std::vector< std::pair<int,int> > >& mapping) const;
+    Sparsity patternProduct(const Sparsity& x_trans) const;
     //@}
     
     //@{

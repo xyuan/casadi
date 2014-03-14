@@ -52,29 +52,32 @@ namespace CasADi{
     return static_cast<FXInternal*>(OptionsFunctionality::operator->());
   }
 
-  vector<MX> FX::call(const MX &arg){
-    vector<MX> xflatten(1,arg);
-    return call(xflatten);
-  }
-
-  vector<MX> FX::call(const vector<MX> &arg){
-    MXVectorVector dummy;
-    MXVector res;
-    call(arg,res,dummy,dummy,dummy,dummy);
+  vector<DMatrix> FX::call(const vector<DMatrix> &arg, bool always_inline, bool never_inline){
+    DMatrixVectorVector dummy;
+    DMatrixVector res;
+    callDerivative(arg,res,dummy,dummy,dummy,dummy,always_inline,never_inline);
     return res;
   }
 
-  void FX::call(const MXVector& arg, MXVector& res,  const MXVectorVector& fseed, MXVectorVector& fsens, 
-                const MXVectorVector& aseed, MXVectorVector& asens){
-    casadi_assert_message(arg.size()==getNumInputs(),"FX::call: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
-    (*this)->call(arg,res,fseed,fsens,aseed,asens,false,true);
+  vector<SX> FX::call(const vector<SX> &arg, bool always_inline, bool never_inline){
+    SXVectorVector dummy;
+    SXVector res;
+    callDerivative(arg,res,dummy,dummy,dummy,dummy,always_inline,never_inline);
+    return res;
   }
 
-  vector<vector<MX> > FX::call(const vector<vector<MX> > &x, const Dictionary& paropt){
+  vector<MX> FX::call(const vector<MX> &arg, bool always_inline, bool never_inline){
+    MXVectorVector dummy;
+    MXVector res;
+    callDerivative(arg,res,dummy,dummy,dummy,dummy,always_inline,never_inline);
+    return res;
+  }
+
+  vector<vector<MX> > FX::callParallel(const vector<vector<MX> > &x, const Dictionary& paropt){
     assertInit();
   
     // Make sure not empty
-    casadi_assert_message(x.size()>1,"FX: call(vector<vector<MX> >): argument must be of length > 1. You supplied length " << x.size() << ".");
+    casadi_assert_message(x.size()>1,"FX: callParallel(vector<vector<MX> >): argument must be of length > 1. You supplied length " << x.size() << ".");
   
     // Return object
     vector<vector<MX> > ret(x.size());
@@ -224,6 +227,7 @@ namespace CasADi{
     return (*this)->getOutputScheme();
   }
 
+#ifndef WITHOUT_PRE_1_9_X
   FX FX::operator[](int k) const {
 
     // Argument checking
@@ -250,8 +254,9 @@ namespace CasADi{
     // And return it, will automatically cast to FX
     return ret;
   }
+#endif
 
-  vector<SX> FX::evalSX(const vector<SX>& arg){
+  vector<SX> FX::eval(const vector<SX>& arg){
     casadi_assert_message(arg.size()==getNumInputs(),"FX::evalSX: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
     vector<SX> res;
     vector<vector<SX> > dummy;
@@ -259,40 +264,12 @@ namespace CasADi{
     return res;
   }
 
-  vector<MX> FX::evalMX(const vector<MX>& arg){
+  vector<MX> FX::eval(const vector<MX>& arg){
     casadi_assert_message(arg.size()==getNumInputs(),"FX::evalMX: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
     vector<MX> res;
     vector<vector<MX> > dummy;
     (*this)->evalMX(arg,res,dummy,dummy,dummy,dummy);
     return res;
-  }
-
-  void FX::evalSX(const std::vector<SX>& arg, std::vector<SX>& res, 
-                  const std::vector<std::vector<SX> >& fseed, std::vector<std::vector<SX> >& fsens, 
-                  const std::vector<std::vector<SX> >& aseed, std::vector<std::vector<SX> >& asens){
-    casadi_assert_message(arg.size()==getNumInputs(),"FX::evalSX: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
-    (*this)->evalSX(arg,res,fseed,fsens,aseed,asens);
-  }
-
-  void FX::evalMX(const std::vector<MX>& arg, std::vector<MX>& res, 
-                  const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
-                  const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens){
-    casadi_assert_message(arg.size()==getNumInputs(),"FX::evalMX: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
-    (*this)->evalMX(arg,res,fseed,fsens,aseed,asens);
-  }
-                        
-  void FX::eval(const std::vector<SX>& arg, std::vector<SX>& res, 
-                const std::vector<std::vector<SX> >& fseed, std::vector<std::vector<SX> >& fsens, 
-                const std::vector<std::vector<SX> >& aseed, std::vector<std::vector<SX> >& asens){
-    casadi_assert_message(arg.size()==getNumInputs(),"FX::eval: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
-    (*this)->evalSX(arg,res,fseed,fsens,aseed,asens);
-  }
-
-  void FX::eval(const std::vector<MX>& arg, std::vector<MX>& res, 
-                const std::vector<std::vector<MX> >& fseed, std::vector<std::vector<MX> >& fsens, 
-                const std::vector<std::vector<MX> >& aseed, std::vector<std::vector<MX> >& asens){
-    casadi_assert_message(arg.size()==getNumInputs(),"FX::eval: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
-    (*this)->evalMX(arg,res,fseed,fsens,aseed,asens);
   }
 
   void FX::spEvaluate(bool fwd){
@@ -353,6 +330,29 @@ namespace CasADi{
 
   void FX::checkInputs() const {
     return (*this)->checkInputs();
+  }
+
+  void FX::callDerivative(const DMatrixVector& arg, DMatrixVector& res, 
+                          const DMatrixVectorVector& fseed, DMatrixVectorVector& fsens, 
+                          const DMatrixVectorVector& aseed, DMatrixVectorVector& asens,
+                          bool always_inline, bool never_inline){
+    (*this)->call(arg,res,fseed,fsens,aseed,asens,always_inline,never_inline);
+  }
+  
+  void FX::callDerivative(const SXVector& arg, SXVector& res, 
+                          const SXVectorVector& fseed, SXVectorVector& fsens, 
+                          const SXVectorVector& aseed, SXVectorVector& asens,
+                          bool always_inline, bool never_inline){
+    casadi_assert_message(arg.size()==getNumInputs(),"FX::callDerivative: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
+    (*this)->call(arg,res,fseed,fsens,aseed,asens,always_inline,never_inline);
+  }
+
+  void FX::callDerivative(const MXVector& arg, MXVector& res, 
+                          const MXVectorVector& fseed, MXVectorVector& fsens, 
+                          const MXVectorVector& aseed, MXVectorVector& asens,
+                          bool always_inline, bool never_inline){
+    casadi_assert_message(arg.size()==getNumInputs(),"FX::callDerivative: dimension mismatch. You supplied " << arg.size() << " arguments instead of suspected " << getNumInputs() << ".");
+    (*this)->call(arg,res,fseed,fsens,aseed,asens,always_inline,never_inline);
   }
 
 } // namespace CasADi

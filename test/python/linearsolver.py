@@ -43,10 +43,10 @@ try:
 except:
   pass
   
-#try:
-#  lsolvers.append((SymbolicQR,{}))
-#except:
-#  pass
+try:
+  lsolvers.append((SymbolicQR,{}))
+except:
+  pass
 
 nsolvers = []
   
@@ -200,7 +200,7 @@ class LinearSolverTests(casadiTestCase):
       
       self.checkarray(mul(A_,f.output()),DMatrix.eye(4))
       
-      trans(solve(mul(A,trans(A)),A,Solver,options))
+      solve(mul(A,A.T),A,Solver,options)
       pinv(A_,Solver,options)
       
       #self.checkarray(mul(A_,pinv(A_,Solver,options)),DMatrix.eye(4))
@@ -280,7 +280,7 @@ class LinearSolverTests(casadiTestCase):
       #   result' = A'\b'             Ax = b
 
   def test_simple_fx_direct(self):
-    A_ = DMatrix([[3,7],[1,2]]).T
+    A_ = DMatrix([[3,1],[7,2]])
     A = MX.sym("A",A_.sparsity())
     b_ = DMatrix([1,0.5])
     b = MX.sym("b",b_.sparsity())
@@ -388,7 +388,7 @@ class LinearSolverTests(casadiTestCase):
 
   def test_simple_solve_node_sparseA(self):
     A_ = DMatrix([[3,0],[7,2]])
-    makeSparse(A_)
+    A_ = sparse(A_)
     A = MX.sym("A",A_.sparsity())
     print A.size(), A_.size()
     b_ = DMatrix([1,0.5])
@@ -432,7 +432,7 @@ class LinearSolverTests(casadiTestCase):
     A_ = DMatrix([[3,1],[7,2]])
     A = MX.sym("A",A_.sparsity())
     b_ = DMatrix([1,0])
-    makeSparse(b_)
+    b_ = sparse(b_)
     b = MX.sym("b",b_.sparsity())
     for Solver, options in lsolvers:
       print Solver
@@ -474,7 +474,7 @@ class LinearSolverTests(casadiTestCase):
     numpy.random.seed(0)
     n = 10
     L = self.randDMatrix(n,n,sparsity=0.2) +  1.5*c.diag(range(1,n+1))
-    L = L[sp_tril(n)]
+    L = L[Sparsity.tril(n)]
     M = mul(L,L.T)
     b = self.randDMatrix(n,1)
     

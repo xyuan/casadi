@@ -59,14 +59,14 @@ class Misctests(casadiTestCase):
     print_sparsity()
     
   def test_sanity(self):
-    DMatrix(4,3,[0,2,2,3],[1,2,1],[0.738,0.39,0.99])
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,4,[0,2,2,3],[1,2,1],[0.738,0.39,0.99]))
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,3,[0,2,2,12],[1,2,1],[0.738,0.39,0.99]))
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,3,[-10,2,2,3],[1,2,1],[0.738,0.39,0.99]))
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,3,[0,2,2,3],[8,2,1],[0.738,0.39,0.99]))
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,3,[0,2,2,3],[-3,2,1],[0.738,0.39,0.99]))
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,3,[0,2,2,3],[1,2,1,2],[0.738,0.39,0.99]))
-    self.assertRaises(RuntimeError,lambda : DMatrix(4,3,[0,2,0,3],[1,2,1],[0.738,0.39,0.99]))
+    DMatrix(Sparsity(4,3,[0,2,2,3],[1,2,1]),[0.738,0.39,0.99])
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,4,[0,2,2,3],[1,2,1]),[0.738,0.39,0.99]))
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,3,[0,2,2,12],[1,2,1]),[0.738,0.39,0.99]))
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,3,[-10,2,2,3],[1,2,1]),[0.738,0.39,0.99]))
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,3,[0,2,2,3],[8,2,1]),[0.738,0.39,0.99]))
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,3,[0,2,2,3],[-3,2,1]),[0.738,0.39,0.99]))
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,3,[0,2,2,3],[1,2,1,2]),[0.738,0.39,0.99]))
+    self.assertRaises(RuntimeError,lambda : DMatrix(Sparsity(4,3,[0,2,0,3],[1,2,1]),[0.738,0.39,0.99]))
   
   def test_setoptionerrors(self):
     self.message("option errors")
@@ -95,7 +95,7 @@ class Misctests(casadiTestCase):
     
   def test_copyconstr_norefcount(self):
     self.message("Copy constructor for non-refcounted classes")
-    x = DMatrix(2,3,1)
+    x = DMatrix.ones(2,3)
 
     y = DMatrix(x)
     x[0,0] = 5
@@ -106,7 +106,7 @@ class Misctests(casadiTestCase):
     
   def test_copyconstr_refcount(self):
     self.message("Copy constructor for refcounted classes")
-    x = sp_diag(4)
+    x = Sparsity.diag(4)
 
     y = Sparsity(x)
         
@@ -138,7 +138,7 @@ class Misctests(casadiTestCase):
     self.message("Shallow copy for non-refcounted classes")
     import copy
     
-    x = DMatrix(2,3,1)
+    x = DMatrix.ones(2,3)
 
     y = copy.copy(x)
     x[0,0] = 5
@@ -150,7 +150,7 @@ class Misctests(casadiTestCase):
   def test_copy_refcount(self):
     self.message("Shallow copy for refcounted classes")
     import copy
-    x = sp_diag(4)
+    x = Sparsity.diag(4)
 
     y = copy.copy(x)
         
@@ -181,7 +181,7 @@ class Misctests(casadiTestCase):
     self.message("Deep copy for non-refcounted classes")
     import copy
     
-    x = DMatrix(2,3,1)
+    x = DMatrix.ones(2,3)
 
     y = copy.deepcopy(x)
     x[0,0] = 5
@@ -193,7 +193,7 @@ class Misctests(casadiTestCase):
   def test_deepcopy_refcount(self):
     self.message("Deep copy for refcounted classes")
     import copy
-    x = sp_diag(4)
+    x = Sparsity.diag(4)
 
     y = copy.deepcopy(x)
         
@@ -228,7 +228,7 @@ class Misctests(casadiTestCase):
     i = IpoptSolver(nlp)
     
     opts = i.getOptionNames()
-    self.assertTrue(isinstance(opts,tuple))
+    self.assertTrue(isinstance(opts,list))
     
     n = opts[0]
     self.assertTrue(type(n)==type(""))
@@ -334,7 +334,7 @@ class Misctests(casadiTestCase):
     
   def test_pickling(self):
 
-    a = sp_tril(4)
+    a = Sparsity.tril(4)
     s = pickle.dumps(a)
     b = pickle.loads(s)
     self.assertTrue(a==b)
@@ -344,13 +344,13 @@ class Misctests(casadiTestCase):
     b = pickle.loads(s)
     self.assertTrue(a.isNull())
     
-    a = IMatrix(sp_tril(4),range(10))
+    a = IMatrix(Sparsity.tril(4),range(10))
     s = pickle.dumps(a)
     b = pickle.loads(s)
     self.checkarray(a,b)
 
 
-    a = DMatrix(sp_tril(4),range(10))
+    a = DMatrix(Sparsity.tril(4),range(10))
     s = pickle.dumps(a)
     b = pickle.loads(s)
     self.checkarray(a,b)

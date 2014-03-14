@@ -111,11 +111,11 @@ class NLPtests(casadiTestCase):
       
       message = Solver.__name__
       N = 5
-      s = sp_tril(N)
+      s = Sparsity.tril(N)
       x=SX.sym("x",s)
 
       y=SX.sym("y",s)
-      y0 = DMatrix(sp_diag(N),0.1)
+      y0 = DMatrix(Sparsity.diag(N),0.1)
 
       f=SXFunction([vecNZ(y),vecNZ(x)],[vecNZ((mul((x+y0),(x+y0).T)-mul((y+y0),(y+y0).T))[s])])
       f.init()

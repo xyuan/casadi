@@ -299,12 +299,12 @@ namespace CasADi{
     setNumInputs(CONTROLSIMULATOR_NUM_IN);
     input(CONTROLSIMULATOR_X0)  = DMatrix(dae_.input(DAE_X));
     input(CONTROLSIMULATOR_P)   = control_dae_.input(CONTROL_DAE_P);
-    input(CONTROLSIMULATOR_U)   = DMatrix(ns_ - 1 + (control_endpoint ? 1 : 0) ,nu_,0);
+    input(CONTROLSIMULATOR_U)   = DMatrix::zeros(ns_-1+(control_endpoint?1:0),nu_);
 
     // Allocate outputs
     setNumOutputs(output_fcn_.getNumOutputs()-2);
     for(int i=0; i<getNumOutputs(); ++i)
-      output(i) = Matrix<double>((ns_-1)*nf_+1,output_fcn_.output(i+2).numel(),0);
+      output(i) = Matrix<double>::zeros((ns_-1)*nf_+1,output_fcn_.output(i+2).numel());
 
     // Call base class method
     FXInternal::init();
@@ -338,13 +338,13 @@ namespace CasADi{
       P_eval[0] = MX(gridc_[k]);
       P_eval[1] = MX(gridc_[k+1]);
       if (nu_>0) {
-        P_eval[3] = trans(U(k,range(nu_)));
+        P_eval[3] = U(k,range(nu_)).T();
       }
       if (control_dae_.input(CONTROL_DAE_U_INTERP).size()>0) {
         if (k+1==U.size1()) {
           P_eval[4] = P_eval[3];
         } else {
-          P_eval[4] = trans(U(k+1,range(nu_)));
+          P_eval[4] = U(k+1,range(nu_)).T();
         }
       }
       P_eval[5] = Xk;
@@ -354,7 +354,7 @@ namespace CasADi{
       simulator_out = simulator_.call(simulator_in);
     
       // Remember the end state and dstate for next iteration in this loop
-      Xk = trans(simulator_out[0](simulator_out[0].size1()-1,ALL));
+      Xk = simulator_out[0](simulator_out[0].size1()-1,ALL).T();
     
       // Copy all the outputs (but not those 2 extra we introduced)
       for (int i=0;i<simulator_out.size()-2;++i) {
@@ -398,7 +398,7 @@ namespace CasADi{
   }
 
   Matrix<double> ControlSimulatorInternal::getVFine() const {
-    Matrix<double> ret(grid_.size()-1,nu_,0);
+    Matrix<double> ret = Matrix<double>::zeros(grid_.size()-1,nu_);
     for (int i=0;i<ns_-1;++i) {
       for (int k=0;k<nf_;++k) {
         copy(input(CONTROLSIMULATOR_U).data().begin()+i*nu_,input(CONTROLSIMULATOR_U).data().begin()+(i+1)*nu_,ret.begin()+i*nu_*nf_+k*nu_);

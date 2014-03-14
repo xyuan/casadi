@@ -95,22 +95,28 @@ namespace CasADi{
 #endif
 
     /** \brief  Check if the matrix expression is empty, i.e. one of its dimensions is 0 */
-    bool isEmpty() const;
+    bool isEmpty() const{ return sparsity().isEmpty();}
     
     /** \brief  Check if the matrix expression is null, i.e. its dimensios are 0-by-0 */
     bool null() const;
     
     /** \brief  Check if the matrix expression is dense */
-    bool isDense() const;
-    
+    bool isDense() const{ return sparsity().isDense();}
+ 
     /** \brief  Check if the matrix expression is scalar */
     bool isScalar(bool scalar_and_dense=false) const;
 
     /** \brief  Check if the matrix expression is square */
-    bool isSquare() const;
+    bool isSquare() const{ return sparsity().isSquare();}
 
     /** \brief  Check if the matrix is a vector (i.e. size2()==1) */
-    bool isVector() const;
+    bool isVector() const{ return sparsity().isVector();}
+
+    /** \brief Check if the matrix is upper triangular */
+    bool isTriu() const{ return sparsity().isTriu();}
+
+    /** \brief Check if the matrix is lower triangular */
+    bool isTril() const{ return sparsity().isTril();}
 
     /** \brief Get the sparsity pattern */
     const Sparsity& sparsity() const;
@@ -157,7 +163,7 @@ namespace CasADi{
     ///@{
 
     /** \brief Create an nrow-by-ncol symbolic primitive */
-    static MatType sym(const std::string& name, int nrow=1, int ncol=1){ return sym(name,sp_dense(nrow,ncol));}
+    static MatType sym(const std::string& name, int nrow=1, int ncol=1){ return sym(name,Sparsity::dense(nrow,ncol));}
 
     /** \brief  Construct a symbolic primitive with given dimensions */
     static MatType sym(const std::string& name, const std::pair<int,int> &rc){ return sym(name,rc.first,rc.second);}
@@ -169,31 +175,31 @@ namespace CasADi{
     static std::vector<MatType > sym(const std::string& name, const Sparsity& sp, int p);
 
     /** \brief Create a vector of length p with nrow-by-ncol symbolic primitives */
-    static std::vector<MatType > sym(const std::string& name, int nrow, int ncol, int p){ return sym(name,sp_dense(nrow,ncol),p);}
+    static std::vector<MatType > sym(const std::string& name, int nrow, int ncol, int p){ return sym(name,Sparsity::dense(nrow,ncol),p);}
     
     /** \brief Create a vector of length r of vectors of length p with symbolic primitives with given sparsity*/
     static std::vector<std::vector<MatType> > sym(const std::string& name, const Sparsity& sp, int p, int r);
 
     /** \brief Create a vector of length r of vectors of length p with nrow-by-ncol symbolic primitives */
-    static std::vector<std::vector<MatType> > sym(const std::string& name, int nrow, int ncol, int p, int r){ return sym(name,sp_dense(nrow,ncol),p,r);}
+    static std::vector<std::vector<MatType> > sym(const std::string& name, int nrow, int ncol, int p, int r){ return sym(name,Sparsity::dense(nrow,ncol),p,r);}
     ///@}
     
     //@{
     /** \brief  create a sparse matrix with all zeros */
-    static MatType sparse(int nrow=1, int ncol=1){ return MatType(nrow,ncol);}
+    static MatType sparse(int nrow=1, int ncol=1){ return MatType(Sparsity::sparse(nrow,ncol));}
     static MatType sparse(const std::pair<int,int>& rc){ return sparse(rc.first,rc.second);}
     //@}
 
     //@{
     /** \brief Create a dense matrix or a matrix with specified sparsity with all entries zero */
-    static MatType zeros(int nrow=1, int ncol=1){ return zeros(sp_dense(nrow,ncol)); }
+    static MatType zeros(int nrow=1, int ncol=1){ return zeros(Sparsity::dense(nrow,ncol)); }
     static MatType zeros(const Sparsity& sp){ return MatType(sp,0);}
     static MatType zeros(const std::pair<int,int>& rc){ return zeros(rc.first,rc.second);}
     //@}
 
     //@{
     /** \brief Create a dense matrix or a matrix with specified sparsity with all entries one */
-    static MatType ones(int nrow=1, int ncol=1){ return ones(sp_dense(nrow,ncol)); }
+    static MatType ones(int nrow=1, int ncol=1){ return ones(Sparsity::dense(nrow,ncol)); }
     static MatType ones(const Sparsity& sp){ return MatType(sp,1);}
     static MatType ones(const std::pair<int,int>& rc){ return ones(rc.first,rc.second);}
     //@}
@@ -265,33 +271,13 @@ namespace CasADi{
   }
 
   template<typename MatType>
-  bool GenericMatrix<MatType>::isEmpty() const{
-    return sparsity().isEmpty();
-  }
-
-  template<typename MatType>
   bool GenericMatrix<MatType>::null() const{
     return sparsity().null();
   }
 
   template<typename MatType>
-  bool GenericMatrix<MatType>::isDense() const{
-    return sparsity().isDense();
-  }
-
-  template<typename MatType>
   bool GenericMatrix<MatType>::isScalar(bool scalar_and_dense) const{
     return sparsity().isScalar(scalar_and_dense);
-  }
-
-  template<typename MatType>
-  bool GenericMatrix<MatType>::isSquare() const{
-    return sparsity().isSquare();
-  }
-
-  template<typename MatType>
-  bool GenericMatrix<MatType>::isVector() const{
-    return sparsity().isVector();
   }
 
   template<typename MatType>
@@ -303,11 +289,11 @@ namespace CasADi{
     }
   
     // Check if we can simplify the product
-    if(isIdentity(x)){
+    if(x.isIdentity()){
       return y;
-    } else if(isIdentity(y)){
+    } else if(y.isIdentity()){
       return x;
-    } else if(isZero(x) || isZero(y)){
+    } else if(x.isZero() || y.isZero()){
       // See if one of the arguments can be used as result
       if(y.size()==0 && x.size2()==x.size1()) {
         return y;

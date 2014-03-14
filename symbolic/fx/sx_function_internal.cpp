@@ -158,7 +158,7 @@ namespace CasADi{
   SX SXFunctionInternal::hess(int iind, int oind){
     casadi_assert_message(output(oind).numel() == 1, "Function must be scalar");
     SX g = grad(iind,oind);
-    makeDense(g);
+    g.densify();
     if(verbose())  cout << "SXFunctionInternal::hess: calculating gradient done " << endl;
 
     // Create function
@@ -841,13 +841,13 @@ namespace CasADi{
     // Get all the inputs
     SX arg = SX::sparse(1,0); 
     for(vector<SX>::const_iterator i=inputv_.begin(); i!=inputv_.end(); ++i){
-      arg.appendColumns(trans(vec(*i)));
+      arg.appendColumns(vec(*i).T());
     }
  
     // Get all the outputs
     SX res = SX::sparse(1,0); 
     for(vector<SX>::const_iterator i=outputv_.begin(); i!=outputv_.end(); ++i){
-      res.appendColumns(trans(vec(*i)));
+      res.appendColumns(vec(*i).T());
     }
     
     // Generate an expression for the Jacobian

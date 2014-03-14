@@ -24,9 +24,16 @@
 #define SPARSITY_HPP
 
 #include "../shared_object.hpp"
+#include "../casadi_types.hpp"
 #include <vector>
 #include <list>
 #include <limits>
+
+#ifdef SWIG
+#define SWIG_OUTPUT(arg) OUTPUT
+#else
+#define SWIG_OUTPUT(arg) arg
+#endif
 
 // Cashing requires a multimap (preferably a hash map)
 #ifdef USE_CXX11
@@ -65,7 +72,7 @@ namespace CasADi{
    respectively), there are also two vectors of integers:
   
    1. "colind" [length size2()+1], which contains the index to the first non-zero element on or after
-   the corresponding col. All the non-zero elements of a particular i are thus the elements with 
+   the corresponding column. All the non-zero elements of a particular i are thus the elements with 
    index el that fulfils: colind[i] <= el < colind[i+1].
      
    2. "row" [same length as the number of non-zero elements, size()] The rows for each of the
@@ -81,7 +88,7 @@ namespace CasADi{
    to share the same sparsity pattern.
   
    The implementations of some methods of this class has been taken from the CSparse package and modified
-   to use STL and CasADi data structures.
+   to use C++ standard library and CasADi data structures.
   
    * \see Matrix
    *
@@ -93,11 +100,19 @@ namespace CasADi{
   
     /// Default constructor
     explicit Sparsity(int dummy=0);
+
+    /// Construct from sparsity pattern vectors given in compressed column storage format
+    Sparsity(int nrow, int ncol, const std::vector<int>& colind, const std::vector<int>& row);
     
 #ifndef SWIG
     /** \brief  Create from node */
     static Sparsity create(SparsityInternal *node);
 #endif
+
+    /** \brief Create a scalar sparsity pattern **/
+    //@{
+    static Sparsity scalar(bool dense_scalar=true){ return dense_scalar ? dense(1,1) : sparse(1,1);}
+    //@}
 
     /** \brief Create a dense rectangular sparsity pattern **/
     //@{
@@ -122,8 +137,12 @@ namespace CasADi{
     /** \brief Create a lower triangular square sparsity pattern **/
     static Sparsity tril(int n);
 
-    /** \brief Create diagonal square sparsity pattern **/
-    static Sparsity diagonal(int n);
+    /** \brief Create diagonal sparsity pattern **/
+    //@{
+    static Sparsity diag(int nrow){ return diag(nrow,nrow);}
+    static Sparsity diag(int nrow, int ncol);
+    static Sparsity diag(const std::pair<int,int> &rc){ return diag(rc.first,rc.second);}
+    //@}
   
     /** \brief Create a single band in a square sparsity pattern
      *
@@ -152,6 +171,19 @@ namespace CasADi{
     **/
     static Sparsity triplet(int nrow, int ncol, const std::vector<int>& row, const std::vector<int>& col);
 
+    /** Create from a single vector containing the pattern in compressed column storage format: 
+     * The format:
+     * The first two entries are the number of rows (nrow) and columns (ncol)
+     * The next ncol+1 entries are the column offsets (colind). Note that the last element, colind[ncol], gives the number of nonzeros
+     * The last colind[ncol] entries are the row indices
+     **/
+    //@{
+    static Sparsity compressed(const std::vector<int>& v);
+#ifndef SWIG
+    static Sparsity compressed(const int* v);
+#endif // SWIG  
+    //@}
+
     /** \brief Check if there is an identical copy of the sparsity pattern in the cache, and if so, make a shallow copy of that one */
     void reCache();
 
@@ -163,18 +195,20 @@ namespace CasADi{
      * throws an error as possible result
      */
     void sanityCheck(bool complete=false) const;
-
     
     /** Get the diagonal of the matrix/create a diagonal matrix (mapping will contain the nonzero mapping)
         When the input is square, the diagonal elements are returned.
         If the input is vector-like, a diagonal matrix is constructed with it.
     */
 #ifndef SWIG
-    Sparsity diag(std::vector<int>& mapping) const;
+    Sparsity getDiag(std::vector<int>& mapping) const;
 #else // SWIG
-    Sparsity diag(std::vector<int>& OUTPUT) const;
+    Sparsity getDiag(std::vector<int>& OUTPUT) const;
 #endif // SWIG
     
+    /// Compress a sparsity pattern
+    std::vector<int> compress() const;
+  
     /// @{
     /// Access a member function or object
     SparsityInternal* operator->();
@@ -199,22 +233,16 @@ namespace CasADi{
     
     /// Check if two sparsity patterns are difference
     bool operator!=(const Sparsity& y) const{return !isEqual(y);}
-    
-    /// Take the union of two sparsity patterns
-    Sparsity operator+(const Sparsity& b) const;
-
-    /// Take the intersection of two sparsity patterns
-    Sparsity operator*(const Sparsity& b) const;
-    
+        
     /// \name Size and element counting
     /// @{
-    
-    /// Get the number of cols
-    int size2() const;
     
     /// Get the number of rows
     int size1() const;
 
+    /// Get the number of columns
+    int size2() const;
+    
     /** \brief The total number of elements, including structural zeros, i.e. size2()*size1()
         \see size()  */
     int numel() const;
@@ -230,10 +258,10 @@ namespace CasADi{
     int size() const;
 
     /** \brief Number of non-zeros in the upper triangular half, i.e. the number of elements (i,j) with j>=i */
-    int sizeL() const;
+    int sizeU() const;
 
     /** \brief Number of non-zeros in the lower triangular half, i.e. the number of elements (i,j) with j<=i */
-    int sizeU() const;
+    int sizeL() const;
 
     /** \brief Number of non-zeros on the diagonal, i.e. the number of elements (i,j) with j==i */
     int sizeD() const;
@@ -295,36 +323,35 @@ namespace CasADi{
     */
     void getNZInplace(std::vector<int>& indices) const;
 
-    /// Get the sparsity in CCS format
-#ifndef SWIG
-    void getSparsityCCS(std::vector<int>& colind, std::vector<int>& row) const;
-#else // SWIG
-    void getSparsityCCS(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
-#endif // SWIG
+    /// Get nonzeros in lower triangular part
+    std::vector<int> getLowerNZ() const;
 
-    /// Get the sparsity in CCS format
-#ifndef SWIG
-    void getSparsityCRS(std::vector<int>& rowind, std::vector<int>& col) const;
-#else // SWIG
-    void getSparsityCRS(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
-#endif // SWIG
+    /// Get nonzeros in upper triangular part
+    std::vector<int> getUpperNZ() const;
+
+    /// Get the sparsity in compressed column storage (CCS) format
+    void getCCS(std::vector<int>& SWIG_OUTPUT(colind), std::vector<int>& SWIG_OUTPUT(row)) const;
+
+    /// Get the sparsity in compressed row storage (CRS) format
+    void getCRS(std::vector<int>& SWIG_OUTPUT(rowind), std::vector<int>& SWIG_OUTPUT(col)) const;
 
     /// Get the sparsity in sparse triplet format
-#ifndef SWIG
-    void getSparsity(std::vector<int>& row, std::vector<int>& col) const;
-#else // SWIG
-    void getSparsity(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
-#endif // SWIG
+    void getTriplet(std::vector<int>& SWIG_OUTPUT(row), std::vector<int>& SWIG_OUTPUT(col)) const;
 
     /** \brief Get a submatrix
      *
      * Returns the sparsity of the submatrix, with a mapping such that
      *   submatrix[k] = originalmatrix[mapping[k]]
      */
-    Sparsity sub(const std::vector<int>& jj, const std::vector<int>& ii, std::vector<int>& mapping) const;
+    Sparsity sub(const std::vector<int>& jj, const std::vector<int>& ii, std::vector<int>& SWIG_OUTPUT(mapping)) const;
     
     /// Transpose the matrix
     Sparsity transpose() const;
+
+#ifndef SWIG
+    /// Transpose the matrix (shorthand)
+    Sparsity T() const{ return transpose();}
+#endif
 
     /// Transpose the matrix and get the reordering of the non-zero entries, i.e. the non-zeros of the original matrix for each non-zero of the new matrix
     Sparsity transpose(std::vector<int>& mapping, bool invert_mapping=false) const;
@@ -337,30 +364,34 @@ namespace CasADi{
         Returns the new sparsity pattern as well as a mapping with the same length as the number of non-zero elements
         The mapping matrix contains the arguments for each nonzero, the first bit indicates if the first argument is nonzero,
         the second bit indicates if the second argument is nonzero (note that none of, one of or both of the arguments can be nonzero) */
-    Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero, std::vector<unsigned char>& mapping) const;
+    Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero, std::vector<unsigned char>& SWIG_OUTPUT(mapping)) const;
     Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero) const;
     /// @}
 
     /// @{
     /** \brief Union of two sparsity patterns */
-    Sparsity patternUnion(const Sparsity& y, std::vector<unsigned char>& mapping) const;
+    Sparsity patternUnion(const Sparsity& y, std::vector<unsigned char>& SWIG_OUTPUT(mapping)) const;
     Sparsity patternUnion(const Sparsity& y) const;
+    Sparsity operator+(const Sparsity& b) const;
     /// @}
-    
+
     /// @{
     /** \brief Intersection of two sparsity patterns
         Returns the new sparsity pattern as well as a mapping with the same length as the number of non-zero elements
         The value is 1 if the non-zero comes from the first (i.e. this) object, 2 if it is from the second and 3 (i.e. 1 | 2) if from both */
-    Sparsity patternIntersection(const Sparsity& y, std::vector<unsigned char>& mapping) const;
+    Sparsity patternIntersection(const Sparsity& y, std::vector<unsigned char>& SWIG_OUTPUT(mapping)) const;
     Sparsity patternIntersection(const Sparsity& y) const;
+    Sparsity operator*(const Sparsity& b) const;
     /// @}
 
     /// @{
-    /** \brief Sparsity pattern for a matrix-matrix product, with the first factor transposed
+    /** \brief Sparsity pattern for a matrix-matrix product
+        Returns the sparsity pattern resulting from premultiplying the pattern with the transpose of x.
         Returns the new sparsity pattern as well as a mapping with the same length as the number of non-zero elements
         The mapping contains a vector of the index pairs that makes up the scalar products for each non-zero */
-    Sparsity patternProduct(const Sparsity& y, std::vector< std::vector< std::pair<int,int> > >& mapping) const;
-    Sparsity patternProduct(const Sparsity& y) const;
+    Sparsity patternProduct(const Sparsity& x_trans, std::vector< std::vector< std::pair<int,int> > >& SWIG_OUTPUT(mapping)) const;
+    Sparsity patternProduct(const Sparsity& x_trans) const;
+
     /// @}
 
     /// Take the inverse of a sparsity pattern; flip zeros and non-zeros
@@ -419,23 +450,20 @@ namespace CasADi{
     /// Is symmetric?
     bool isSymmetric() const;
 
-    /// Is lower triangular?
-    bool isTril() const;
-
     /// Is upper triangular?
     bool isTriu() const;
 
-    /// Get lower triangular part
-    Sparsity lower(bool includeDiagonal=true) const;
+    /// Is lower triangular?
+    bool isTril() const;
+
+    /// Check whether the sparsity-pattern inidcates structural singularity
+    bool isSingular() const;
+
+    /// Get upper triangular part
+    Sparsity getTriu(bool includeDiagonal=true) const;
 
     /// Get lower triangular part
-    Sparsity upper(bool includeDiagonal=true) const;
-
-    /// Get nonzeros in lower triangular part
-    std::vector<int> lowerNZ() const;
-
-    /// Get nonzeros in upper triangular part
-    std::vector<int> upperNZ() const;
+    Sparsity getTril(bool includeDiagonal=true) const;
 
     /// Do the rows appear sequentially on each column (if strictly==true, then do not allow multiple entries)
     bool rowsSequential(bool strictly=true) const;
@@ -487,11 +515,7 @@ namespace CasADi{
         with the indices of the block boundaries to be found in r. 
       
     */
-#ifndef SWIG
-    int stronglyConnectedComponents(std::vector<int>& index, std::vector<int>& offset) const;
-#else // SWIG
-    int stronglyConnectedComponents(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
-#endif // SWIG
+    int stronglyConnectedComponents(std::vector<int>& SWIG_OUTPUT(index), std::vector<int>& SWIG_OUTPUT(offset)) const;
     
     /** \brief Compute the Dulmage-Mendelsohn decomposition 
         See Direct Methods for Sparse Linear Systems by Davis (2006).
@@ -510,7 +534,14 @@ namespace CasADi{
 #else // SWIG
     int dulmageMendelsohn(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT, std::vector<int>& OUTPUT, std::vector<int>& OUTPUT, std::vector<int>& OUTPUT, std::vector<int>& OUTPUT, int seed=0) const;
 #endif // SWIG
-    /// Get the location of all nonzero elements
+
+    /** \brief Get the location of all non-zero elements as they would appear in a Dense matrix  
+        A : DenseMatrix  4 x 3
+        B : SparseMatrix 4 x 3 , 5 structural non-zeros
+      
+        k = A.getElements()
+        A[k] will contain the elements of A that are non-zero in B         
+    */
     std::vector<int> getElements(bool col_major=true) const;
     
     /// Get the location of all nonzero elements (inplace version)
@@ -560,9 +591,19 @@ namespace CasADi{
      */
     //@{
     Sparsity(int nrow, int ncol, bool dense=false);
-    Sparsity(int nrow, int ncol, const std::vector<int>& colind, const std::vector<int>& row);
-    static Sparsity createDiagonal(int n);
-    static Sparsity createDiagonal(int m, int n);
+    static Sparsity createDiagonal(int nrow){ return diag(nrow);}
+    static Sparsity createDiagonal(int nrow, int ncol){ return diag(nrow,ncol);}
+    std::vector<int> lowerNZ() const{ return getLowerNZ();}
+    std::vector<int> upperNZ() const{ return getUpperNZ();}
+#ifndef SWIG
+    void getSparsityCCS(std::vector<int>& colind, std::vector<int>& row) const;
+    void getSparsityCRS(std::vector<int>& rowind, std::vector<int>& col) const;
+    void getSparsity(std::vector<int>& row, std::vector<int>& col) const;
+#else // SWIG
+    void getSparsityCCS(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
+    void getSparsityCRS(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
+    void getSparsity(std::vector<int>& OUTPUT, std::vector<int>& OUTPUT) const;
+#endif // SWIG
     //@}
 #endif
   
@@ -607,8 +648,8 @@ namespace CasADi{
 
   // Template instantiations
 #ifndef SWIG
-  template<typename T>
-  void Sparsity::set(T* data, const T* val_data, const Sparsity& val_sp) const{
+  template<typename DataType>
+  void Sparsity::set(DataType* data, const DataType* val_data, const Sparsity& val_sp) const{
     // Get dimensions of this
     const int sz = size();
     const int sz1 = size1();
@@ -631,13 +672,13 @@ namespace CasADi{
       // Quick return
       return;
     } else if(val_nel==1){ // if scalar
-      std::fill(data,data+sz,val_sz==0 ? T(0) : val_data[0]);
+      std::fill(data,data+sz,val_sz==0 ? DataType(0) : val_data[0]);
     } else {
       // Quick return if empty
       if(nel==0 && val_nel==0) return;
     
       // Make sure that dimension matches
-      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,"Sparsity::set<T>: shape mismatch. lhs is matrix of shape " << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
+      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,"Sparsity::set<DataType>: shape mismatch. lhs is matrix of shape " << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
     
       // Sparsity
       const std::vector<int>& c = row();
@@ -681,8 +722,8 @@ namespace CasADi{
     }
   }
 
-  template<typename T>
-  void Sparsity::add(T* data, const T* val_data, const Sparsity& val_sp) const{
+  template<typename DataType>
+  void Sparsity::add(DataType* data, const DataType* val_data, const Sparsity& val_sp) const{
     // Get dimensions of this
     const int sz = size();
     const int sz1 = size1();
@@ -717,7 +758,7 @@ namespace CasADi{
       if(nel==0 && val_nel==0) return;
     
       // Make sure that dimension matches
-      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,"Sparsity::add<T>: shape mismatch. lhs is matrix of shape " << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
+      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,"Sparsity::add<DataType>: shape mismatch. lhs is matrix of shape " << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
     
       // Sparsity
       const std::vector<int>& c = row();
@@ -759,8 +800,8 @@ namespace CasADi{
     }
   }
 
-  template<typename T>
-  void Sparsity::bor(T* data, const T* val_data, const Sparsity& val_sp) const{
+  template<typename DataType>
+  void Sparsity::bor(DataType* data, const DataType* val_data, const Sparsity& val_sp) const{
     // Get dimensions of this
     const int sz = size();
     const int sz1 = size1();
@@ -795,7 +836,7 @@ namespace CasADi{
       if(nel==0 && val_nel==0) return;
     
       // Make sure that dimension matches
-      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,"Sparsity::add<T>: shape mismatch. lhs is matrix of shape " << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
+      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,"Sparsity::add<DataType>: shape mismatch. lhs is matrix of shape " << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
     
       // Sparsity
       const std::vector<int>& c = row();

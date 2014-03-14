@@ -35,13 +35,13 @@ class ADtests(casadiTestCase):
     z=SXElement.sym("z")
     w=SXElement.sym("w")
     
-    out=SX(6,1)
+    out=SX.sparse(6,1)
     out[0,0]=x
     out[2,0]=x+2*y**2
     out[4,0]=x+2*y**3+3*z**4
     out[5,0]=w
 
-    inp=SX(6,1)
+    inp=SX.sparse(6,1)
     inp[0,0]=x
     inp[2,0]=y
     inp[4,0]=z
@@ -79,7 +79,7 @@ class ADtests(casadiTestCase):
     }
     
     def temp1(xyz):
-      X=MX(6,1)
+      X=MX.sparse(6,1)
       X[0,0]=xyz[0]
       X[2,0]=xyz[0]+2*xyz[1]**2
       X[4,0]=xyz[0]+2*xyz[1]**3+3*xyz[2]**4
@@ -87,7 +87,7 @@ class ADtests(casadiTestCase):
       return [X]
     
     def temp2(xyz):
-      X=MX(1,6)
+      X=MX.sparse(1,6)
       X[0,0]=xyz[0]
       X[0,2]=xyz[0]+2*xyz[1]**2
       X[0,4]=xyz[0]+2*xyz[1]**3+3*xyz[2]**4
@@ -157,7 +157,7 @@ class ADtests(casadiTestCase):
             
             fseeds = map(lambda x: DMatrix(f.input().sparsity(),x), seeds)
             aseeds = map(lambda x: DMatrix(f.output().sparsity(),x), seeds)
-            res,fwdsens,adjsens = f.evalSX([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
+            res,fwdsens,adjsens = f.callDerivative([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
             fwdsens = map(lambda x: x[0],fwdsens)
             adjsens = map(lambda x: x[0],adjsens)
             
@@ -203,7 +203,7 @@ class ADtests(casadiTestCase):
             
             fseeds = map(lambda x: DMatrix(f.input().sparsity(),x), seeds)
             aseeds = map(lambda x: DMatrix(f.output().sparsity(),x), seeds)
-            res,fwdsens,adjsens = f.evalMX([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
+            res,fwdsens,adjsens = f.callDerivative([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds),True)
             fwdsens = map(lambda x: x[0],fwdsens)
             adjsens = map(lambda x: x[0],adjsens)
             
@@ -250,7 +250,7 @@ class ADtests(casadiTestCase):
             
             fseeds = map(lambda x: DMatrix(f.input().sparsity(),x), seeds)
             aseeds = map(lambda x: DMatrix(f.output().sparsity(),x), seeds)
-            res,fwdsens,adjsens = f.evalSX([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
+            res,fwdsens,adjsens = f.callDerivative([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
             fwdsens = map(lambda x: x[0],fwdsens)
             adjsens = map(lambda x: x[0],adjsens)
             
@@ -292,7 +292,7 @@ class ADtests(casadiTestCase):
             y = SX.sym("y",f.input().sparsity())
             
       
-            res,fwdsens,adjsens = f.evalSX([y],[],[])
+            res,fwdsens,adjsens = f.callDerivative([y],[],[])
             
             fe = SXFunction([y],res)
             fe.init()
@@ -422,7 +422,7 @@ class ADtests(casadiTestCase):
     x=SX.sym("x")
     y=SX.sym("y")
 
-    inp=SX(5,1)
+    inp=SX.sparse(5,1)
     inp[0,0]=x
     inp[3,0]=y
 
@@ -443,7 +443,7 @@ class ADtests(casadiTestCase):
     x=SXElement.sym("x")
     y=SXElement.sym("y")
 
-    inp=SX(5,1)
+    inp=SX.sparse(5,1)
     inp[0,0]=x
     inp[3,0]=y
 
@@ -565,10 +565,10 @@ class ADtests(casadiTestCase):
           (in1,v1,yyy[:,0],sparse(DMatrix([[0,1],[1,0]]))),
           (in1,v1,mul(y,x),y),
           (in1,v1,mul(x.T,y.T),y),
-          (in1,v1,mul(y,x,sp_triplet(2,1,[1],[0])),y[sp_triplet(2,2,[1,1],[0,1])]),
-          (in1,v1,mul(x.T,y.T,sp_triplet(2,1,[1],[0]).T),y[sp_triplet(2,2,[1,1],[0,1])]),
-          (in1,v1,mul(y[sp_triplet(2,2,[0,1,1],[0,0,1])],x),y[sp_triplet(2,2,[0,1,1],[0,0,1])]),
-          (in1,v1,mul(x.T,y[sp_triplet(2,2,[0,1,1],[0,0,1])].T),y[sp_triplet(2,2,[0,1,1],[0,0,1])]),
+          (in1,v1,mul(y,x,Sparsity.triplet(2,1,[1],[0])),y[Sparsity.triplet(2,2,[1,1],[0,1])]),
+          (in1,v1,mul(x.T,y.T,Sparsity.triplet(2,1,[1],[0]).T),y[Sparsity.triplet(2,2,[1,1],[0,1])]),
+          (in1,v1,mul(y[Sparsity.triplet(2,2,[0,1,1],[0,0,1])],x),y[Sparsity.triplet(2,2,[0,1,1],[0,0,1])]),
+          (in1,v1,mul(x.T,y[Sparsity.triplet(2,2,[0,1,1],[0,0,1])].T),y[Sparsity.triplet(2,2,[0,1,1],[0,0,1])]),
           (in1,v1,mul(y,x**2),y*2*vertcat([x.T,x.T])),
           (in1,v1,sin(x),c.diag(cos(x))),
           (in1,v1,sin(x**2),c.diag(cos(x**2)*2*x)),
