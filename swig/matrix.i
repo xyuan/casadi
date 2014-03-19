@@ -57,6 +57,22 @@ def prod(self,*args):
     raise Exception("'prod' is not supported anymore in CasADi. Use 'mul' to do matrix multiplication.")
 def dot(self,*args):
     raise Exception("'dot' is not supported anymore in CasADi. Use 'mul' to do matrix multiplication.")
+    
+class NZproxy:
+  def __init__(self,matrix):
+    self.matrix = matrix
+    
+  def __getitem__(self,s):
+    return self.matrix.__NZgetitem__(s)
+
+  def __setitem__(self,s,val):
+    return self.matrix.__NZsetitem__(s,val)
+
+  def __len__(self):
+    return self.matrix.size()
+    
+  def __iter__(self):
+      return self.matrix.data().__iter__()
 %}
 
 %define %matrix_convertors
@@ -93,6 +109,10 @@ def dot(self,*args):
         if isinstance(s,tuple) and len(s)==2:
           return self.__Csetitem__(s[0],s[1],val)  
         return self.__Csetitem__(s,val)
+        
+    @property
+    def nz(self):
+      return NZproxy(self)
         
     def prod(self,*args):
         raise Exception("'prod' is not supported anymore in CasADi. Use 'mul' to do matrix multiplication.")
@@ -177,12 +197,20 @@ def dot(self,*args):
 %rename(__paren_asgn__) indexed_assignment;
 %rename(__vertcat__) vertcat;
 %rename(__horzcat__) horzcat;
+%rename(__brace__) nz_indexed_one_based;
+%rename(__brace__) nz_indexed;
+%rename(__brace_asgn__) nz_indexed_one_based_assignment;
+%rename(__brace_asgn__) nz_indexed_assignment;
 #endif
 #ifdef SWIGPYTHON
 %rename(__Cgetitem__) indexed_zero_based;
 %rename(__Cgetitem__) indexed;
 %rename(__Csetitem__) indexed_zero_based_assignment;
 %rename(__Csetitem__) indexed_assignment;
+%rename(__NZgetitem__) nz_indexed_zero_based;
+%rename(__NZgetitem__) nz_indexed;
+%rename(__NZsetitem__) nz_indexed_zero_based_assignment;
+%rename(__NZsetitem__) nz_indexed_assignment;
 #endif
 
 
@@ -445,8 +473,8 @@ int meta< CasADi::Slice >::as(PyObject * p,CasADi::Slice &m) {
     return true;
   } else if (PySlice_Check(p)) {
     PySliceObject *r = (PySliceObject*)(p);
-    m.start_ = (r->start == Py_None) ? std::numeric_limits<int>::min() : PyInt_AsLong(r->start);
-    m.stop_  = (r->stop ==Py_None) ? std::numeric_limits<int>::max() : PyInt_AsLong(r->stop) ;
+    m.start_ = (r->start == Py_None || PyInt_AsLong(r->start) < std::numeric_limits<int>::min()) ? std::numeric_limits<int>::min() : PyInt_AsLong(r->start);
+    m.stop_  = (r->stop ==Py_None || PyInt_AsLong(r->stop)> std::numeric_limits<int>::max()) ? std::numeric_limits<int>::max() : PyInt_AsLong(r->stop) ;
     if(r->step !=Py_None) m.step_  = PyInt_AsLong(r->step);
     return true;
   } else {

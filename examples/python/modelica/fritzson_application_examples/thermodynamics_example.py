@@ -65,6 +65,14 @@ comp("BasicVolumeMassConservation")
 ocp = SymbolicOCP()
 ocp.parseFMI('BasicVolumeMassConservation.xml')
 
+# Eliminate the dependent variables
+ocp.eliminateInterdependencies()
+ocp.eliminateDependent()
+
+# Sort the equations
+ocp.sortODE()
+ocp.sortALG()
+
 # Make the OCP explicit
 ocp.makeExplicit()
 
@@ -74,8 +82,8 @@ ocp.eliminateAlgebraic()
 # Inputs to the integrator
 dae_fcn_in = daeIn(
   t = ocp.t,
-  x = vertcat(var(ocp.x)),
-  p = vertcat(var(ocp.pi)+var(ocp.pf))
+  x = var(ocp.x),
+  p = vertcat((var(ocp.pi),var(ocp.pf)))
 )
 
 # Create an integrator
@@ -83,14 +91,14 @@ dae = SXFunction(dae_fcn_in,daeOut(ode=ocp.ode))
 integrator = CVodesIntegrator(dae)
 
 # Output function
-m = ocp.variable("m").var()
-P = ocp.variable("P").var()
+m = ocp("m")
+P = ocp("P")
 output_fcn_out = ocp.substituteDependents([m,P])
 output_fcn_in = daeIn(
   t=ocp.t,
-  x = vertcat(var(ocp.x)),
-  z = vertcat(var(ocp.z)),
-  p = vertcat(var(ocp.pi)+var(ocp.pf)+var(ocp.u))
+  x = var(ocp.x),
+  z = var(ocp.z),
+  p = vertcat((var(ocp.pi),var(ocp.pf),var(ocp.u)))
 )
 output_fcn = SXFunction(output_fcn_in,output_fcn_out)
 
@@ -110,13 +118,13 @@ integrator.printStats()
 # Plot
 plt.figure(1)
 plt.subplot(1,2,1)
-plt.plot(grid,simulator.getOutput())
+plt.plot(grid,simulator.getOutput().T)
 plt.xlabel("t")
 plt.ylabel("m(t)")
 plt.title("c.f. Fritzson figure 15-6 (left)")
 
 plt.subplot(1,2,2)
-plt.plot(grid,simulator.getOutput(1))
+plt.plot(grid,simulator.getOutput(1).T)
 plt.xlabel("t")
 plt.ylabel("P(t)")
 plt.title("c.f. Fritzson figure 15-6 (right)")
@@ -129,6 +137,14 @@ comp("BasicVolumeEnergyConservation")
 ocp = SymbolicOCP()
 ocp.parseFMI('BasicVolumeEnergyConservation.xml')
 
+# Eliminate the dependent variables
+ocp.eliminateInterdependencies()
+ocp.eliminateDependent()
+
+# Sort the equations
+ocp.sortODE()
+ocp.sortALG()
+
 # Make the OCP explicit
 ocp.makeExplicit()
 
@@ -138,8 +154,8 @@ ocp.eliminateAlgebraic()
 # Inputs to the integrator
 dae_fcn_in = daeIn(
   t = ocp.t,
-  x = vertcat(var(ocp.x)),
-  p = vertcat(var(ocp.pi)+var(ocp.pf))
+  x = var(ocp.x),
+  p = vertcat((var(ocp.pi),var(ocp.pf)))
 )
 
 # Create an integrator
@@ -147,13 +163,13 @@ dae = SXFunction(dae_fcn_in,daeOut(ode=ocp.ode))
 integrator = CVodesIntegrator(dae)
 
 # Output function
-T = ocp.variable("T").var()
+T = ocp("T")
 output_fcn_out = ocp.substituteDependents([T])
 output_fcn_in = daeIn(
   t=ocp.t,
-  x = vertcat(var(ocp.x)),
-  z = vertcat(var(ocp.z)),
-  p = vertcat(var(ocp.pi)+var(ocp.pf)+var(ocp.u))
+  x = var(ocp.x),
+  z = var(ocp.z),
+  p = vertcat((var(ocp.pi),var(ocp.pf),var(ocp.u)))
 )
 output_fcn = SXFunction(output_fcn_in,output_fcn_out)
 
@@ -172,7 +188,7 @@ integrator.printStats()
 
 # Plot
 plt.figure(2)
-plt.plot(grid,simulator.getOutput())
+plt.plot(grid,simulator.getOutput().T)
 plt.xlabel("t")
 plt.ylabel("T(t)")
 plt.title("c.f. Fritzson figure 15-9")
@@ -185,6 +201,14 @@ comp("BasicVolumeTest")
 ocp = SymbolicOCP()
 ocp.parseFMI('BasicVolumeTest.xml')
 
+# Eliminate the dependent variables
+ocp.eliminateInterdependencies()
+ocp.eliminateDependent()
+
+# Sort the equations
+ocp.sortODE()
+ocp.sortALG()
+
 # Make explicit
 ocp.makeExplicit()
 
@@ -194,8 +218,8 @@ ocp.eliminateAlgebraic()
 # Inputs to the integrator
 dae_fcn_in = daeIn(
   t = ocp.t,
-  x = vertcat(var(ocp.x)),
-  p = vertcat(var(ocp.pi)+var(ocp.pf))
+  x = var(ocp.x),
+  p = vertcat((var(ocp.pi),var(ocp.pf)))
 )
 
 # Create an integrator
@@ -203,15 +227,15 @@ dae = SXFunction(dae_fcn_in,daeOut(ode=ocp.ode))
 integrator = CVodesIntegrator(dae)
 
 # Output function
-T = ocp.variable("T").var()
-U = ocp.variable("U").var()
-V = ocp.variable("V").var()
+T = ocp("T")
+U = ocp("U")
+V = ocp("V")
 output_fcn_out = ocp.substituteDependents([T,U,V])
 output_fcn_in = daeIn(
   t=ocp.t,
-  x = vertcat(var(ocp.x)),
-  z = vertcat(var(ocp.z)),
-  p = vertcat(var(ocp.pi)+var(ocp.pf)+var(ocp.u))
+  x = var(ocp.x),
+  z = var(ocp.z),
+  p = vertcat((var(ocp.pi),var(ocp.pf),var(ocp.u)))
 )
 output_fcn = SXFunction(output_fcn_in,output_fcn_out)
 
@@ -230,15 +254,15 @@ integrator.printStats()
 
 # Plot
 plt.figure(3)
-p1, = plt.plot(grid,simulator.getOutput(0))
-p2, = plt.plot(grid,simulator.getOutput(1))
+p1, = plt.plot(grid,simulator.getOutput(0).T)
+p2, = plt.plot(grid,simulator.getOutput(1).T)
 plt.xlabel("t")
 plt.ylabel("T(t)")
 plt.legend([p2, p1], ["T", "U"])
 plt.title("c.f. Fritzson figure 15-14")
 
 plt.figure(4)
-plt.plot(grid,simulator.getOutput(2))
+plt.plot(grid,simulator.getOutput(2).T)
 plt.xlabel("t")
 plt.ylabel("V(t)")
 plt.title("Approximation of V")
@@ -250,6 +274,14 @@ comp("CtrlFlowSystem")
 # Allocate a parser and load the xml
 ocp = SymbolicOCP()
 ocp.parseFMI('CtrlFlowSystem.xml')
+
+# Eliminate the dependent variables
+ocp.eliminateInterdependencies()
+ocp.eliminateDependent()
+
+# Sort the equations
+ocp.sortODE()
+ocp.sortALG()
 
 # Make the OCP explicit
 ocp.makeExplicit()
