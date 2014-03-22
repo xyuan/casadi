@@ -80,13 +80,13 @@ namespace CasADi{
     // Consistency check
     casadi_assert(offset.size()>=1);
     casadi_assert(offset.front()==0);
-    casadi_assert(offset.back()<=x.size2());
+    casadi_assert(offset.back()==x.size2());
     casadi_assert(isMonotone(offset));
     
     // Trivial return if possible
-    if(offset.size()==1 && offset.back()==x.size2()){
+    if(offset.size()==1){
       return vector<MX>(0);
-    } else if(offset.size()==1 || (offset.size()==2 && offset.back()==x.size2())){
+    } else if(offset.size()==2){
       return vector<MX>(1,x);
     } else {
       return x->getHorzsplit(offset);
@@ -95,7 +95,9 @@ namespace CasADi{
   
   std::vector<MX> horzsplit(const MX& x, int incr){
     casadi_assert(incr>=1);
-    return horzsplit(x,range(0,x.size2(),incr));
+    vector<int> offset2 = range(0,x.size2(),incr);
+    offset2.push_back(x.size2());
+    return horzsplit(x,offset2);
   }
   
   std::vector<MX> vertsplit(const MX& x, const std::vector<int>& offset){
@@ -103,13 +105,13 @@ namespace CasADi{
       // Consistency check
       casadi_assert(offset.size()>=1);
       casadi_assert(offset.front()==0);
-      casadi_assert(offset.back()<=x.size1());
+      casadi_assert(offset.back()==x.size1());
       casadi_assert(isMonotone(offset));
     
       // Trivial return if possible
-      if(offset.size()==1 && offset.back()==x.size1()){
-        return vector<MX>(0);
-      } else if(offset.size()==1 || (offset.size()==2 && offset.back()==x.size1())){
+      if(offset.size()==1){
+        return vector<MX>();
+      } else if(offset.size()==2){
         return vector<MX>(1,x);
       } else {
         return x->getVertsplit(offset);
@@ -124,7 +126,9 @@ namespace CasADi{
   
   std::vector<MX> vertsplit(const MX& x, int incr){
     casadi_assert(incr>=1);
-    return vertsplit(x,range(0,x.size1(),incr));
+    vector<int> offset1 = range(0,x.size1(),incr);
+    offset1.push_back(x.size1());
+    return vertsplit(x,offset1);
   }
   
   std::vector< std::vector<MX> > blocksplit(const MX& x, const std::vector<int>& vert_offset, const std::vector<int>& horz_offset) {
@@ -139,7 +143,11 @@ namespace CasADi{
   std::vector< std::vector<MX > > blocksplit(const MX& x, int vert_incr, int horz_incr) {
     casadi_assert(horz_incr>=1);
     casadi_assert(vert_incr>=1);
-    return blocksplit(x,range(0,x.size1(),vert_incr),range(0,x.size2(),horz_incr));
+    vector<int> offset1 = range(0,x.size1(),vert_incr);
+    offset1.push_back(x.size1());
+    vector<int> offset2 = range(0,x.size2(),horz_incr);
+    offset2.push_back(x.size2());
+    return blocksplit(x,offset1,offset2);
   }
 
   MX horzcat(const MX& a, const MX& b){
@@ -830,18 +838,21 @@ namespace CasADi{
 
   MX jacobian(const MX& ex, const MX &arg) {
     MXFunction temp(arg,ex); // make a runtime
+    temp.setOption("name","helper_jacobian_MX");
     temp.init();
     return temp.jac();
   }
 
   MX gradient(const MX& ex, const MX &arg) {
     MXFunction temp(arg,ex); // make a runtime
+    temp.setOption("name","helper_gradient_MX");
     temp.init();
     return temp.grad();
   }
 
   MX tangent(const MX& ex, const MX &arg) {
     MXFunction temp(arg,ex); // make a runtime
+    temp.setOption("name","helper_tangent_MX");
     temp.init();
     return temp.tang();
   }
@@ -979,6 +990,7 @@ namespace CasADi{
   MX nullspace(const MX& A) {
     SX n = SX::sym("A",A.sparsity());
     SXFunction f(n,nullspace(n));
+    f.setOption("name","nullspace");
     f.init();
     return f(A).at(0);
   }
