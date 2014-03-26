@@ -36,6 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--known_bugs', help='Run with known bugs', action='store_true')
 parser.add_argument('--ignore_memory_heavy', help='Skip those tests that have a high memory footprint', action='store_true')
 parser.add_argument('--ignore_memory_light', help='Skip those tests that have a lightweight memory footprint', action='store_true')
+parser.add_argument('--run_slow', help='Skip those tests that take a long time to run', action='store_true')
 parser.add_argument('unittest_args', nargs='*')
 
 args = parser.parse_args()
@@ -97,7 +98,8 @@ class casadiTestCase(unittest.TestCase):
     fun = getattr(getattr(self,margs[0]),'im_func')
     if not hasattr(fun,'tag_memory_heavy'):
       fun.tag_memory_heavy = False
-    
+    if not hasattr(fun,'tag_slow'):
+      fun.tag_slow = False
     
     if args.ignore_memory_heavy and fun.tag_memory_heavy:
       fun.__unittest_skip__ = True
@@ -105,6 +107,10 @@ class casadiTestCase(unittest.TestCase):
     if args.ignore_memory_light and not(fun.tag_memory_heavy):
       fun.__unittest_skip__ = True
       fun.__unittest_skip_why__ = "Ignoring memory_light tests (--ignore_memory_light)"
+
+    if not(args.run_slow) and fun.tag_slow:
+      fun.__unittest_skip__ = True
+      fun.__unittest_skip_why__ = "Ignoring slow tests (--run_slow)"
       
     unittest.TestCase.__init__(self,*margs,**kwargs)
 
@@ -261,7 +267,7 @@ class casadiTestCase(unittest.TestCase):
         continue
       self.numpyEvaluationCheck(pool.casadioperators[i],pool.numpyoperators[i],x,x0,"%s:%s" % (name,pool.names[i]),"\n I tried to apply %s (%s) from test case '%s' to numerical value %s. But the result returned: " % (str(pool.casadioperators[i]),pool.names[i],name, str(x0)),fmod=fmod,setx0=setx0)
 
-  def checkfx(self,trial,solution,fwd=True,adj=True,jacobian=True,gradient=True,hessian=True,sens_der=True,evals=True,digits=9,digits_sens=None,failmessage="",allow_empty=True,verbose=True,indirect=False):
+  def checkfx(self,trial,solution,fwd=True,adj=True,jacobian=True,gradient=True,hessian=True,sens_der=True,evals=True,digits=9,digits_sens=None,failmessage="",allow_empty=True,verbose=True,indirect=False,sparsity_mod=True):
 
     if indirect:
       ins = trial.symbolicInput()
@@ -387,13 +393,25 @@ class casadiTestCase(unittest.TestCase):
 
     if evals:
 
-      def remove00(x):
+      def remove_first(x):
         ret = DMatrix(x)
-        ret[0,0] = DMatrix.sparse(1,1)
-        return ret
+        if ret.numel()>0:
+          ret[0,0] = DMatrix.sparse(1,1)
+          return ret
+        else:
+          return ret
+
+      def remove_last(x):
+        ret = DMatrix(x)
+        if ret.size()>0:
+          ret[ret.sparsity().row()[-1],ret.sparsity().getCol()[-1]] = DMatrix.sparse(1,1)
+          return ret
+        else:
+          return x
         
-      spmods = [lambda x: x , remove00]
+      #spmods = [lambda x: x , remove_first, remove_last]
       spmods = [lambda x: x]
+      #spmods = [lambda x: x , remove_first]
       
       sym = MX.sym
       Function = MXFunction
@@ -539,4 +557,13 @@ class memory_heavy(object):
   def __call__(self, c):
     print c
     c.tag_memory_heavy = True
+    return c
+    
+class slow(object):
+  def __init__(self):
+    pass
+    
+  def __call__(self, c):
+    print "slow", c
+    c.tag_slow = True
     return c

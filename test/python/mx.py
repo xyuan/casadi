@@ -2002,6 +2002,7 @@ class MXtests(casadiTestCase):
     with self.assertRaises(RuntimeError):
       d = x / c
       
+  @slow()
   @memory_heavy()
   def test_MX_shapes(self):
       self.message("MX unary operations")
@@ -2268,7 +2269,7 @@ class MXtests(casadiTestCase):
 
     As = MX.sym("As",A.sparsity())
 
-    f = MXFunction([As],[full(As.T),full(As).T,As.T,As,full(As)])
+    f = MXFunction([As],[dense(As.T),dense(As).T,As.T,As,dense(As)])
     f.init()
 
     f.setInput(A)
@@ -2312,7 +2313,7 @@ class MXtests(casadiTestCase):
 
     r= MXFunction([As,Bs],[solve(Ast,Bs,CSparse)])
     r.init()
-    R= MXFunction([As,Bs],[solve(full(Ast),Bs,CSparse)])
+    R= MXFunction([As,Bs],[solve(dense(Ast),Bs,CSparse)])
     R.init()
 
     for i in [r,R]:
@@ -2620,6 +2621,107 @@ class MXtests(casadiTestCase):
     f.init()
 
     f.derivative(0,1)
+
+  def test_MX_const_sp(self):
+    x = MX.sym("x",4,1)
+
+    sp = Sparsity.triplet(3,3,[0,1,2,2],[0,0,1,2])
+
+    f = MXFunction([x],[x[IMatrix(sp,range(sp.size()))]])
+    f.init()
+
+    g = MXFunction([x],[MX(sp,x)])
+    g.init()
+    
+    f.setInput(range(1,5))
+    g.setInput(range(1,5))
+    
+    self.checkfx(f,g)
+    
+  def test_reshape_sp(self):
+    x = MX.sym("x",4,1)
+
+    f = MXFunction([x],[x.reshape((2,2))])
+    f.init()
+    
+    sx = SX.sym("x",4,1)
+
+    g = SXFunction([sx],[sx.reshape((2,2))])
+    g.init()
+    
+    f.setInput(range(1,5))
+    g.setInput(range(1,5))
+    
+    self.checkfx(f,g)
+    
+  def test_issue1041(self):
+    x = MX.sym("x",2)
+
+    y = vertsplit(x,[0,1,2])[1]
+
+    f = MXFunction([x],[y])
+    f.init()
+
+    H = f.hessian()
+    H.init()
+    
+  def test_bug_1042(self):
+
+    x = MX.sym('x',2,1)
+    
+    mf = MXFunction([x],[x*x[0,0]])
+    mf.init()
+    
+    mfx = mf.expand()
+    mfx.init()
+    
+    mfg = mf.derivative(0,1)
+    mfg.init()
+    
+    mfxg = mfx.derivative(0,1)
+    mfxg.init()
+    
+    for f in [mfg,mfxg]:
+      f.setInput([1,2],0)
+      #f.setInput(0.1,)
+      f.setInput([4,5],1)
+    
+    self.checkfx(mfg,mfxg)
+    
+  def test_bug_1042bis(self):
+    x = MX.sym('x',2,1)
+    a = MX.sym("ax",2,1)
+    i1 = x[0,0]
+    z = i1*x
+    i3 = i1*a
+    i3= inner_prod(x,a)
+    d = MXFunction([x,a],[z,i3])
+    d.init()
+    d.setInput([1,2],0)
+    d.setInput([3,4],1)
+
+    dx = d.expand()
+    dx.init()
+    dx.setInput([1,2],0)
+    dx.setInput([3,4],1)
+    
+    self.checkfx(d,dx)
+    
+  def test_bug_1042tris(self):
+    x = MX.sym('x',2,1)
+    a = MX.sym("ax",2,1)
+    d = MXFunction([x,a],[inner_prod(x,a)])
+    d.init()
+    d.setInput([1,2],0)
+    d.setInput([3,4],1)
+
+    dx = d.expand()
+    dx.init()
+    dx.setInput([1,2],0)
+    dx.setInput([3,4],1)
+    
+    self.checkfx(d,dx)
+    
       
 if __name__ == '__main__':
     unittest.main()

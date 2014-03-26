@@ -345,6 +345,7 @@ class LinearSolverTests(casadiTestCase):
       
       self.checkfx(solver,solution,fwd=False,adj=False,jacobian=False,evals=False)
 
+  @slow()
   def test_simple_solve_node(self):
     A_ = DMatrix([[3,1],[7,2]])
     A = MX.sym("A",A_.sparsity())
@@ -385,7 +386,7 @@ class LinearSolverTests(casadiTestCase):
         
         self.checkfx(f,solution)
 
-
+  @slow()
   def test_simple_solve_node_sparseA(self):
     A_ = DMatrix([[3,0],[7,2]])
     A_ = sparse(A_)
@@ -428,6 +429,7 @@ class LinearSolverTests(casadiTestCase):
         
         self.checkfx(f,solution,sens_der=False,digits_sens=7)
 
+  @slow()
   def test_simple_solve_node_sparseB(self):
     A_ = DMatrix([[3,1],[7,2]])
     A = MX.sym("A",A_.sparsity())
@@ -555,7 +557,7 @@ class LinearSolverTests(casadiTestCase):
       
       self.checkarray(mul(A,C),b)
       
-      for As_,A_ in [(As,A),(full(As),full(A)),(full(As).T,full(A).T),(full(As.T),full(A.T)),(As.T,A.T)]:
+      for As_,A_ in [(As,A),(dense(As),dense(A)),(dense(As).T,dense(A).T),(dense(As.T),dense(A.T)),(As.T,A.T)]:
         f = MXFunction([As,bs],[solve(As_,bs,Solver,options)])
         f.init()
         f.setInput(A,0)

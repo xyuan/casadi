@@ -96,7 +96,9 @@ namespace CasADi{
 #endif
 
   MX::MX(const Sparsity& sp, const MX& val){
-    if(val.isScalar()){
+    if(sp.isReshape(val.sparsity())){
+      *this = reshape(val,sp);
+    } else if(val.isScalar()){
       // Dense matrix if val dense
       if(val.isDense()){
         if(val.isConstant()){
@@ -110,7 +112,7 @@ namespace CasADi{
       }
     } else {
       casadi_assert(val.isVector() && sp.size()==val.size1());
-      *this = full(val)->getGetNonzeros(sp,range(size1()));
+      *this = dense(val)->getGetNonzeros(sp,range(sp.size()));
     }
   }
 

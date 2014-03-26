@@ -201,6 +201,8 @@ namespace CasADi{
     reference back(){ return data().back();}
     const_reference back() const { return data().back();}
 
+#endif // SWIG
+
     /** \brief  Create a matrix from a matrix with a different type of matrix entries (assuming that the scalar conversion is valid) */
     template<typename A>
     Matrix(const Matrix<A>& x) : sparsity_(x.sparsity()), data_(std::vector<DataType>(x.size())){
@@ -219,8 +221,6 @@ namespace CasADi{
       if(x.size() != nrow*ncol) throw CasadiException("Matrix::Matrix(const std::vector<DataType>& x,  int n, int m): dimension mismatch");
       copy(x.begin(),x.end(),begin());
     }
-    
-#endif // SWIG
 
 
 #ifndef SWIG
@@ -304,10 +304,13 @@ namespace CasADi{
     void setSub(const Matrix<DataType>& m, const Slice& rr, const Slice& cc){ setSub(m,rr.getAll(size1()),cc.getAll(size2()));}
     void setSub(const Matrix<DataType>& m, const Matrix<int>& rr, const std::vector<int>& cc);
     void setSub(const Matrix<DataType>& m, const std::vector<int>& rr, const Matrix<int>& cc);
-    void setSub(const Matrix<DataType>& m, const Matrix<int>& rr, const Slice& cc) {return setSub(m,rr,cc.getAll(size2()));}
-    void setSub(const Matrix<DataType>& m, const Slice& rr, const Matrix<int>& cc) {return setSub(m,rr.getAll(size1()),cc);}
+    void setSub(const Matrix<DataType>& m, const Matrix<int>& rr, const Slice& cc) {setSub(m,rr,cc.getAll(size2()));}
+    void setSub(const Matrix<DataType>& m, const Slice& rr, const Matrix<int>& cc) {setSub(m,rr.getAll(size1()),cc);}
     void setSub(const Matrix<DataType>& m, const Matrix<int>& rr, const Matrix<int>& cc);
+    void setSub(const Matrix<DataType>& m, const Slice& rr, int cc){setSub(m,rr.getAll(size1()),std::vector<int>(1,cc));}
+    void setSub(const Matrix<DataType>& m, const int rr, const Slice& cc){setSub(m,std::vector<int>(1,rr),cc.getAll(size2()));}
     void setSub(const Matrix<DataType>& m, const Sparsity& sp, int dummy);
+
     //@}
 
     //@{
