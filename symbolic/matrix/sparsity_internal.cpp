@@ -41,7 +41,24 @@ namespace CasADi{
   }
     
   void SparsityInternal::repr(ostream &stream) const{
-    stream << "Compressed Column Storage: " << nrow_ << "-by-" << ncol_ << " matrix, " << row_.size() << " structural non-zeros";
+    stream << "Compressed Column Storage: ";
+    printCompact(stream);
+  }
+
+  void SparsityInternal::printCompact(std::ostream &stream) const{
+    // Print dimensions
+    stream << nrow_ << "x" << ncol_;
+
+    // Print shape
+    if(isEmpty()){
+      // Print nothing, shape clear anyway
+    } else if(isDense()){
+      stream << ", dense";
+    } else if(isDiagonal()){
+      stream << ", diagonal";
+    } else {
+      stream << ", " << row_.size() << " nnz";
+    }
   }
 
   void SparsityInternal::sanityCheck(bool complete) const{
@@ -2323,17 +2340,17 @@ namespace CasADi{
     return ret;
   }
 
-  Sparsity SparsityInternal::patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero) const{
+  Sparsity SparsityInternal::patternCombine(const Sparsity& y, bool f0x_is_zero, bool function0_is_zero) const{
     static vector<unsigned char> mapping;
-    return patternCombineGen1<false>(y, f0x_is_zero, fx0_is_zero, mapping);
+    return patternCombineGen1<false>(y, f0x_is_zero, function0_is_zero, mapping);
   }
 
-  Sparsity SparsityInternal::patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero, vector<unsigned char>& mapping) const{
-    return patternCombineGen1<true>(y, f0x_is_zero, fx0_is_zero, mapping);    
+  Sparsity SparsityInternal::patternCombine(const Sparsity& y, bool f0x_is_zero, bool function0_is_zero, vector<unsigned char>& mapping) const{
+    return patternCombineGen1<true>(y, f0x_is_zero, function0_is_zero, mapping);    
   }
   
   template<bool with_mapping>
-  Sparsity SparsityInternal::patternCombineGen1(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero, std::vector<unsigned char>& mapping) const{
+  Sparsity SparsityInternal::patternCombineGen1(const Sparsity& y, bool f0x_is_zero, bool function0_is_zero, std::vector<unsigned char>& mapping) const{
 
     // Quick return if identical
     if(isEqual(y)){
@@ -2345,19 +2362,19 @@ namespace CasADi{
     }
 
     if(f0x_is_zero){
-      if(fx0_is_zero){
+      if(function0_is_zero){
         return patternCombineGen<with_mapping,true,true>(y,mapping);
       } else {
         return patternCombineGen<with_mapping,true,false>(y,mapping);
       }      
-    } else if(fx0_is_zero){
+    } else if(function0_is_zero){
       return patternCombineGen<with_mapping,false,true>(y,mapping);
     } else {
       return patternCombineGen<with_mapping,false,false>(y,mapping);
     }
   }
   
-  template<bool with_mapping, bool f0x_is_zero, bool fx0_is_zero>
+  template<bool with_mapping, bool f0x_is_zero, bool function0_is_zero>
   Sparsity SparsityInternal::patternCombineGen(const Sparsity& y, vector<unsigned char>& mapping) const{
 
     // Assert dimensions
@@ -2396,7 +2413,7 @@ namespace CasADi{
           if(with_mapping) mapping.push_back( 1 | 2);
           el1++; el2++;
         } else if(row1<row2){ //  only first argument is nonzero
-          if(!fx0_is_zero){
+          if(!function0_is_zero){
             ret_row.push_back(row1);
             if(with_mapping) mapping.push_back(1);
           } else {
@@ -3384,17 +3401,17 @@ namespace CasADi{
     if(ncol_!=y.nrow_ || nrow_!=y.ncol_ || size()!=y.size())
       return false;
   
-    // Quick return if empty or dense
+    // Quick return if empty interior or dense
     if(size()==0 || isDense())
       return true;
     
     // Run algorithm on the pattern with the least number of rows
     if(nrow_>ncol_) return y.isTranspose(*this);
 
-    // Index counter for col of the possible transpose
+    // Index counter for columns of the possible transpose
     vector<int> y_col_count(y.ncol_,0);
   
-    // Loop over the cols
+    // Loop over the columns
     for(int i=0; i<ncol_; ++i){
     
       // Loop over the nonzeros
@@ -3433,8 +3450,8 @@ namespace CasADi{
     if(ncol_*nrow_!=y.nrow_*y.ncol_ || size()!=y.size())
       return false;
   
-    // Quick return if dense
-    if(isDense()) return true;
+    // Quick return if empty interior or dense
+    if(size()==0 || isDense()) return true;
     
     // Loop over the elements
     for(int cc=0; cc<ncol_; ++cc){
@@ -3613,7 +3630,7 @@ namespace CasADi{
     }
     return ret;
   }
-  
+ 
 } // namespace CasADi
 
 

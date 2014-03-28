@@ -27,8 +27,8 @@
 #include "../../symbolic/matrix/matrix_tools.hpp"
 #include "../../symbolic/mx/mx_tools.hpp"
 #include "../../symbolic/sx/sx_tools.hpp"
-#include "../../symbolic/fx/mx_function.hpp"
-#include "../../symbolic/fx/sx_function.hpp"
+#include "../../symbolic/function/mx_function.hpp"
+#include "../../symbolic/function/sx_function.hpp"
 
 #include "../../symbolic/profiling.hpp"
 #include "../../symbolic/casadi_options.hpp"
@@ -149,7 +149,7 @@ namespace CasADi{
     }
     
     if (CasadiOptions::profiling && CasadiOptions::profilingBinary) { 
-      profileWriteName(CasadiOptions::profilingLog,this,"PsdIndefSolver",ProfilingData_FXType_Other,4);
+      profileWriteName(CasadiOptions::profilingLog,this,"PsdIndefSolver",ProfilingData_FunctionType_Other,4);
       
       profileWriteSourceLine(CasadiOptions::profilingLog,this,0,"periodic schur form",-1);
       profileWriteSourceLine(CasadiOptions::profilingLog,this,1,"nominal",-1);
@@ -159,6 +159,7 @@ namespace CasADi{
 
   }
   
+  /// \cond INTERNAL
   inline int PsdIndefDpleInternal::partindex(int i, int j, int k, int r, int c) {
     return k*n_*n_+(partition_[i]+r)*n_ + partition_[j]+c;
   }
@@ -198,6 +199,8 @@ namespace CasADi{
       }
     }
   }
+  
+  /// \endcond
   
   
   void PsdIndefDpleInternal::evaluate(){
@@ -965,7 +968,7 @@ namespace CasADi{
     
   }
   
-  FX PsdIndefDpleInternal::getDerivative(int nfwd, int nadj) {
+  Function PsdIndefDpleInternal::getDerivative(int nfwd, int nadj) {
     casadi_assert(nfwd_==0 && nadj_==0);
     
     PsdIndefDpleInternal* node = new PsdIndefDpleInternal(A_,V_, nfwd, nadj);

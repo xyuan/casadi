@@ -366,8 +366,8 @@ namespace CasADi{
         Returns the new sparsity pattern as well as a mapping with the same length as the number of non-zero elements
         The mapping matrix contains the arguments for each nonzero, the first bit indicates if the first argument is nonzero,
         the second bit indicates if the second argument is nonzero (note that none of, one of or both of the arguments can be nonzero) */
-    Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero, std::vector<unsigned char>& SWIG_OUTPUT(mapping)) const;
-    Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool fx0_is_zero) const;
+    Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool function0_is_zero, std::vector<unsigned char>& SWIG_OUTPUT(mapping)) const;
+    Sparsity patternCombine(const Sparsity& y, bool f0x_is_zero, bool function0_is_zero) const;
     /// @}
 
     /// @{
@@ -581,9 +581,11 @@ namespace CasADi{
      */
     void spy(std::ostream &stream=std::cout) const;
 
-    /** \brief Generate a script for Matlab or Octave which visualizes the sparsity using the spy command
-     */
+    /** \brief Generate a script for Matlab or Octave which visualizes the sparsity using the spy command  */
     void spyMatlab(const std::string& mfile) const;
+
+    /** \brief Print a compact description of the sparsity pattern */
+    void printCompact(std::ostream &stream=std::cout) const;
 
     // Hash the sparsity pattern
     std::size_t hash() const;

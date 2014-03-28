@@ -100,6 +100,7 @@ class OptionsFunctionality : public SharedObject{
         
 /// @}
 
+    /// \cond INTERNAL
     /// Assert that the node is pointing to the right type of object
     virtual bool checkNode() const;
     
@@ -133,9 +134,12 @@ class OptionsFunctionality : public SharedObject{
   
     /** \brief Get the default of a certain option */
     GenericType getOptionDefault(const std::string &str) const;
+    
+    /// \endcond INTERNAL
 
 };
 
+/// \cond INTERNAL
 #ifndef SWIG
 
 /** \brief Internal class
@@ -289,6 +293,8 @@ private:
 };
 
 #endif // SWIG
+
+/// \endcond
 
 } // namespace CasADi
 

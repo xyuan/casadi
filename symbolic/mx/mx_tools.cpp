@@ -22,10 +22,10 @@
 
 #include "mx_tools.hpp"
 #include "../sx/sx_tools.hpp"
-#include "../fx/mx_function.hpp"
+#include "../function/mx_function.hpp"
 #include "../matrix/matrix_tools.hpp"
 #include "../std_vector_tools.hpp"
-#include "../fx/mx_function_internal.hpp"
+#include "../function/mx_function_internal.hpp"
 
 using namespace std;
 
@@ -165,12 +165,11 @@ namespace CasADi{
   }
   
   MX veccat(const vector<MX>& comp) {
-        MX (&f)(const MX&) = vec;
+    MX (&f)(const MX&) = vec;
     return vertcat(applymap(f,comp));
   }
 
   MX vecNZcat(const vector<MX>& comp) {
-    MX (&f)(const MX&) = vecNZ;
     return vertcat(applymap(vecNZ,comp));
   }
 
