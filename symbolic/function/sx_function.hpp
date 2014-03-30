@@ -51,10 +51,10 @@ namespace CasADi{
   class MXFunction;
 
   /**   \brief Dynamically created function that can be expanded into a series of scalar operations.
+  
         \author Joel Andersson 
         \date 2010-2013
   */
-
   class SXFunction : public Function{
 
   public:
@@ -210,8 +210,9 @@ namespace CasADi{
     SXFunction indexed_zero_based(int k) const{ return operator[](k);}
     //@}
 #endif
-  };
 /// \endcond
+  };
+
 
 } // namespace CasADi
 

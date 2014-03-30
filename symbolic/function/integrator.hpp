@@ -26,7 +26,9 @@
 #include "function.hpp"
 #include "linear_solver.hpp"
 
-/** \defgroup DAE_doc
+/** \brief Base class for integrators
+ *
+ * \defgroup DAE_doc
     Solves an initial value problem (IVP) coupled to a terminal value problem
     with differential equation given as an implicit ODE coupled to an algebraic
     equation and a set of quadratures:
@@ -153,8 +155,11 @@ namespace CasADi{
 
   /// Forward declaration of internal class
   class IntegratorInternal;
-
+  
+  // grep "addOption" integrator_internal.cpp | perl -pe 's/addOption\((.*?),(.*?),(.*?)\);(.*\/\/ (.*))?/* \1 \2 \3 ...  \5\\n/'
+  
   /** Integrator abstract base class
+  
       @copydoc DAE_doc
   
       The Integrator class provides some additional functionality, such as getting the value of the state 
@@ -165,9 +170,6 @@ namespace CasADi{
       \author Joel Andersson
       \date 2010
   */
-
-  // grep "addOption" integrator_internal.cpp | perl -pe 's/addOption\((.*?),(.*?),(.*?)\);(.*\/\/ (.*))?/* \1 \2 \3 ...  \5\\n/'
-
   class Integrator : public Function{
   public:
     /// Default constructor
