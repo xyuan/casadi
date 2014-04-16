@@ -20,5 +20,19 @@
  *
  */
 
-// control
-%include "control.i"
+%module casadi_control
+
+%include "common.i"
+
+%import "casadi_symbolic.i"
+
+#define CASADI_CONTROL_EXPORT
+
+%{
+#include "casadi/control/dple_solver.hpp"
+#include "casadi/control/simple_indef_dple_solver.hpp"
+%}
+
+%include "casadi/control/dple_solver.hpp"
+%include "casadi/control/simple_indef_dple_solver.hpp"
+

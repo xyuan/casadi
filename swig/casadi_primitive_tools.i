@@ -20,14 +20,6 @@
  *
  */
 
-#ifdef WITH_SWIG_SPLIT
-%module casadi_primitive_tools
-
-%include "common.i"
-
-%import "casadi_primitive.i"
-#endif //WITH_SWIG_SPLIT
-
 #ifdef SWIGPYTHON
 %pythoncode%{
 try:
@@ -65,43 +57,43 @@ except:
 #endif // SWIGPYTHON
 
 // Matrix tools
-%include "symbolic/matrix/matrix_tools.hpp"
-%include "symbolic/matrix/generic_matrix_tools.hpp"
+%include "casadi/symbolic/matrix/matrix_tools.hpp"
+%include "casadi/symbolic/matrix/generic_matrix_tools.hpp"
 
 // General tools
-%include "symbolic/matrix/generic_expression_tools.hpp"
+%include "casadi/symbolic/matrix/generic_expression_tools.hpp"
 
 // Instantiate the functions
 MATRIX_TOOLS_TEMPLATES(int)
 MATRIX_TOOLS_TEMPLATES(double)
-MATRIX_TOOLS_TEMPLATES(CasADi::SXElement)
+MATRIX_TOOLS_TEMPLATES(casadi::SXElement)
 
-GENERIC_MATRIX_TOOLS_TEMPLATES(CasADi::Matrix<int>)
-GENERIC_MATRIX_TOOLS_TEMPLATES(CasADi::Matrix<double>)
-GENERIC_MATRIX_TOOLS_TEMPLATES(CasADi::Matrix<CasADi::SXElement>)
-GENERIC_MATRIX_TOOLS_TEMPLATES(CasADi::MX)
+GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<int>)
+GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<double>)
+GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<casadi::SXElement>)
+GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::MX)
 
-GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(CasADi::Matrix<double>)
-GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(CasADi::Matrix<CasADi::SXElement>)
-GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(CasADi::MX)
+GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(casadi::Matrix<double>)
+GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(casadi::Matrix<casadi::SXElement>)
+GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(casadi::MX)
 
 
 GENERIC_EXPRESSION_TOOLS_TEMPLATES(int)
 GENERIC_EXPRESSION_TOOLS_TEMPLATES(double)
-GENERIC_EXPRESSION_TOOLS_TEMPLATES(CasADi::Matrix<int>)
-GENERIC_EXPRESSION_TOOLS_TEMPLATES(CasADi::Matrix<double>)
-GENERIC_EXPRESSION_TOOLS_TEMPLATES(CasADi::Matrix<CasADi::SXElement>)
-GENERIC_EXPRESSION_TOOLS_TEMPLATES(CasADi::MX)
-GENERIC_EXPRESSION_TOOLS_TEMPLATES(CasADi::SXElement)
+GENERIC_EXPRESSION_TOOLS_TEMPLATES(casadi::Matrix<int>)
+GENERIC_EXPRESSION_TOOLS_TEMPLATES(casadi::Matrix<double>)
+GENERIC_EXPRESSION_TOOLS_TEMPLATES(casadi::Matrix<casadi::SXElement>)
+GENERIC_EXPRESSION_TOOLS_TEMPLATES(casadi::MX)
+GENERIC_EXPRESSION_TOOLS_TEMPLATES(casadi::SXElement)
 
 // Sparsity tools
 %{
-#include "symbolic/matrix/sparsity_tools.hpp"
+#include "casadi/symbolic/matrix/sparsity_tools.hpp"
 %}
-%include "symbolic/matrix/sparsity_tools.hpp"
+%include "casadi/symbolic/matrix/sparsity_tools.hpp"
 
 // SXElement tools
-%include "symbolic/sx/sx_tools.hpp"
+%include "casadi/symbolic/sx/sx_tools.hpp"
 
 
-%include "symbolic/mx/mx_tools.hpp"
+%include "casadi/symbolic/mx/mx_tools.hpp"
