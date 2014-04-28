@@ -23,13 +23,13 @@
 #ifndef NLP_QP_INTERNAL_HPP
 #define NLP_QP_INTERNAL_HPP
 
-#include "casadi/symbolic/function/qp_solver_internal.hpp"
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/qp_solver_internal.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 
 #include "nlp_qp_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for NLPQPInternal
    *

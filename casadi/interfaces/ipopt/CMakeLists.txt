@@ -9,6 +9,11 @@ set(IPOPT_INTERFACE_SRCS
   ipopt_internal.cpp
   ipopt_nlp.hpp
   ipopt_nlp.cpp)
+  
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+else()
+  add_definitions(-DHAVE_CSTDDEF)
+endif()
 
 if(WITH_IPOPT_CALLBACK)
   add_definitions(-DWITH_IPOPT_CALLBACK)
@@ -24,6 +29,8 @@ endif()
 
 casadi_library(casadi_ipopt_interface ${IPOPT_INTERFACE_SRCS})
 target_link_libraries(casadi_ipopt_interface ${IPOPT_LIBRARIES})
+
+set_property(TARGET casadi_ipopt_interface PROPERTY PKG_CONFIG_REQUIRES ipopt)
 
 install(DIRECTORY ./
   DESTINATION include/casadi/interfaces/ipopt

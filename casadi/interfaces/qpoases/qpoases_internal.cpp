@@ -22,8 +22,8 @@
 
 #include "qpoases_internal.hpp"
 
-#include "../../symbolic/std_vector_tools.hpp"
-#include "../../symbolic/matrix/matrix_tools.hpp"
+#include "../../core/std_vector_tools.hpp"
+#include "../../core/matrix/matrix_tools.hpp"
 
 // Bug in qpOASES?
 #define ALLOW_QPROBLEMB true
@@ -31,15 +31,15 @@
 using namespace std;
 namespace casadi {
 
-QPOasesInternal* QPOasesInternal::clone() const{
+QPOasesInternal* QPOasesInternal::clone() const {
   // Return a deep copy
   QPOasesInternal* node = new QPOasesInternal(st_);
-  if(!node->is_init_)
+  if (!node->is_init_)
     node->init();
   return node;
 }
 
-QPOasesInternal::QPOasesInternal(const std::vector<Sparsity>& st) : QPSolverInternal(st){
+QPOasesInternal::QPOasesInternal(const std::vector<Sparsity>& st) : QPSolverInternal(st) {
   addOption("nWSR",                   OT_INTEGER,     GenericType(),
             "The maximum number of working set recalculations to be performed during "
             "the initial homotopy. Default is 5(nx + nc)");
@@ -53,7 +53,7 @@ QPOasesInternal::QPOasesInternal(const std::vector<Sparsity>& st) : QPSolverInte
 
   addOption("printLevel",             OT_STRING,  PrintLevel_to_string(ops.printLevel),
             "Defines the amount of text output during QP solution, "
-            "see Section 5.7","none|low|medium|high");
+            "see Section 5.7", "none|low|medium|high");
   addOption("enableRamping",          OT_BOOLEAN, BooleanType_to_bool(ops.enableRamping),
             "Enables ramping.");
   addOption("enableFarBounds",        OT_BOOLEAN, BooleanType_to_bool(ops.enableFarBounds),
@@ -68,7 +68,7 @@ QPOasesInternal::QPOasesInternal(const std::vector<Sparsity>& st) : QPSolverInte
             "Enables nonzero curvature  tests.");
   addOption("enableDriftCorrection",  OT_INTEGER, static_cast<int>(ops.enableDriftCorrection),
             "Specifies the frequency of drift corrections: 0: turns them off.");
-  addOption("enableCholeskyRefactorisation",OT_INTEGER,
+  addOption("enableCholeskyRefactorisation", OT_INTEGER,
             static_cast<int>(ops.enableCholeskyRefactorisation),
             "Specifies the frequency of a full re-factorisation of projected "
             "Hessian matrix: 0: turns them off,  1: uses them at each iteration etc.");
@@ -121,22 +121,22 @@ QPOasesInternal::QPOasesInternal(const std::vector<Sparsity>& st) : QPSolverInte
   qp_ = 0;
 }
 
-QPOasesInternal::~QPOasesInternal(){
-  if(qp_!=0) delete qp_;
+QPOasesInternal::~QPOasesInternal() {
+  if (qp_!=0) delete qp_;
 }
 
-void QPOasesInternal::init(){
+void QPOasesInternal::init() {
   QPSolverInternal::init();
 
   // Read options
-  if(hasSetOption("nWSR")){
+  if (hasSetOption("nWSR")) {
     max_nWSR_ = getOption("nWSR");
     casadi_assert(max_nWSR_>=0);
   } else {
     max_nWSR_ = 5 *(n_ + nc_);
   }
 
-  if(hasSetOption("CPUtime")){
+  if (hasSetOption("CPUtime")) {
     max_cputime_ = getOption("CPUtime");
     casadi_assert(max_cputime_>0);
   } else {
@@ -144,7 +144,7 @@ void QPOasesInternal::init(){
   }
 
   // Create data for H if not dense
-  if(!input(QP_SOLVER_H).sparsity().isDense()) h_data_.resize(n_*n_);
+  if (!input(QP_SOLVER_H).sparsity().isDense()) h_data_.resize(n_*n_);
 
   // Create data for A
   a_data_.resize(n_*nc_);
@@ -153,11 +153,11 @@ void QPOasesInternal::init(){
   dual_.resize(n_+nc_);
 
   // Create qpOASES instance
-  if(qp_) delete qp_;
-  if(ALLOW_QPROBLEMB && nc_==0){
+  if (qp_) delete qp_;
+  if (ALLOW_QPROBLEMB && nc_==0) {
     qp_ = new qpOASES::QProblemB(n_);
   } else {
-    qp_ = new qpOASES::SQProblem(n_,nc_);
+    qp_ = new qpOASES::SQProblem(n_, nc_);
   }
   called_once_ = false;
 
@@ -204,7 +204,7 @@ void QPOasesInternal::init(){
 void QPOasesInternal::evaluate() {
   if (inputs_check_) checkInputs();
 
-  if(verbose()){
+  if (verbose()) {
 //     cout << "X_INIT = " << input(QP_SOLVER_X_INIT) << endl;
 //     cout << "LAMBDA_INIT = " << input(QP_SOLVER_LAMBDA_INIT) << endl;
     cout << "LBX = " << input(QP_SOLVER_LBX) << endl;
@@ -215,19 +215,19 @@ void QPOasesInternal::evaluate() {
 
   // Get pointer to H
   const double* h=0;
-  if(h_data_.empty()){
+  if (h_data_.empty()) {
     // No copying needed
     h = getPtr(input(QP_SOLVER_H));
   } else {
     // First copy to dense array
-    input(QP_SOLVER_H).get(h_data_,DENSE);
+    input(QP_SOLVER_H).get(h_data_, DENSE);
     h = getPtr(h_data_);
   }
 
   // Copy A to a row-major dense vector
   const double* a=0;
-  if(nc_>0){
-    input(QP_SOLVER_A).get(a_data_,DENSETRANS);
+  if (nc_>0) {
+    input(QP_SOLVER_A).get(a_data_, DENSETRANS);
     a = getPtr(a_data_);
   }
 
@@ -244,23 +244,25 @@ void QPOasesInternal::evaluate() {
   const double* ubA = getPtr(input(QP_SOLVER_UBA));
 
   int flag;
-  if(!called_once_){
-    if(ALLOW_QPROBLEMB && nc_==0){
-      flag = static_cast<qpOASES::QProblemB*>(qp_)->init(h,g,lb,ub,nWSR,cputime_ptr);
+  if (!called_once_) {
+    if (ALLOW_QPROBLEMB && nc_==0) {
+      flag = static_cast<qpOASES::QProblemB*>(qp_)->init(h, g, lb, ub, nWSR, cputime_ptr);
     } else {
-      flag = static_cast<qpOASES::SQProblem*>(qp_)->init(h,g,a,lb,ub,lbA,ubA,nWSR,cputime_ptr);
+      flag = static_cast<qpOASES::SQProblem*>(qp_)->init(h, g, a, lb, ub, lbA, ubA,
+                                                         nWSR, cputime_ptr);
     }
     called_once_ = true;
   } else {
-    if(ALLOW_QPROBLEMB && nc_==0){
+    if (ALLOW_QPROBLEMB && nc_==0) {
       static_cast<qpOASES::QProblemB*>(qp_)->reset();
-      flag = static_cast<qpOASES::QProblemB*>(qp_)->init(h,g,lb,ub,nWSR,cputime_ptr);
-      //flag = static_cast<qpOASES::QProblemB*>(qp_)->hotstart(g,lb,ub,nWSR,cputime_ptr);
+      flag = static_cast<qpOASES::QProblemB*>(qp_)->init(h, g, lb, ub, nWSR, cputime_ptr);
+      //flag = static_cast<qpOASES::QProblemB*>(qp_)->hotstart(g, lb, ub, nWSR, cputime_ptr);
     } else {
-      flag = static_cast<qpOASES::SQProblem*>(qp_)->hotstart(h,g,a,lb,ub,lbA,ubA,nWSR, cputime_ptr);
+      flag = static_cast<qpOASES::SQProblem*>(qp_)->hotstart(h, g, a, lb, ub, lbA, ubA,
+                                                             nWSR, cputime_ptr);
     }
   }
-  if(flag!=qpOASES::SUCCESSFUL_RETURN && flag!=qpOASES::RET_MAX_NWSR_REACHED){
+  if (flag!=qpOASES::SUCCESSFUL_RETURN && flag!=qpOASES::RET_MAX_NWSR_REACHED) {
     throw CasadiException("qpOASES failed: " + getErrorMessage(flag));
   }
 
@@ -274,12 +276,12 @@ void QPOasesInternal::evaluate() {
   qp_->getDualSolution(&dual_.front());
 
   // Split up the dual solution in multipliers for the simple bounds and the linear bounds
-  transform(dual_.begin(),   dual_.begin()+n_,output(QP_SOLVER_LAM_X).begin(),negate<double>());
-  transform(dual_.begin()+n_,dual_.end(),     output(QP_SOLVER_LAM_A).begin(),negate<double>());
+  transform(dual_.begin(),   dual_.begin()+n_, output(QP_SOLVER_LAM_X).begin(), negate<double>());
+  transform(dual_.begin()+n_, dual_.end(),     output(QP_SOLVER_LAM_A).begin(), negate<double>());
 }
 
-std::string QPOasesInternal::getErrorMessage(int flag){
-  switch(flag){
+std::string QPOasesInternal::getErrorMessage(int flag) {
+  switch (flag) {
     case qpOASES::SUCCESSFUL_RETURN:
         return "Successful return.";
     case qpOASES::RET_DIV_BY_ZERO:
@@ -559,20 +561,20 @@ std::string QPOasesInternal::getErrorMessage(int flag){
   return ss.str();
 }
 
-bool QPOasesInternal::BooleanType_to_bool(qpOASES::BooleanType b){
-  switch(b){
+bool QPOasesInternal::BooleanType_to_bool(qpOASES::BooleanType b) {
+  switch (b) {
     case qpOASES::BT_TRUE:              return true;
     case qpOASES::BT_FALSE:             return false;
     default:                            casadi_error("not_implemented");
   }
 }
 
-qpOASES::BooleanType QPOasesInternal::bool_to_BooleanType(bool b){
+qpOASES::BooleanType QPOasesInternal::bool_to_BooleanType(bool b) {
   return b ? qpOASES::BT_TRUE : qpOASES::BT_FALSE;
 }
 
-std::string QPOasesInternal::SubjectToStatus_to_string(qpOASES::SubjectToStatus b){
-  switch(b){
+std::string QPOasesInternal::SubjectToStatus_to_string(qpOASES::SubjectToStatus b) {
+  switch (b) {
     case qpOASES::ST_INACTIVE:          return "inactive";
     case qpOASES::ST_LOWER:             return "lower";
     case qpOASES::ST_INFEASIBLE_LOWER:  return "infeasible_lower";
@@ -582,24 +584,24 @@ std::string QPOasesInternal::SubjectToStatus_to_string(qpOASES::SubjectToStatus 
   }
 }
 
-qpOASES::SubjectToStatus QPOasesInternal::string_to_SubjectToStatus(std::string b){
-  if(b.compare("inactive")==0){
+qpOASES::SubjectToStatus QPOasesInternal::string_to_SubjectToStatus(std::string b) {
+  if (b.compare("inactive")==0) {
     return qpOASES::ST_INACTIVE;
-  } else if(b.compare("lower")==0){
+  } else if (b.compare("lower")==0) {
     return qpOASES::ST_LOWER;
-  } else if(b.compare("infeasible_lower")==0){
+  } else if (b.compare("infeasible_lower")==0) {
     return qpOASES::ST_INFEASIBLE_LOWER;
-  } else if(b.compare("infeasible_upper")==0){
+  } else if (b.compare("infeasible_upper")==0) {
     return qpOASES::ST_INFEASIBLE_UPPER;
-  } else if(b.compare("undefined")==0){
+  } else if (b.compare("undefined")==0) {
     return qpOASES::ST_UNDEFINED;
   } else {
     casadi_error("not_implemented");
   }
 }
 
-std::string QPOasesInternal::PrintLevel_to_string(qpOASES::PrintLevel b){
-  switch(b){
+std::string QPOasesInternal::PrintLevel_to_string(qpOASES::PrintLevel b) {
+  switch (b) {
     case qpOASES::PL_TABULAR:           return "tabular";
     case qpOASES::PL_NONE:              return "none";
     case qpOASES::PL_LOW:               return "low";
@@ -609,16 +611,16 @@ std::string QPOasesInternal::PrintLevel_to_string(qpOASES::PrintLevel b){
   }
 }
 
-qpOASES::PrintLevel QPOasesInternal::string_to_PrintLevel(std::string b){
-  if(b.compare("tabular")==0){
+qpOASES::PrintLevel QPOasesInternal::string_to_PrintLevel(std::string b) {
+  if (b.compare("tabular")==0) {
     return qpOASES::PL_TABULAR;
-  } else if(b.compare("none")==0){
+  } else if (b.compare("none")==0) {
     return qpOASES::PL_NONE;
-  } else if(b.compare("low")==0){
+  } else if (b.compare("low")==0) {
     return qpOASES::PL_LOW;
-  } else if(b.compare("medium")==0){
+  } else if (b.compare("medium")==0) {
     return qpOASES::PL_MEDIUM;
-  } else if(b.compare("high")==0){
+  } else if (b.compare("high")==0) {
     return qpOASES::PL_HIGH;
   } else {
     casadi_error("not_implemented");

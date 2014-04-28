@@ -25,21 +25,20 @@
 
 #include "implicit_fixed_step_integrator.hpp"
 #include "fixed_step_integrator_internal.hpp"
-#include "casadi/symbolic/function/implicit_function.hpp"
+#include "casadi/core/function/implicit_function.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-  class CASADI_INTEGRATION_EXPORT ImplicitFixedStepIntegratorInternal :
-    public FixedStepIntegratorInternal
-  {
+  class CASADI_INTEGRATION_EXPORT ImplicitFixedStepIntegratorInternal
+      : public FixedStepIntegratorInternal {
   public:
 
     /// Constructor
     explicit ImplicitFixedStepIntegratorInternal(const Function& f, const Function& g);
 
     /// Deep copy data members
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /// Clone
     virtual ImplicitFixedStepIntegratorInternal* clone() const = 0;
@@ -55,10 +54,10 @@ namespace casadi{
     virtual void init();
 
     /// Get explicit dynamics
-    virtual Function& getExplicit(){ return implicit_solver_;}
+    virtual Function& getExplicit() { return implicit_solver_;}
 
     /// Get explicit dynamics (backward problem)
-    virtual Function& getExplicitB(){ return backward_implicit_solver_;}
+    virtual Function& getExplicitB() { return backward_implicit_solver_;}
 
     // Implicit function solver
     ImplicitFunction implicit_solver_, backward_implicit_solver_;

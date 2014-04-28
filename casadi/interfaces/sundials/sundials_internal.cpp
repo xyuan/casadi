@@ -21,20 +21,21 @@
  */
 
 #include "sundials_internal.hpp"
-#include "casadi/symbolic/std_vector_tools.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
+#include "casadi/core/std_vector_tools.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/sx_function.hpp"
 
 INPUTSCHEME(IntegratorInput)
 OUTPUTSCHEME(IntegratorOutput)
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
-SundialsInternal::SundialsInternal(const Function& f, const Function& g) : IntegratorInternal(f,g){
+SundialsInternal::SundialsInternal(const Function& f, const Function& g)
+    : IntegratorInternal(f, g) {
   addOption("max_num_steps",               OT_INTEGER,          10000,
             "Maximum number of integrator steps");
   addOption("reltol",                      OT_REAL,             1e-6,
@@ -51,11 +52,11 @@ SundialsInternal::SundialsInternal(const Function& f, const Function& g) : Integ
   addOption("lower_bandwidth",             OT_INTEGER,          GenericType(),
             "Lower band-width of banded Jacobian (estimations)");
   addOption("linear_solver_type",          OT_STRING,           "dense",
-            "","user_defined|dense|banded|iterative");
+            "", "user_defined|dense|banded|iterative");
   addOption("iterative_solver",            OT_STRING,           "gmres",
-            "","gmres|bcgstab|tfqmr");
+            "", "gmres|bcgstab|tfqmr");
   addOption("pretype",                     OT_STRING,           "none",
-            "","none|left|right|both");
+            "", "none|left|right|both");
   addOption("max_krylov",                  OT_INTEGER,          10,
             "Maximum Krylov subspace size");
   addOption("sensitivity_method",          OT_STRING,           "simultaneous", "",
@@ -92,7 +93,7 @@ SundialsInternal::SundialsInternal(const Function& f, const Function& g) : Integ
   addOption("steps_per_checkpoint",        OT_INTEGER,          20,
             "Number of steps between two consecutive checkpoints");
   addOption("interpolation_type",          OT_STRING,           "hermite",
-            "Type of interpolation for the adjoint sensitivities","hermite|polynomial");
+            "Type of interpolation for the adjoint sensitivities", "hermite|polynomial");
   addOption("upper_bandwidthB",            OT_INTEGER,          GenericType(),
             "Upper band-width of banded jacobians for backward integration "
             "[default: equal to upper_bandwidth]");
@@ -100,11 +101,11 @@ SundialsInternal::SundialsInternal(const Function& f, const Function& g) : Integ
             "lower band-width of banded jacobians for backward integration "
             "[default: equal to lower_bandwidth]");
   addOption("linear_solver_typeB",         OT_STRING,           GenericType(),
-            "","user_defined|dense|banded|iterative");
+            "", "user_defined|dense|banded|iterative");
   addOption("iterative_solverB",           OT_STRING,           GenericType(),
-            "","gmres|bcgstab|tfqmr");
+            "", "gmres|bcgstab|tfqmr");
   addOption("pretypeB",                    OT_STRING,           GenericType(),
-            "","none|left|right|both");
+            "", "none|left|right|both");
   addOption("max_krylovB",                 OT_INTEGER,          GenericType(),
             "Maximum krylov subspace size");
   addOption("reltolB",                     OT_REAL,             GenericType(),
@@ -123,10 +124,10 @@ SundialsInternal::SundialsInternal(const Function& f, const Function& g) : Integ
             "[default: equal to linear_solver_options]");
 }
 
-SundialsInternal::~SundialsInternal(){
+SundialsInternal::~SundialsInternal() {
 }
 
-void SundialsInternal::init(){
+void SundialsInternal::init() {
   // Call the base class method
   IntegratorInternal::init();
 
@@ -156,32 +157,32 @@ void SundialsInternal::init(){
       hasSetOption("max_krylovB") ? static_cast<int>(getOption("max_krylovB")): max_krylov_;
 
   // Linear solver for forward integration
-  if(getOption("linear_solver_type")=="dense"){
+  if (getOption("linear_solver_type")=="dense") {
     linsol_f_ = SD_DENSE;
-  } else if(getOption("linear_solver_type")=="banded") {
+  } else if (getOption("linear_solver_type")=="banded") {
     linsol_f_ = SD_BANDED;
-  } else if(getOption("linear_solver_type")=="iterative") {
+  } else if (getOption("linear_solver_type")=="iterative") {
     linsol_f_ = SD_ITERATIVE;
 
     // Iterative solver
-    if(getOption("iterative_solver")=="gmres"){
+    if (getOption("iterative_solver")=="gmres") {
       itsol_f_ = SD_GMRES;
-    } else if(getOption("iterative_solver")=="bcgstab") {
+    } else if (getOption("iterative_solver")=="bcgstab") {
       itsol_f_ = SD_BCGSTAB;
-    } else if(getOption("iterative_solver")=="tfqmr") {
+    } else if (getOption("iterative_solver")=="tfqmr") {
       itsol_f_ = SD_TFQMR;
     } else {
       throw CasadiException("Unknown sparse solver for forward integration");
     }
 
     // Preconditioning type
-    if(getOption("pretype")=="none")               pretype_f_ = PREC_NONE;
-    else if(getOption("pretype")=="left")          pretype_f_ = PREC_LEFT;
-    else if(getOption("pretype")=="right")         pretype_f_ = PREC_RIGHT;
-    else if(getOption("pretype")=="both")          pretype_f_ = PREC_BOTH;
+    if (getOption("pretype")=="none")               pretype_f_ = PREC_NONE;
+    else if (getOption("pretype")=="left")          pretype_f_ = PREC_LEFT;
+    else if (getOption("pretype")=="right")         pretype_f_ = PREC_RIGHT;
+    else if (getOption("pretype")=="both")          pretype_f_ = PREC_BOTH;
     else
       throw CasadiException("Unknown preconditioning type for forward integration");
-  } else if(getOption("linear_solver_type")=="user_defined") {
+  } else if (getOption("linear_solver_type")=="user_defined") {
     linsol_f_ = SD_USER_DEFINED;
   } else {
     throw CasadiException("Unknown linear solver for forward integration");
@@ -195,32 +196,32 @@ void SundialsInternal::init(){
   std::string pretypeB = hasSetOption("pretypeB") ? getOption("pretypeB"): getOption("pretype");
 
   // Linear solver for backward integration
-  if(linear_solver_typeB=="dense"){
+  if (linear_solver_typeB=="dense") {
     linsol_g_ = SD_DENSE;
-  } else if(linear_solver_typeB=="banded") {
+  } else if (linear_solver_typeB=="banded") {
     linsol_g_ = SD_BANDED;
-  } else if(linear_solver_typeB=="iterative") {
+  } else if (linear_solver_typeB=="iterative") {
     linsol_g_ = SD_ITERATIVE;
 
     // Iterative solver
-    if(iterative_solverB=="gmres"){
+    if (iterative_solverB=="gmres") {
       itsol_g_ = SD_GMRES;
-    } else if(iterative_solverB=="bcgstab") {
+    } else if (iterative_solverB=="bcgstab") {
       itsol_g_ = SD_BCGSTAB;
-    } else if(iterative_solverB=="tfqmr") {
+    } else if (iterative_solverB=="tfqmr") {
       itsol_g_ = SD_TFQMR;
     } else {
       throw CasadiException("Unknown sparse solver for backward integration");
     }
 
     // Preconditioning type
-    if(pretypeB=="none")               pretype_g_ = PREC_NONE;
-    else if(pretypeB=="left")          pretype_g_ = PREC_LEFT;
-    else if(pretypeB=="right")         pretype_g_ = PREC_RIGHT;
-    else if(pretypeB=="both")          pretype_g_ = PREC_BOTH;
+    if (pretypeB=="none")               pretype_g_ = PREC_NONE;
+    else if (pretypeB=="left")          pretype_g_ = PREC_LEFT;
+    else if (pretypeB=="right")         pretype_g_ = PREC_RIGHT;
+    else if (pretypeB=="both")          pretype_g_ = PREC_BOTH;
     else
       throw CasadiException("Unknown preconditioning type for backward integration");
-  } else if(linear_solver_typeB=="user_defined") {
+  } else if (linear_solver_typeB=="user_defined") {
     linsol_g_ = SD_USER_DEFINED;
   } else {
    casadi_error("Unknown linear solver for backward integration: " << iterative_solverB);
@@ -229,7 +230,7 @@ void SundialsInternal::init(){
   // Create a Jacobian if requested
   if (exact_jacobian_) jac_ = getJac();
   // Initialize Jacobian if availabe
-  if(!jac_.isNull() && !jac_.isInit()) jac_.init();
+  if (!jac_.isNull() && !jac_.isInit()) jac_.init();
 
   if (!jac_.isNull()) {
     casadi_assert_message(
@@ -246,9 +247,9 @@ void SundialsInternal::init(){
   }
 
   // Create a backwards Jacobian if requested
-  if(exact_jacobianB_ && !g_.isNull()) jacB_ = getJacB();
+  if (exact_jacobianB_ && !g_.isNull()) jacB_ = getJacB();
   // Initialize backwards  Jacobian if availabe
-  if(!jacB_.isNull() && !jacB_.isInit()) jacB_.init();
+  if (!jacB_.isNull() && !jacB_.isInit()) jacB_.init();
 
   if (!jacB_.isNull()) {
     casadi_assert_message(
@@ -264,24 +265,24 @@ void SundialsInternal::init(){
       << jacB_.output().size2() << ")");
   }
 
-  if(hasSetOption("linear_solver") && !jac_.isNull()){
+  if (hasSetOption("linear_solver") && !jac_.isNull()) {
     // Create a linear solver
     linearSolverCreator creator = getOption("linear_solver");
-    linsol_ = creator(jac_.output().sparsity(),1);
+    linsol_ = creator(jac_.output().sparsity(), 1);
     // Pass options
-    if(hasSetOption("linear_solver_options")){
+    if (hasSetOption("linear_solver_options")) {
       linsol_.setOption(getOption("linear_solver_options"));
     }
     linsol_.init();
   }
 
-  if((hasSetOption("linear_solverB") || hasSetOption("linear_solver")) && !jacB_.isNull()){
+  if ((hasSetOption("linear_solverB") || hasSetOption("linear_solver")) && !jacB_.isNull()) {
     // Create a linear solver
     linearSolverCreator creator =
         hasSetOption("linear_solverB") ? getOption("linear_solverB") : getOption("linear_solver");
-    linsolB_ = creator(jacB_.output().sparsity(),1);
+    linsolB_ = creator(jacB_.output().sparsity(), 1);
     // Pass options
-    if(hasSetOption("linear_solver_optionsB")){
+    if (hasSetOption("linear_solver_optionsB")) {
       linsolB_.setOption(getOption("linear_solver_optionsB"));
     } else if (hasSetOption("linear_solver_options")) {
       linsolB_.setOption(getOption("linear_solver_options"));
@@ -290,17 +291,17 @@ void SundialsInternal::init(){
   }
 }
 
-void SundialsInternal::deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied){
+void SundialsInternal::deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied) {
   IntegratorInternal::deepCopyMembers(already_copied);
-  linsol_ = deepcopy(linsol_,already_copied);
-  linsolB_ = deepcopy(linsolB_,already_copied);
-  jac_ = deepcopy(jac_,already_copied);
-  jacB_ = deepcopy(jacB_,already_copied);
-  f_fwd_ = deepcopy(f_fwd_,already_copied);
-  g_fwd_ = deepcopy(g_fwd_,already_copied);
+  linsol_ = deepcopy(linsol_, already_copied);
+  linsolB_ = deepcopy(linsolB_, already_copied);
+  jac_ = deepcopy(jac_, already_copied);
+  jacB_ = deepcopy(jacB_, already_copied);
+  f_fwd_ = deepcopy(f_fwd_, already_copied);
+  g_fwd_ = deepcopy(g_fwd_, already_copied);
 }
 
-void SundialsInternal::reset(){
+void SundialsInternal::reset() {
   // Reset the base classes
   IntegratorInternal::reset();
 }

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.6)
 project(casadi C CXX)
 set(PACKAGE_NAME "CasADi")
 set(PACKAGE_VERSION "1.9.0+")
+set(PACKAGE_SO_VERSION "2.0")
 set(PACKAGE_DESCRIPTION "CasADi is a symbolic framework for automatic differentation and numeric optimization")
 set(PACKAGE_AUTHOR "Joel Andersson")
 set(PACKAGE_MAINTAINER "Joris Gillis")
@@ -101,6 +102,7 @@ endif()
 option(WITH_DOC "Enable documentation generation" OFF)
 option(ENABLE_EXPORT_ALL "Export all symbols to a shared library" OFF)
 
+option(WITH_EXAMPLES "Build examples" ON)
 option(WITH_PYTHON_INTERRUPTS "With interrupt handling inside python interface" OFF)
 # option(WITH_GSL "Compile the GSL interface" ON)
 option(WITH_OPENMP "Compile with parallelization support" OFF)
@@ -122,6 +124,25 @@ option(WITH_LAPACK "Compile the interface to LAPACK" ON)
 option(WITH_OPENCL "Compile with OpenCL support" OFF)
 option(WITH_PROFILING "Enable a built-in profiler to be switched used" OFF)
 option(WITH_COVERAGE "Create coverage report" OFF)
+
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# the RPATH to be used when installing, but only if it's not a system directory
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
 
 # For code optimization
 if(CMAKE_BUILD_TYPE)
@@ -355,7 +376,6 @@ endif()
 
 add_subdirectory(external_packages)
 add_subdirectory(casadi)
-add_subdirectory(docs/examples)
 add_subdirectory(experimental/greg EXCLUDE_FROM_ALL)
 add_subdirectory(experimental/joel EXCLUDE_FROM_ALL)
 #add_subdirectory(experimental/andrew EXCLUDE_FROM_ALL)
@@ -363,7 +383,7 @@ add_subdirectory(misc)
 
 find_package(SWIG)
   if(SWIG_FOUND)
-    add_subdirectory(swig EXCLUDE_FROM_ALL) # the swig interfaces are not compiled when typing "make"
+    add_subdirectory(swig)
     add_custom_target(python DEPENDS _python_modules)
     add_custom_target(json DEPENDS _json_modules)
 endif()
@@ -372,13 +392,16 @@ if(WITH_DOC)
   set(DOXYFILE_LATEX "NO")
   set(DOXYFILE_IN_DIR ${CMAKE_SOURCE_DIR}/docs/api)
   set(DOXYFILE_OUTPUT_DIR  ${CMAKE_SOURCE_DIR}/docs/api)
-  set(DOXYFILE_SOURCE_DIR ${CMAKE_SOURCE_DIR}/symbolic)
+  set(DOXYFILE_SOURCE_DIR ${CMAKE_SOURCE_DIR}/casadi)
   include(UseDoxygen OPTIONAL)
   add_subdirectory(docs/tutorials EXCLUDE_FROM_ALL)
   add_custom_target(tutor)
 endif()
 
-add_subdirectory(docs/api/examples/ctemplate)
+if(WITH_EXAMPLES)
+  add_subdirectory(docs/examples)
+  add_subdirectory(docs/api/examples/ctemplate)
+endif()
 
 # Print a summary
 feature_summary(WHAT ALL)
@@ -388,8 +411,8 @@ string(REPLACE "\n" "\\n" feature_list "${feature_list}")
 
 # Pass meta information
 configure_file(
-  ${CMAKE_SOURCE_DIR}/casadi/symbolic/casadi_meta.cpp.cmake
-  ${CMAKE_SOURCE_DIR}/casadi/symbolic/casadi_meta.cpp
+  ${CMAKE_SOURCE_DIR}/casadi/core/casadi_meta.cpp.cmake
+  ${CMAKE_SOURCE_DIR}/casadi/core/casadi_meta.cpp
   ESCAPE_QUOTES
 )
 

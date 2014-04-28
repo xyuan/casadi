@@ -23,7 +23,7 @@
 #ifndef SDP_SDQP_SOLVER_HPP
 #define SDP_SDQP_SOLVER_HPP
 
-#include "casadi/symbolic/function/sdqp_solver.hpp"
+#include "casadi/core/function/sdqp_solver.hpp"
 
 #include <casadi/convex_programming/casadi_convex_programming_export.h>
 
@@ -72,7 +72,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static SDQPSolver creator(const SDQPStructure & st){ return SDPSDQPSolver(st);}
+  static SDQPSolver creator(const SDQPStructure & st) { return SDPSDQPSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

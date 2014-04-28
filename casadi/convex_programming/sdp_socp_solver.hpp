@@ -23,7 +23,7 @@
 #ifndef SDP_SOCP_SOLVER_HPP
 #define SDP_SOCP_SOLVER_HPP
 
-#include "casadi/symbolic/function/socp_solver.hpp"
+#include "casadi/core/function/socp_solver.hpp"
 
 #include <casadi/convex_programming/casadi_convex_programming_export.h>
 
@@ -64,7 +64,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static SOCPSolver creator(const SOCPStructure & st){ return SDPSOCPSolver(st);}
+  static SOCPSolver creator(const SOCPStructure & st) { return SDPSOCPSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

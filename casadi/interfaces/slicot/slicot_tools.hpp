@@ -23,10 +23,10 @@
 #ifndef SLICOT_TOOLS_HPP
 #define SLICOT_TOOLS_HPP
 
-#include "../../symbolic/matrix/matrix.hpp"
+#include "../../core/matrix/matrix.hpp"
 #include <casadi/interfaces/slicot/casadi_slicot_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
 /// \cond INTERNAL
 #ifndef SWIG

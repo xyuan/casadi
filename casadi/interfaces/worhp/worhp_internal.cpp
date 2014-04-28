@@ -21,18 +21,18 @@
  */
 
 #include "worhp_internal.hpp"
-#include "casadi/symbolic/std_vector_tools.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
-#include "casadi/symbolic/matrix/sparsity_tools.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
+#include "casadi/core/std_vector_tools.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
+#include "casadi/core/matrix/sparsity_tools.hpp"
+#include "casadi/core/function/mx_function.hpp"
 #include <ctime>
 
 using namespace std;
 
-namespace casadi{
+namespace casadi {
 
-  WorhpInternal::WorhpInternal(const Function& nlp) : NLPSolverInternal(nlp){
+  WorhpInternal::WorhpInternal(const Function& nlp) : NLPSolverInternal(nlp) {
 
     // Monitors
     addOption("monitor",            OT_STRINGVECTOR,  GenericType(),  "Monitor functions",
@@ -47,106 +47,108 @@ namespace casadi{
     ss << "Armijo recovery strategies. Vector of size " << NAres;
 
     std::vector<int> ares(NAres);
-    std::copy(worhp_p_.Ares,worhp_p_.Ares+NAres,ares.begin());
-    addOption("Ares",OT_INTEGERVECTOR,ares,ss.str());
+    std::copy(worhp_p_.Ares, worhp_p_.Ares+NAres, ares.begin());
+    addOption("Ares", OT_INTEGERVECTOR, ares, ss.str());
 
     for (int i=0;i<WorhpGetParamCount();++i) {
       WorhpType type = WorhpGetParamType(i+1);
       const char* name = WorhpGetParamName(i+1);
-      if (strcmp(name,"Ares")==0) continue;
-      switch(type) {
+      if (strcmp(name, "Ares")==0) continue;
+      switch (type) {
         case WORHP_BOOL_T:
           bool default_bool;
           WorhpGetBoolParam(&worhp_p_, name, &default_bool);
-          addOption(WorhpGetParamName(i+1),OT_BOOLEAN,default_bool,WorhpGetParamDescription(i+1));
+          addOption(WorhpGetParamName(i+1), OT_BOOLEAN, default_bool,
+                    WorhpGetParamDescription(i+1));
           break;
         case WORHP_DOUBLE_T:
           double default_double;
           WorhpGetDoubleParam(&worhp_p_, name, &default_double);
-          addOption(WorhpGetParamName(i+1),OT_REAL,default_double,WorhpGetParamDescription(i+1));
+          addOption(WorhpGetParamName(i+1), OT_REAL, default_double, WorhpGetParamDescription(i+1));
           break;
         case WORHP_INT_T:
           int default_int;
           WorhpGetIntParam(&worhp_p_, name, &default_int);
-          addOption(WorhpGetParamName(i+1),OT_INTEGER,default_int,WorhpGetParamDescription(i+1));
+          addOption(WorhpGetParamName(i+1), OT_INTEGER, default_int, WorhpGetParamDescription(i+1));
           break;
         default:
           break;// do nothing
       }
     }
 
-    addOption("qp_ipBarrier",OT_REAL,worhp_p_.qp.ipBarrier,"IP barrier parameter.");
-    addOption("qp_ipComTol",OT_REAL,worhp_p_.qp.ipComTol,"IP complementarity tolerance.");
-    addOption("qp_ipFracBound",OT_REAL,worhp_p_.qp.ipFracBound,
+    addOption("qp_ipBarrier", OT_REAL, worhp_p_.qp.ipBarrier, "IP barrier parameter.");
+    addOption("qp_ipComTol", OT_REAL, worhp_p_.qp.ipComTol, "IP complementarity tolerance.");
+    addOption("qp_ipFracBound", OT_REAL, worhp_p_.qp.ipFracBound,
               "IP fraction-to-the-boundary parameter.");
-    addOption("qp_ipLsMethod",OT_STRING,GenericType(),
+    addOption("qp_ipLsMethod", OT_STRING, GenericType(),
       "Select the direct linear solver used by the IP method.",
       "LAPACK::0|MA57: only available if provided by the user:1|"
-      "SuperLU::2|PARDISO: only available if provided by the user,"
+      "SuperLU::2|PARDISO: only available if provided by the user, "
       "subject to license availability:3|"
       "MUMPS: currently Linux platforms only:5|"
       "WSMP: subject to license availability:6|"
       "MA86: experimental, only available if provided by the user:7|"
       "MA97:experimental, only available if provided by the user:8");
-    setOptionByEnumValue("qp_ipLsMethod",worhp_p_.qp.ipLsMethod);
-    addOption("qp_ipMinAlpha",OT_REAL,worhp_p_.qp.ipMinAlpha,"IP line search minimum step size.");
-    addOption("qp_ipTryRelax",OT_BOOLEAN,worhp_p_.qp.ipTryRelax,
+    setOptionByEnumValue("qp_ipLsMethod", worhp_p_.qp.ipLsMethod);
+    addOption("qp_ipMinAlpha", OT_REAL, worhp_p_.qp.ipMinAlpha,
+              "IP line search minimum step size.");
+    addOption("qp_ipTryRelax", OT_BOOLEAN, worhp_p_.qp.ipTryRelax,
       "Enable relaxation strategy when encountering an error.");
-    addOption("qp_ipRelaxDiv",OT_REAL,worhp_p_.qp.ipRelaxDiv,
+    addOption("qp_ipRelaxDiv", OT_REAL, worhp_p_.qp.ipRelaxDiv,
       "The relaxation term is divided by this value if successful.");
-    addOption("qp_ipRelaxMult",OT_REAL,worhp_p_.qp.ipRelaxMult,
+    addOption("qp_ipRelaxMult", OT_REAL, worhp_p_.qp.ipRelaxMult,
       "The relaxation term is multiplied by this value if unsuccessful.");
-    addOption("qp_ipRelaxMax",OT_REAL,worhp_p_.qp.ipRelaxMax,"Maximum relaxation value.");
-    addOption("qp_ipRelaxMin",OT_REAL,worhp_p_.qp.ipRelaxMin,"Mimimum relaxation value.");
-    addOption("qp_ipResTol",OT_REAL,worhp_p_.qp.ipResTol,"IP residuals tolerance.");
-    addOption("qp_lsItMaxIter",OT_INTEGER,worhp_p_.qp.lsItMaxIter,
+    addOption("qp_ipRelaxMax", OT_REAL, worhp_p_.qp.ipRelaxMax, "Maximum relaxation value.");
+    addOption("qp_ipRelaxMin", OT_REAL, worhp_p_.qp.ipRelaxMin, "Mimimum relaxation value.");
+    addOption("qp_ipResTol", OT_REAL, worhp_p_.qp.ipResTol, "IP residuals tolerance.");
+    addOption("qp_lsItMaxIter", OT_INTEGER, worhp_p_.qp.lsItMaxIter,
       "Maximum number of iterations of the iterative linear solvers.");
-    addOption("qp_lsItMethod",OT_STRING,GenericType(),
+    addOption("qp_lsItMethod", OT_STRING, GenericType(),
       "Select the iterative linear solver.",
       "none:Deactivate; use a direct linear solver.:0|CGNR::1|CGNE::2|CGS::3|BiCGSTAB::4");
-    setOptionByEnumValue("qp_lsItMethod",worhp_p_.qp.lsItMethod);
-    addOption("qp_lsItPrecondMethod",OT_STRING,GenericType(),
+    setOptionByEnumValue("qp_lsItMethod", worhp_p_.qp.lsItMethod);
+    addOption("qp_lsItPrecondMethod", OT_STRING, GenericType(),
       "Select preconditioner for the iterative linear solver.",
       "none:No preconditioner.:0|"
       "static:Static preconditioner (KKT-matrix with constant lower-right block).:1|"
       "full:Full KKT-matrix.:2");
-    setOptionByEnumValue("qp_lsItPrecondMethod",worhp_p_.qp.lsItPrecondMethod);
-    addOption("qp_lsRefineMaxIter",OT_INTEGER,worhp_p_.qp.lsRefineMaxIter,
+    setOptionByEnumValue("qp_lsItPrecondMethod", worhp_p_.qp.lsItPrecondMethod);
+    addOption("qp_lsRefineMaxIter", OT_INTEGER, worhp_p_.qp.lsRefineMaxIter,
       "Maximum number of iterative refinement steps of the direct linear solvers.");
-    addOption("qp_lsScale",OT_BOOLEAN,worhp_p_.qp.lsScale,
+    addOption("qp_lsScale", OT_BOOLEAN, worhp_p_.qp.lsScale,
               "Enables scaling on linear solver level.");
-    addOption("qp_lsTrySimple",OT_BOOLEAN,worhp_p_.qp.lsTrySimple,
+    addOption("qp_lsTrySimple", OT_BOOLEAN, worhp_p_.qp.lsTrySimple,
       "Some matrices can be solved without calling a linear equation solver."
       "Currently only diagonal matrices are supported."
       "Non-diagonal matrices will besolved with the chosen linear equation solver.");
-    addOption("qp_lsTol",OT_REAL,worhp_p_.qp.lsTol,"Tolerance for the linear solver.");
-    addOption("qp_maxIter",OT_INTEGER,worhp_p_.qp.maxIter,
-      "Imposes an upper limit on the number of minor solver iterations,"
+    addOption("qp_lsTol", OT_REAL, worhp_p_.qp.lsTol, "Tolerance for the linear solver.");
+    addOption("qp_maxIter", OT_INTEGER, worhp_p_.qp.maxIter,
+      "Imposes an upper limit on the number of minor solver iterations, "
       " i.e. for the quadratic subproblem solver."
-      "If the limit is reached before convergence,"
+      "If the limit is reached before convergence, "
       "WORHP will activate QP recovery strategies to prevent a solver breakdown.");
-    addOption("qp_method",OT_STRING,GenericType(),
+    addOption("qp_method", OT_STRING, GenericType(),
       "Select the solution method used by the QP solver.",
       "ip:Interior-Point method.:1|nsn:Nonsmooth-Newton method.:2|"
       "automatic: Prefer IP and fall back to NSN on error.:12");
-    setOptionByEnumValue("qp_method",worhp_p_.qp.method);
-    addOption("qp_nsnBeta",OT_REAL,worhp_p_.qp.nsnBeta,"NSN stepsize decrease factor.");
-    addOption("qp_nsnGradStep",OT_BOOLEAN,worhp_p_.qp.nsnGradStep,
+    setOptionByEnumValue("qp_method", worhp_p_.qp.method);
+    addOption("qp_nsnBeta", OT_REAL, worhp_p_.qp.nsnBeta, "NSN stepsize decrease factor.");
+    addOption("qp_nsnGradStep", OT_BOOLEAN, worhp_p_.qp.nsnGradStep,
       "Enable gradient steps in the NSN method.");
-    addOption("qp_nsnKKT",OT_REAL,worhp_p_.qp.nsnKKT,"NSN KKT tolerance.");
-    addOption("qp_nsnLsMethod",OT_STRING,GenericType(),
+    addOption("qp_nsnKKT", OT_REAL, worhp_p_.qp.nsnKKT, "NSN KKT tolerance.");
+    addOption("qp_nsnLsMethod", OT_STRING, GenericType(),
       "Select the direct linear solver used by the NSN method.",
       "SuperLU::2|MA48: only available if provided by the user:4");
-    setOptionByEnumValue("qp_nsnLsMethod",worhp_p_.qp.nsnLsMethod);
-    addOption("qp_nsnMinAlpha",OT_REAL,worhp_p_.qp.nsnMinAlpha,
+    setOptionByEnumValue("qp_nsnLsMethod", worhp_p_.qp.nsnLsMethod);
+    addOption("qp_nsnMinAlpha", OT_REAL, worhp_p_.qp.nsnMinAlpha,
               "NSN line search minimum step size.");
-    addOption("qp_nsnSigma",OT_REAL,worhp_p_.qp.nsnSigma,"NSN line search slope parameter.");
-    addOption("qp_printLevel",OT_STRING,GenericType(),
+    addOption("qp_nsnSigma", OT_REAL, worhp_p_.qp.nsnSigma, "NSN line search slope parameter.");
+    addOption("qp_printLevel", OT_STRING, GenericType(),
       "Controls the amount of QP solver output.",
       "none:No output.:0|warn:Print warnings and errors.:1|iterations:Print iterations.:2");
-    setOptionByEnumValue("qp_printLevel",worhp_p_.qp.printLevel);
-    addOption("qp_scaleIntern",OT_BOOLEAN,worhp_p_.qp.scaleIntern,"Enable scaling on QP level.");
-    addOption("qp_strict",OT_BOOLEAN,worhp_p_.qp.strict,
+    setOptionByEnumValue("qp_printLevel", worhp_p_.qp.printLevel);
+    addOption("qp_scaleIntern", OT_BOOLEAN, worhp_p_.qp.scaleIntern, "Enable scaling on QP level.");
+    addOption("qp_strict", OT_BOOLEAN, worhp_p_.qp.strict,
               "Use strict termination criteria in IP method.");
 
     worhp_o_.initialised = false;
@@ -155,19 +157,19 @@ namespace casadi{
     worhp_c_.initialised = false;
 
     // WORKAROUND: Bug in scaling, set to false by default // FIXME
-    setOption("ScaledObj",false);
+    setOption("ScaledObj", false);
 
     // WORKAROUND: Why is this needed? // FIXME
-    setOption("ScaleConIter",true);
+    setOption("ScaleConIter", true);
   }
 
-  WorhpInternal::~WorhpInternal(){
+  WorhpInternal::~WorhpInternal() {
     if (worhp_p_.initialised || worhp_o_.initialised ||
         worhp_w_.initialised || worhp_c_.initialised)
       WorhpFree(&worhp_o_, &worhp_w_, &worhp_p_, &worhp_c_);
   }
 
-  WorhpInternal* WorhpInternal::clone() const{
+  WorhpInternal* WorhpInternal::clone() const {
     // Use default copy routine
     WorhpInternal* node = new WorhpInternal(*this);
 
@@ -180,14 +182,14 @@ namespace casadi{
     return node;
   }
 
-  void WorhpInternal::init(){
+  void WorhpInternal::init() {
 
     // Call the init method of the base class
     NLPSolverInternal::init();
 
     if (hasSetOption("Ares")) {
       std::vector<int> ares = getOption("Ares");
-      std::copy(ares.begin(),ares.begin()+NAres,worhp_p_.Ares);
+      std::copy(ares.begin(), ares.begin()+NAres, worhp_p_.Ares);
     }
 
     // Read options
@@ -199,7 +201,7 @@ namespace casadi{
     // Get/generate required functions
     gradF();
     jacG();
-    if(exact_hessian_){ // does not appear to work
+    if (exact_hessian_) { // does not appear to work
       hessLag();
     }
 
@@ -240,7 +242,7 @@ namespace casadi{
     status_[FunctionErrorHM]="FunctionErrorHM";
   }
 
-  void WorhpInternal::reset(){
+  void WorhpInternal::reset() {
 
     // Number of (free) variables
     worhp_o_.n = nx_;
@@ -251,7 +253,7 @@ namespace casadi{
     // Free existing Worhp memory (except parameters)
     bool p_init_backup = worhp_p_.initialised;
     worhp_p_.initialised = false; // Avoid freeing the memory for parameters
-    if (worhp_o_.initialised || worhp_w_.initialised || worhp_c_.initialised){
+    if (worhp_o_.initialised || worhp_w_.initialised || worhp_c_.initialised) {
       WorhpFree(&worhp_o_, &worhp_w_, &worhp_p_, &worhp_c_);
     }
     worhp_p_.initialised = p_init_backup;
@@ -278,8 +280,8 @@ namespace casadi{
 
       // Get number of nonzeros in the lower triangular part of the Hessian including full diagonal
       worhp_w_.HM.nnz = nx_; // diagonal entries
-      for(int c=0; c<nx_; ++c){
-        for(int el=colind[c]; el<colind[c+1] && row[el]<c; ++el){
+      for (int c=0; c<nx_; ++c) {
+        for (int el=colind[c]; el<colind[c+1] && row[el]<c; ++el) {
           worhp_w_.HM.nnz++; // strictly lower triangular part
         }
       }
@@ -293,8 +295,8 @@ namespace casadi{
       casadi_error("Main: Initialisation failed. Status: " << formatStatus(worhp_c_.status));
     }
 
-    if (worhp_w_.DF.NeedStructure){
-      for(int i=0; i<nx_; ++i){
+    if (worhp_w_.DF.NeedStructure) {
+      for (int i=0; i<nx_; ++i) {
         worhp_w_.DF.row[i] = i + 1; // Index-1 based
       }
     }
@@ -306,8 +308,8 @@ namespace casadi{
       int nz=0;
       const vector<int>& colind = J.colind();
       const vector<int>& row = J.row();
-      for(int c=0; c<nx_; ++c){
-        for(int el=colind[c]; el<colind[c+1]; ++el){
+      for (int c=0; c<nx_; ++c) {
+        for (int el=colind[c]; el<colind[c+1]; ++el) {
           int r = row[el];
           worhp_w_.DG.col[nz] = c + 1; // Index-1 based
           worhp_w_.DG.row[nz] = r + 1;
@@ -325,9 +327,9 @@ namespace casadi{
       int nz=0;
 
       // Upper triangular part of the Hessian (note CCS -> CRS format change)
-      for(int c=0; c<nx_; ++c){
-        for(int el=colind[c]; el<colind[c+1]; ++el){
-          if(row[el]>c){
+      for (int c=0; c<nx_; ++c) {
+        for (int el=colind[c]; el<colind[c+1]; ++el) {
+          if (row[el]>c) {
             worhp_w_.HM.row[nz] = row[el] + 1;
             worhp_w_.HM.col[nz] = c + 1;
             nz++;
@@ -336,7 +338,7 @@ namespace casadi{
       }
 
       // Diagonal always included
-      for(int r=0; r<nx_; ++r){
+      for (int r=0; r<nx_; ++r) {
         worhp_w_.HM.row[nz] = r + 1;
         worhp_w_.HM.col[nz] = r + 1;
         nz++;
@@ -353,9 +355,9 @@ namespace casadi{
      for (int i=0;i<WorhpGetParamCount();++i) {
       WorhpType type = WorhpGetParamType(i+1);
       const char* name = WorhpGetParamName(i+1);
-      if (strcmp(name,"Ares")==0) continue;
+      if (strcmp(name, "Ares")==0) continue;
 
-      switch(type) {
+      switch (type) {
         case WORHP_BOOL_T:
           if (hasSetOption(name)) WorhpSetBoolParam(&worhp_p_, name, getOption(name));
           break;
@@ -417,7 +419,7 @@ namespace casadi{
     }
   }
 
-  void WorhpInternal::evaluate(){
+  void WorhpInternal::evaluate() {
     log("WorhpInternal::evaluate");
 
     if (gather_stats_) {
@@ -469,28 +471,28 @@ namespace casadi{
     }
 
     // Pass inputs to WORHP data structures
-    x0.getArray(worhp_o_.X,worhp_o_.n);
-    lbx.getArray(worhp_o_.XL,worhp_o_.n);
-    ubx.getArray(worhp_o_.XU,worhp_o_.n);
-    lam_x0.getArray(worhp_o_.Lambda,worhp_o_.n);
-    if (worhp_o_.m>0){
-      lam_g0.getArray(worhp_o_.Mu,worhp_o_.m);
-      lbg.getArray(worhp_o_.GL,worhp_o_.m);
-      ubg.getArray(worhp_o_.GU,worhp_o_.m);
+    x0.getArray(worhp_o_.X, worhp_o_.n);
+    lbx.getArray(worhp_o_.XL, worhp_o_.n);
+    ubx.getArray(worhp_o_.XU, worhp_o_.n);
+    lam_x0.getArray(worhp_o_.Lambda, worhp_o_.n);
+    if (worhp_o_.m>0) {
+      lam_g0.getArray(worhp_o_.Mu, worhp_o_.m);
+      lbg.getArray(worhp_o_.GL, worhp_o_.m);
+      ubg.getArray(worhp_o_.GU, worhp_o_.m);
     }
 
     // Replace infinite bounds with worhp_p_.Infty
-    for(int i=0; i<nx_; ++i) if(worhp_o_.XL[i]==-inf) worhp_o_.XL[i] = -worhp_p_.Infty;
-    for(int i=0; i<nx_; ++i) if(worhp_o_.XU[i]== inf) worhp_o_.XU[i] =  worhp_p_.Infty;
-    for(int i=0; i<ng_; ++i) if(worhp_o_.GL[i]==-inf) worhp_o_.GL[i] = -worhp_p_.Infty;
-    for(int i=0; i<ng_; ++i) if(worhp_o_.GU[i]== inf) worhp_o_.GU[i] =  worhp_p_.Infty;
+    for (int i=0; i<nx_; ++i) if (worhp_o_.XL[i]==-inf) worhp_o_.XL[i] = -worhp_p_.Infty;
+    for (int i=0; i<nx_; ++i) if (worhp_o_.XU[i]== inf) worhp_o_.XU[i] =  worhp_p_.Infty;
+    for (int i=0; i<ng_; ++i) if (worhp_o_.GL[i]==-inf) worhp_o_.GL[i] = -worhp_p_.Infty;
+    for (int i=0; i<ng_; ++i) if (worhp_o_.GU[i]== inf) worhp_o_.GU[i] =  worhp_p_.Infty;
 
     log("WorhpInternal::starting iteration");
 
     double time1 = clock();
 
     // Reverse Communication loop
-    while(worhp_c_.status < TerminateSuccess &&  worhp_c_.status > TerminateError) {
+    while (worhp_c_.status < TerminateSuccess &&  worhp_c_.status > TerminateError) {
       if (GetUserAction(&worhp_c_, callWorhp)) {
         Worhp(&worhp_o_, &worhp_w_, &worhp_p_, &worhp_c_);
       }
@@ -513,15 +515,15 @@ namespace casadi{
             double time1 = clock();
             // Copy outputs
             if (!output(NLP_SOLVER_X).isEmpty())
-              output(NLP_SOLVER_X).setArray(worhp_o_.X,worhp_o_.n);
+              output(NLP_SOLVER_X).setArray(worhp_o_.X, worhp_o_.n);
             if (!output(NLP_SOLVER_F).isEmpty())
               output(NLP_SOLVER_F).set(worhp_o_.F);
             if (!output(NLP_SOLVER_G).isEmpty())
-              output(NLP_SOLVER_G).setArray(worhp_o_.G,worhp_o_.m);
+              output(NLP_SOLVER_G).setArray(worhp_o_.G, worhp_o_.m);
             if (!output(NLP_SOLVER_LAM_X).isEmpty())
-              output(NLP_SOLVER_LAM_X).setArray(worhp_o_.Lambda,worhp_o_.n);
+              output(NLP_SOLVER_LAM_X).setArray(worhp_o_.Lambda, worhp_o_.n);
             if (!output(NLP_SOLVER_LAM_G).isEmpty())
-              output(NLP_SOLVER_LAM_G).setArray(worhp_o_.Mu,worhp_o_.m);
+              output(NLP_SOLVER_LAM_G).setArray(worhp_o_.Mu, worhp_o_.m);
 
             Dictionary iteration;
             iteration["iter"] = worhp_w_.MajorIter;
@@ -535,11 +537,11 @@ namespace casadi{
             double time2 = clock();
             t_callback_prepare_ += (time2-time1)/CLOCKS_PER_SEC;
             time1 = clock();
-            int ret = callback_(ref_,user_data_);
+            int ret = callback_(ref_, user_data_);
             time2 = clock();
             t_callback_fun_ += (time2-time1)/CLOCKS_PER_SEC;
 
-            if(ret) worhp_c_.status = TerminatedByUser;
+            if (ret) worhp_c_.status = TerminatedByUser;
 
           }
         }
@@ -565,7 +567,7 @@ namespace casadi{
       }
 
       if (GetUserAction(&worhp_c_, evalDG)) {
-        eval_jac_g(worhp_o_.X,worhp_w_.DG.val);
+        eval_jac_g(worhp_o_.X, worhp_w_.DG.val);
         DoneUserAction(&worhp_c_, evalDG);
       }
 
@@ -583,11 +585,11 @@ namespace casadi{
     t_mainloop_ += (time2-time1)/CLOCKS_PER_SEC;
 
     // Copy outputs
-    output(NLP_SOLVER_X).setArray(worhp_o_.X,worhp_o_.n,DENSE);
+    output(NLP_SOLVER_X).setArray(worhp_o_.X, worhp_o_.n, DENSE);
     output(NLP_SOLVER_F).set(worhp_o_.F);
-    output(NLP_SOLVER_G).setArray(worhp_o_.G,worhp_o_.m,DENSE);
-    output(NLP_SOLVER_LAM_X).setArray(worhp_o_.Lambda,worhp_o_.n);
-    output(NLP_SOLVER_LAM_G).setArray(worhp_o_.Mu,worhp_o_.m,DENSE);
+    output(NLP_SOLVER_G).setArray(worhp_o_.G, worhp_o_.m, DENSE);
+    output(NLP_SOLVER_LAM_X).setArray(worhp_o_.Lambda, worhp_o_.n);
+    output(NLP_SOLVER_LAM_G).setArray(worhp_o_.Mu, worhp_o_.m, DENSE);
 
     StatusMsg(&worhp_o_, &worhp_w_, &worhp_p_, &worhp_c_);
 
@@ -641,22 +643,22 @@ namespace casadi{
   }
 
   bool WorhpInternal::eval_h(const double* x, double obj_factor,
-                             const double* lambda, double* values){
-    try{
+                             const double* lambda, double* values) {
+    try {
       log("eval_h started");
       double time1 = clock();
 
       // Make sure generated
-      casadi_assert_warning(!hessLag_.isNull(),"Hessian function not pregenerated");
+      casadi_assert_warning(!hessLag_.isNull(), "Hessian function not pregenerated");
 
       // Get Hessian
       Function& hessLag = this->hessLag();
 
       // Pass input
-      hessLag.setInput(x,HESSLAG_X);
-      hessLag.setInput(input(NLP_SOLVER_P),HESSLAG_P);
-      hessLag.setInput(obj_factor,HESSLAG_LAM_F);
-      hessLag.setInput(lambda,HESSLAG_LAM_G);
+      hessLag.setInput(x, HESSLAG_X);
+      hessLag.setInput(input(NLP_SOLVER_P), HESSLAG_P);
+      hessLag.setInput(obj_factor, HESSLAG_LAM_F);
+      hessLag.setInput(lambda, HESSLAG_LAM_G);
 
       // Evaluate
       hessLag.evaluate();
@@ -672,24 +674,24 @@ namespace casadi{
       double* values_diagonal = values + (worhp_w_.HM.nnz-nx_);
 
       // Initialize diagonal to zero
-      for(int r=0; r<nx_; ++r){
+      for (int r=0; r<nx_; ++r) {
         values_diagonal[r] = 0.;
       }
 
       // Upper triangular part of the Hessian (note CCS -> CRS format change)
-      for(int c=0; c<nx_; ++c){
-        for(int el=colind[c]; el<colind[c+1]; ++el){
-          if(row[el]>c){
+      for (int c=0; c<nx_; ++c) {
+        for (int el=colind[c]; el<colind[c+1]; ++el) {
+          if (row[el]>c) {
             // Strictly upper triangular
             *values_upper++ = data[el];
-          } else if(row[el]==c){
+          } else if (row[el]==c) {
             // Diagonal separately
             values_diagonal[c] = data[el];
           }
         }
       }
 
-      if(monitored("eval_h")){
+      if (monitored("eval_h")) {
         std::cout << "x = " <<  hessLag.input(HESSLAG_X) << std::endl;
         std::cout << "obj_factor= " << obj_factor << std::endl;
         std::cout << "lambda = " << hessLag.input(HESSLAG_LAM_G) << std::endl;
@@ -704,18 +706,18 @@ namespace casadi{
       n_eval_h_ += 1;
       log("eval_h ok");
       return true;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_h failed: " << ex.what() << endl;
       return false;
     }
   }
 
-  bool WorhpInternal::eval_jac_g(const double* x,double* values){
-    try{
+  bool WorhpInternal::eval_jac_g(const double* x, double* values) {
+    try {
       log("eval_jac_g started");
 
       // Quich finish if no constraints
-      if(worhp_o_.m==0){
+      if (worhp_o_.m==0) {
         log("eval_jac_g quick return (m==0)");
         return true;
       }
@@ -729,17 +731,17 @@ namespace casadi{
       double time1 = clock();
 
       // Pass the argument to the function
-      jacG.setInput(x,JACG_X);
-      jacG.setInput(input(NLP_SOLVER_P),JACG_P);
+      jacG.setInput(x, JACG_X);
+      jacG.setInput(input(NLP_SOLVER_P), JACG_P);
 
       // Evaluate the function
       jacG.evaluate();
 
       const DMatrix& J = jacG.output(JACG_JAC);
 
-      std::copy(J.data().begin(),J.data().end(),values);
+      std::copy(J.data().begin(), J.data().end(), values);
 
-      if(monitored("eval_jac_g")){
+      if (monitored("eval_jac_g")) {
         cout << "x = " << jacG_.input().data() << endl;
         cout << "J = " << endl;
         jacG_.output().printSparse();
@@ -750,13 +752,13 @@ namespace casadi{
       n_eval_jac_g_ += 1;
       log("eval_jac_g ok");
       return true;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_jac_g failed: " << ex.what() << endl;
       return false;
     }
   }
 
-  bool WorhpInternal::eval_f(const double* x, double scale, double& obj_value){
+  bool WorhpInternal::eval_f(const double* x, double scale, double& obj_value) {
     try {
       log("eval_f started");
 
@@ -765,16 +767,16 @@ namespace casadi{
 
       // Pass the argument to the function
       nlp_.setInput(x, NL_X);
-      nlp_.setInput(input(NLP_SOLVER_P),NL_P);
+      nlp_.setInput(input(NLP_SOLVER_P), NL_P);
 
       // Evaluate the function
       nlp_.evaluate();
 
       // Get the result
-      nlp_.getOutput(obj_value,NL_F);
+      nlp_.getOutput(obj_value, NL_F);
 
       // Printing
-      if(monitored("eval_f")){
+      if (monitored("eval_f")) {
         cout << "x = " << nlp_.input(NL_X) << endl;
         cout << "obj_value = " << obj_value << endl;
       }
@@ -788,31 +790,30 @@ namespace casadi{
       n_eval_f_ += 1;
       log("eval_f ok");
       return true;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_f failed: " << ex.what() << endl;
       return false;
     }
   }
 
-  bool WorhpInternal::eval_g(const double* x, double* g)
-  {
+  bool WorhpInternal::eval_g(const double* x, double* g) {
     try {
       log("eval_g started");
       double time1 = clock();
 
-      if(worhp_o_.m>0){
+      if (worhp_o_.m>0) {
         // Pass the argument to the function
-        nlp_.setInput(x,NL_X);
-        nlp_.setInput(input(NLP_SOLVER_P),NL_P);
+        nlp_.setInput(x, NL_X);
+        nlp_.setInput(input(NLP_SOLVER_P), NL_P);
 
         // Evaluate the function and tape
         nlp_.evaluate();
 
         // Ge the result
-        nlp_.getOutput(g,NL_G);
+        nlp_.getOutput(g, NL_G);
 
         // Printing
-        if(monitored("eval_g")){
+        if (monitored("eval_g")) {
           cout << "x = " << nlp_.input(NL_X) << endl;
           cout << "g = " << nlp_.output(NL_G) << endl;
         }
@@ -826,35 +827,34 @@ namespace casadi{
       n_eval_g_ += 1;
       log("eval_g ok");
       return true;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_g failed: " << ex.what() << endl;
       return false;
     }
   }
 
-  bool WorhpInternal::eval_grad_f(const double* x, double scale , double* grad_f )
-  {
+  bool WorhpInternal::eval_grad_f(const double* x, double scale , double* grad_f) {
     try {
       log("eval_grad_f started");
       double time1 = clock();
 
       // Pass the argument to the function
-      gradF_.setInput(x,NL_X);
-      gradF_.setInput(input(NLP_SOLVER_P),NL_P);
+      gradF_.setInput(x, NL_X);
+      gradF_.setInput(input(NLP_SOLVER_P), NL_P);
 
       // Evaluate, adjoint mode
       gradF_.evaluate();
 
       // Get the result
-      gradF_.output().get(grad_f,DENSE);
+      gradF_.output().get(grad_f, DENSE);
 
       // Scale
-      for(int i=0; i<nx_; ++i){
+      for (int i=0; i<nx_; ++i) {
         grad_f[i] *= scale;
       }
 
       // Printing
-      if(monitored("eval_grad_f")){
+      if (monitored("eval_grad_f")) {
         cout << "grad_f = " << gradF_.output() << endl;
       }
 
@@ -865,8 +865,8 @@ namespace casadi{
       t_eval_grad_f_ += (time2-time1)/CLOCKS_PER_SEC;
       n_eval_grad_f_ += 1;
       // Check the result for regularity
-      for(int i=0; i<nx_; ++i){
-        if(isnan(grad_f[i]) || isinf(grad_f[i])){
+      for (int i=0; i<nx_; ++i) {
+        if (isnan(grad_f[i]) || isinf(grad_f[i])) {
           log("eval_grad_f: result not regular");
           return false;
         }
@@ -874,7 +874,7 @@ namespace casadi{
 
       log("eval_grad_f ok");
       return true;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_jac_f failed: " << ex.what() << endl;
       return false;
     }
@@ -883,7 +883,7 @@ namespace casadi{
   void WorhpInternal::setOptionsFromFile(const std::string & file) {
     int status;
     char *cpy = new char[file.size()+1] ;
-    strcpy(cpy, file.c_str());  // NOLINT(runtime/printf)
+    strcpy(cpy, file.c_str());
     worhp_p_.initialised = true;
     ReadParamsNoInit(&status, cpy, &worhp_p_);
     delete cpy;
@@ -891,22 +891,22 @@ namespace casadi{
     for (int i=0;i<WorhpGetParamCount();++i) {
       WorhpType type = WorhpGetParamType(i+1);
       const char* name = WorhpGetParamName(i+1);
-      if (strcmp(name,"Ares")==0) continue;
-      switch(type) {
+      if (strcmp(name, "Ares")==0) continue;
+      switch (type) {
         case WORHP_BOOL_T:
           bool default_bool;
           WorhpGetBoolParam(&worhp_p_, name, &default_bool);
-          setOption(WorhpGetParamName(i+1),default_bool);
+          setOption(WorhpGetParamName(i+1), default_bool);
           break;
         case WORHP_DOUBLE_T:
           double default_double;
           WorhpGetDoubleParam(&worhp_p_, name, &default_double);
-          setOption(WorhpGetParamName(i+1),default_double);
+          setOption(WorhpGetParamName(i+1), default_double);
           break;
         case WORHP_INT_T:
           int default_int;
           WorhpGetIntParam(&worhp_p_, name, &default_int);
-          setOption(WorhpGetParamName(i+1),default_int);
+          setOption(WorhpGetParamName(i+1), default_int);
           break;
         default:
           break; // do nothing
@@ -914,41 +914,41 @@ namespace casadi{
     }
 
 
-    setOption("qp_ipBarrier",worhp_p_.qp.ipBarrier);
-    setOption("qp_ipComTol",worhp_p_.qp.ipComTol);
-    setOption("qp_ipFracBound",worhp_p_.qp.ipFracBound);
-    setOptionByEnumValue("qp_ipLsMethod",worhp_p_.qp.ipLsMethod );
-    setOption("qp_ipMinAlpha",worhp_p_.qp.ipMinAlpha);
-    setOption("qp_ipTryRelax",worhp_p_.qp.ipTryRelax);
-    setOption("qp_ipRelaxDiv",worhp_p_.qp.ipRelaxDiv);
-    setOption("qp_ipRelaxMult",worhp_p_.qp.ipRelaxMult);
-    setOption("qp_ipRelaxMax",worhp_p_.qp.ipRelaxMax);
-    setOption("qp_ipRelaxMin",worhp_p_.qp.ipRelaxMin);
-    setOption("qp_ipResTol",worhp_p_.qp.ipResTol);
-    setOption("qp_lsItMaxIter",worhp_p_.qp.lsItMaxIter);
-    setOptionByEnumValue("qp_lsItMethod",worhp_p_.qp.lsItMethod );
-    setOptionByEnumValue("qp_lsItPrecondMethod",worhp_p_.qp.lsItPrecondMethod );
-    setOption("qp_lsRefineMaxIter",worhp_p_.qp.lsRefineMaxIter);
-    setOption("qp_lsScale",worhp_p_.qp.lsScale);
-    setOption("qp_lsTrySimple",worhp_p_.qp.lsTrySimple);
-    setOption("qp_lsTol",worhp_p_.qp.lsTol);
-    setOption("qp_maxIter",worhp_p_.qp.maxIter);
-    setOptionByEnumValue("qp_method",worhp_p_.qp.method );
-    setOption("qp_nsnBeta",worhp_p_.qp.nsnBeta);
-    setOption("qp_nsnGradStep",worhp_p_.qp.nsnGradStep);
-    setOption("qp_nsnKKT",worhp_p_.qp.nsnKKT);
-    setOptionByEnumValue("qp_nsnLsMethod",worhp_p_.qp.nsnLsMethod );
-    setOption("qp_nsnMinAlpha",worhp_p_.qp.nsnMinAlpha);
-    setOption("qp_nsnSigma",worhp_p_.qp.nsnSigma);
-    setOptionByEnumValue("qp_printLevel",worhp_p_.qp.printLevel );
-    setOption("qp_scaleIntern",worhp_p_.qp.scaleIntern);
-    setOption("qp_strict",worhp_p_.qp.strict);
+    setOption("qp_ipBarrier", worhp_p_.qp.ipBarrier);
+    setOption("qp_ipComTol", worhp_p_.qp.ipComTol);
+    setOption("qp_ipFracBound", worhp_p_.qp.ipFracBound);
+    setOptionByEnumValue("qp_ipLsMethod", worhp_p_.qp.ipLsMethod);
+    setOption("qp_ipMinAlpha", worhp_p_.qp.ipMinAlpha);
+    setOption("qp_ipTryRelax", worhp_p_.qp.ipTryRelax);
+    setOption("qp_ipRelaxDiv", worhp_p_.qp.ipRelaxDiv);
+    setOption("qp_ipRelaxMult", worhp_p_.qp.ipRelaxMult);
+    setOption("qp_ipRelaxMax", worhp_p_.qp.ipRelaxMax);
+    setOption("qp_ipRelaxMin", worhp_p_.qp.ipRelaxMin);
+    setOption("qp_ipResTol", worhp_p_.qp.ipResTol);
+    setOption("qp_lsItMaxIter", worhp_p_.qp.lsItMaxIter);
+    setOptionByEnumValue("qp_lsItMethod", worhp_p_.qp.lsItMethod);
+    setOptionByEnumValue("qp_lsItPrecondMethod", worhp_p_.qp.lsItPrecondMethod);
+    setOption("qp_lsRefineMaxIter", worhp_p_.qp.lsRefineMaxIter);
+    setOption("qp_lsScale", worhp_p_.qp.lsScale);
+    setOption("qp_lsTrySimple", worhp_p_.qp.lsTrySimple);
+    setOption("qp_lsTol", worhp_p_.qp.lsTol);
+    setOption("qp_maxIter", worhp_p_.qp.maxIter);
+    setOptionByEnumValue("qp_method", worhp_p_.qp.method);
+    setOption("qp_nsnBeta", worhp_p_.qp.nsnBeta);
+    setOption("qp_nsnGradStep", worhp_p_.qp.nsnGradStep);
+    setOption("qp_nsnKKT", worhp_p_.qp.nsnKKT);
+    setOptionByEnumValue("qp_nsnLsMethod", worhp_p_.qp.nsnLsMethod);
+    setOption("qp_nsnMinAlpha", worhp_p_.qp.nsnMinAlpha);
+    setOption("qp_nsnSigma", worhp_p_.qp.nsnSigma);
+    setOptionByEnumValue("qp_printLevel", worhp_p_.qp.printLevel);
+    setOption("qp_scaleIntern", worhp_p_.qp.scaleIntern);
+    setOption("qp_strict", worhp_p_.qp.strict);
 
     std::cout << "readparams status: " << status << std::endl;
   }
 
-  map<int,string> WorhpInternal::calc_flagmap(){
-  map<int,string> f;
+  map<int, string> WorhpInternal::calc_flagmap() {
+  map<int, string> f;
   f[TerminateSuccess] = "TerminateSuccess";
   f[OptimalSolution] = "OptimalSolution";
   f[SearchDirectionZero] = "SearchDirectionZero";
@@ -986,6 +986,6 @@ namespace casadi{
   return f;
 }
 
-map<int,string> WorhpInternal::flagmap = WorhpInternal::calc_flagmap();
+map<int, string> WorhpInternal::flagmap = WorhpInternal::calc_flagmap();
 
 } // namespace casadi

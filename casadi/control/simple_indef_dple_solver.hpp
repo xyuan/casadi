@@ -27,7 +27,7 @@
 
 #include <casadi/control/casadi_control_export.h>
 
-namespace casadi{
+namespace casadi {
 
   /// Forward declaration of internal class
   class SimpleIndefDpleInternal;
@@ -70,8 +70,8 @@ namespace casadi{
     %callback("%s_cb");
     #endif
     static DpleSolver creator(const std::vector< Sparsity > & A,
-                              const std::vector< Sparsity > &V){
-        return SimpleIndefDpleSolver(A,V);}
+                              const std::vector< Sparsity > &V) {
+        return SimpleIndefDpleSolver(A, V);}
     #ifdef SWIG
     %nocallback;
     #endif

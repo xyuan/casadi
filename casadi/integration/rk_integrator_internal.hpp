@@ -27,23 +27,23 @@
 #include "fixed_step_integrator_internal.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-  class CASADI_INTEGRATION_EXPORT RKIntegratorInternal : public FixedStepIntegratorInternal{
+  class CASADI_INTEGRATION_EXPORT RKIntegratorInternal : public FixedStepIntegratorInternal {
   public:
 
     /// Constructor
     explicit RKIntegratorInternal(const Function& f, const Function& g);
 
     /// Deep copy data members
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /// Clone
-    virtual RKIntegratorInternal* clone() const{ return new RKIntegratorInternal(*this);}
+    virtual RKIntegratorInternal* clone() const { return new RKIntegratorInternal(*this);}
 
     /// Create a new integrator
     virtual RKIntegratorInternal* create(const Function& f, const Function& g) const
-    { return new RKIntegratorInternal(f,g);}
+    { return new RKIntegratorInternal(f, g);}
 
     /// Destructor
     virtual ~RKIntegratorInternal();

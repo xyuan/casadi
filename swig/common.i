@@ -24,7 +24,7 @@
 // for example vertcat(SXVector), vertcat(DMatrixVector) and vertcat(MXVector) appears to work fine
 #pragma SWIG nowarn=509,303,302
 
-#define CASADI_SYMBOLIC_EXPORT
+#define CASADI_CORE_EXPORT
 
 // Incude cmath early on, see #622
 %begin %{
@@ -416,11 +416,11 @@ if (internal("$decl")) SWIG_fail;
 #ifdef SWIGPYTHON
 %wrapper %{
 int deprecated(const std::string & c,const std::string & a) {
-  return PyErr_WarnEx(PyExc_DeprecationWarning,("This function (" + c+") is deprecated. "  + a).c_str(),2);
+  return PyErr_WarnEx(PyExc_DeprecationWarning,("This CasADi function (" + c+") is deprecated. "  + a).c_str(),2);
 }
 int internal(const std::string & c) {
   if (CasadiOptions::allowed_internal_api) return 0;
-  return PyErr_WarnEx(PyExc_SyntaxWarning,("This function ("+ c+ ") is not part of the public API. Use at your own risk.").c_str(),2);
+  return PyErr_WarnEx(PyExc_SyntaxWarning,("This CasADi function ("+ c+ ") is not part of the public API. Use at your own risk.").c_str(),2);
 }
 %}
 #endif
@@ -594,83 +594,53 @@ memberbinops(pow,argtype,argCast,selfCast,returntype) \
 %include "commontypemaps.i"
 
 %{
-#include "casadi/symbolic/matrix/matrix.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
-#include "casadi/symbolic/matrix/sparsity_tools.hpp"
+#include "casadi/core/matrix/matrix.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
+#include "casadi/core/matrix/sparsity_tools.hpp"
 	 
 // Scalar expressions 
-#include "casadi/symbolic/sx/sx_element.hpp"
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
+#include "casadi/core/sx/sx_element.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/function/sx_function.hpp"
 	 
 // Matrix expressions 
-#include "casadi/symbolic/mx/mx.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
+#include "casadi/core/mx/mx.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
 
-#include "casadi/symbolic/function/mx_function.hpp"
+#include "casadi/core/function/mx_function.hpp"
 
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/custom_function.hpp"
-#include "casadi/symbolic/function/ocp_solver.hpp"
-#include "casadi/symbolic/function/simulator.hpp"
-#include "casadi/symbolic/function/parallelizer.hpp"
-#include "casadi/symbolic/function/external_function.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/custom_function.hpp"
+#include "casadi/core/function/ocp_solver.hpp"
+#include "casadi/core/function/simulator.hpp"
+#include "casadi/core/function/parallelizer.hpp"
+#include "casadi/core/function/external_function.hpp"
 
-
-#include "casadi/optimal_control/direct_multiple_shooting.hpp"
-#include "casadi/optimal_control/symbolic_ocp.hpp"
-
-#include "casadi/symbolic/function/io_interface.hpp"
-#include "casadi/symbolic/function/function.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/linear_solver.hpp"
-#include "casadi/symbolic/function/symbolic_qr.hpp"
-#include "casadi/symbolic/function/implicit_function.hpp"
-#include "casadi/symbolic/function/integrator.hpp"
-#include "casadi/symbolic/function/simulator.hpp"
-#include "casadi/symbolic/function/control_simulator.hpp"
-#include "casadi/symbolic/function/nlp_solver.hpp"
-#include "casadi/symbolic/function/homotopy_nlp_solver.hpp"
-#include "casadi/symbolic/function/qp_solver.hpp"
-#include "casadi/symbolic/function/stabilized_qp_solver.hpp"
-#include "casadi/symbolic/function/lp_solver.hpp"
-#include "casadi/symbolic/function/ocp_solver.hpp"
-#include "casadi/symbolic/function/sdp_solver.hpp"
-#include "casadi/symbolic/function/socp_solver.hpp"
-#include "casadi/symbolic/function/qcqp_solver.hpp"
-#include "casadi/symbolic/function/sdqp_solver.hpp"
-#include "casadi/symbolic/function/external_function.hpp"
-#include "casadi/symbolic/function/parallelizer.hpp"
-#include "casadi/symbolic/function/custom_function.hpp"
-#include "casadi/symbolic/function/nullspace.hpp"
-#include "casadi/symbolic/functor.hpp"
-
-#include "casadi/nonlinear_programming/symbolic_nlp.hpp"
-#include "casadi/nonlinear_programming/sqp_method.hpp"
-#include "casadi/nonlinear_programming/stabilized_sqp_method.hpp"
-#include "casadi/nonlinear_programming/scpgen.hpp"
-#include "casadi/nonlinear_programming/nlp_qp_solver.hpp"
-#include "casadi/nonlinear_programming/nlp_implicit_solver.hpp"
-#include "casadi/nonlinear_programming/newton_implicit_solver.hpp"
-#include "casadi/nonlinear_programming/simple_homotopy_nlp_solver.hpp"
-
-#include "casadi/integration/fixed_step_integrator.hpp"
-#include "casadi/integration/implicit_fixed_step_integrator.hpp"
-#include "casadi/integration/rk_integrator.hpp"
-#include "casadi/integration/collocation_integrator.hpp"
-#include "casadi/integration/old_collocation_integrator.hpp"
-#include "casadi/integration/integration_tools.hpp"
-
-
-#include "casadi/optimal_control/variable.hpp"
-#include "casadi/optimal_control/symbolic_ocp.hpp"
-#include "casadi/optimal_control/direct_single_shooting.hpp"
-#include "casadi/optimal_control/direct_multiple_shooting.hpp"
-#include "casadi/optimal_control/direct_collocation.hpp"
-
-#include "casadi/control/dple_solver.hpp"
-#include "casadi/control/simple_indef_dple_solver.hpp"
+#include "casadi/core/function/io_interface.hpp"
+#include "casadi/core/function/function.hpp"
+#include "casadi/core/function/sx_function.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/linear_solver.hpp"
+#include "casadi/core/function/symbolic_qr.hpp"
+#include "casadi/core/function/implicit_function.hpp"
+#include "casadi/core/function/integrator.hpp"
+#include "casadi/core/function/simulator.hpp"
+#include "casadi/core/function/control_simulator.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
+#include "casadi/core/function/homotopy_nlp_solver.hpp"
+#include "casadi/core/function/qp_solver.hpp"
+#include "casadi/core/function/stabilized_qp_solver.hpp"
+#include "casadi/core/function/lp_solver.hpp"
+#include "casadi/core/function/ocp_solver.hpp"
+#include "casadi/core/function/sdp_solver.hpp"
+#include "casadi/core/function/socp_solver.hpp"
+#include "casadi/core/function/qcqp_solver.hpp"
+#include "casadi/core/function/sdqp_solver.hpp"
+#include "casadi/core/function/external_function.hpp"
+#include "casadi/core/function/parallelizer.hpp"
+#include "casadi/core/function/custom_function.hpp"
+#include "casadi/core/function/nullspace.hpp"
+#include "casadi/core/functor.hpp"
 
 using namespace casadi;
 
@@ -739,7 +709,7 @@ void dummy2(
 
 #ifdef SWIGPYTHON
 %pythoncode %{
-import _casadi_symbolic
+import _casadi_core
 %}
 #endif // SWIGPYTHON
 

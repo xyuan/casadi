@@ -23,16 +23,16 @@
 #ifndef SNOPT_INTERNAL_HPP
 #define SNOPT_INTERNAL_HPP
 
-#include "casadi/symbolic/function/nlp_solver_internal.hpp"
+#include "casadi/core/function/nlp_solver_internal.hpp"
 #include "snopt_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /**
      @copydoc NLPSolver_doc
   */
-  class CASADI_SNOPT_INTERFACE_EXPORT SnoptInternal : public NLPSolverInternal{
+  class CASADI_SNOPT_INTERFACE_EXPORT SnoptInternal : public NLPSolverInternal {
 
   public:
     // Constructor
@@ -62,8 +62,8 @@ namespace casadi{
     /// Exact Hessian?
     bool exact_hessian_;
 
-    std::map<int,std::string> status_;
-    std::map<std::string,opt_type> ops_;
+    std::map<int, std::string> status_;
+    std::map<std::string, opt_type> ops_;
 
     std::string formatStatus(int status) const;
 

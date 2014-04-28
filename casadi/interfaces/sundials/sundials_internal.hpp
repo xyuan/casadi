@@ -24,7 +24,7 @@
 #define SUNDIALS_INTERNAL_HPP
 
 #include "sundials_integrator.hpp"
-#include "casadi/symbolic/function/integrator_internal.hpp"
+#include "casadi/core/function/integrator_internal.hpp"
 
 #include <nvector/nvector_serial.h>
 #include <sundials/sundials_dense.h>
@@ -32,9 +32,9 @@
 #include <sundials/sundials_types.h>
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-class CASADI_SUNDIALS_INTERFACE_EXPORT SundialsInternal : public IntegratorInternal{
+class CASADI_SUNDIALS_INTERFACE_EXPORT SundialsInternal : public IntegratorInternal {
 public:
   /** \brief  Constructor */
   SundialsInternal(const Function& f, const Function& g);
@@ -49,7 +49,7 @@ public:
   virtual void reset() = 0;
 
   /** \brief  Deep copy data members */
-  virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+  virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
   /** \brief  Set stop time for the integration */
   virtual void setStopTime(double tf) = 0;
@@ -72,13 +72,13 @@ public:
   int ncheck_;
 
   /// Supported linear solvers in Sundials
-  enum LinearSolverType{SD_USER_DEFINED, SD_DENSE, SD_BANDED, SD_ITERATIVE};
+  enum LinearSolverType {SD_USER_DEFINED, SD_DENSE, SD_BANDED, SD_ITERATIVE};
 
   /// Supported iterative solvers in Sundials
-  enum IterativeSolverType{SD_GMRES,SD_BCGSTAB,SD_TFQMR};
+  enum IterativeSolverType {SD_GMRES, SD_BCGSTAB, SD_TFQMR};
 
   /// Linear solver data (dense)
-  struct LinSolDataDense{};
+  struct LinSolDataDense {};
 
   /// Linear solver
   LinearSolverType linsol_f_, linsol_g_;

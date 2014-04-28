@@ -21,16 +21,16 @@
  */
 
 #include "knitro_internal.hpp"
-#include "casadi/symbolic/std_vector_tools.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
+#include "casadi/core/std_vector_tools.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
 #include <ctime>
 #include <cstdio>
 #include <cstdlib>
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
-  KnitroInternal::KnitroInternal(const Function& nlp) : NLPSolverInternal(nlp){
+  KnitroInternal::KnitroInternal(const Function& nlp) : NLPSolverInternal(nlp) {
     casadi_warning("KnitroInternal: the KNITRO interface is still experimental, "
                    "more tests are needed");
 
@@ -62,38 +62,38 @@ namespace casadi{
     //  "Maximum number of refactorizations of the KKT system per iteration of the Interior "
     //  "Direct algorithm before reverting to a CG step. See KNITRO documentation.");
 
-    //addOption("Alg",OT_INTEGER,0,"Algorithm");
-    addOption("BarRule",OT_INTEGER,0,"Barrier Rule");
-    addOption("NewPoint",OT_BOOLEAN,0,"Select new-point feature");
-    addOption("GradOpt",OT_INTEGER,1,"Gradient calculation method");
-    addOption("HessOpt",OT_INTEGER,1,"Hessian calculation method");
-    addOption("Feasible",OT_BOOLEAN,0,"Allow infeasible iterations");
-    addOption("HonorBnds",OT_BOOLEAN,0,"Enforce bounds");
-    addOption("LPSolver",OT_BOOLEAN,0,"Use LPSolver");
-    addOption("Multistart",OT_BOOLEAN,0,"Use multistart");
-    //addOption("MsMaxSolves",OT_INTEGER,1,"Maximum multistart points");
-    addOption("MaxCgIt",OT_INTEGER,0,"Maximum conjugate gradient iterations");
-    //addOption("MaxCrossTt",OT_INTEGER,0,"Maximum crossover iterations");
-    addOption("MaxIt",OT_INTEGER,10000,"Iteration limit");
-    //addOption("MaxTimeCPU",OT_REAL,1e8,"CPU Time limit");
-    //addOption("MaxTimeReal",OT_REAL,1e8,"Time limit");
-    addOption("LmSize",OT_INTEGER,10,"Memory pairsize limit");
-    addOption("Scale",OT_BOOLEAN,1,"Perform scaling");
-    addOption("ShiftInit",OT_BOOLEAN,1,"Interior-point shifting initial point");
-    addOption("Soc",OT_INTEGER,1,"Second order correction");
-    addOption("InitPt",OT_BOOLEAN,0,"Use initial point strategy");
-    addOption("Delta",OT_REAL,1.0,"Initial region scaling factor");
-    addOption("FeasModeTol",OT_REAL,0.0001,"Feasible mode tolerance");
-    addOption("FeasTol",OT_REAL,1e-6,"Feasible tolerance");
-    addOption("FeasTolAbs",OT_REAL,1,"Absolute feasible tolerance");
-    addOption("OptTol",OT_REAL,1e-6,"Relative optimality tolerance");
-    addOption("OptTolAbs",OT_REAL,0,"Absolute optimality tolerance");
-    addOption("Pivot",OT_REAL,1e-8,"Initial pivot threshold");
-    addOption("XTol",OT_REAL,1e-15,"Relative solution change tolerance");
-    addOption("Mu",OT_REAL,0.1,"Initial barrier parameter");
-    addOption("ObjRange",OT_REAL,1e-8,"Maximum objective value");
-    addOption("OutLev",OT_INTEGER,2,"Log output level");
-    addOption("Debug",OT_INTEGER,0,"Debug level");
+    //addOption("Alg", OT_INTEGER,0, "Algorithm");
+    addOption("BarRule", OT_INTEGER, 0, "Barrier Rule");
+    addOption("NewPoint", OT_BOOLEAN, 0, "Select new-point feature");
+    addOption("GradOpt", OT_INTEGER, 1, "Gradient calculation method");
+    addOption("HessOpt", OT_INTEGER, 1, "Hessian calculation method");
+    addOption("Feasible", OT_BOOLEAN, 0, "Allow infeasible iterations");
+    addOption("HonorBnds", OT_BOOLEAN, 0, "Enforce bounds");
+    addOption("LPSolver", OT_BOOLEAN, 0, "Use LPSolver");
+    addOption("Multistart", OT_BOOLEAN, 0, "Use multistart");
+    //addOption("MsMaxSolves", OT_INTEGER, 1, "Maximum multistart points");
+    addOption("MaxCgIt", OT_INTEGER, 0, "Maximum conjugate gradient iterations");
+    //addOption("MaxCrossTt", OT_INTEGER, 0, "Maximum crossover iterations");
+    addOption("MaxIt", OT_INTEGER, 10000, "Iteration limit");
+    //addOption("MaxTimeCPU", OT_REAL, 1e8, "CPU Time limit");
+    //addOption("MaxTimeReal", OT_REAL, 1e8, "Time limit");
+    addOption("LmSize", OT_INTEGER, 10, "Memory pairsize limit");
+    addOption("Scale", OT_BOOLEAN, 1, "Perform scaling");
+    addOption("ShiftInit", OT_BOOLEAN, 1, "Interior-point shifting initial point");
+    addOption("Soc", OT_INTEGER, 1, "Second order correction");
+    addOption("InitPt", OT_BOOLEAN, 0, "Use initial point strategy");
+    addOption("Delta", OT_REAL, 1.0, "Initial region scaling factor");
+    addOption("FeasModeTol", OT_REAL, 0.0001, "Feasible mode tolerance");
+    addOption("FeasTol", OT_REAL, 1e-6, "Feasible tolerance");
+    addOption("FeasTolAbs", OT_REAL, 1, "Absolute feasible tolerance");
+    addOption("OptTol", OT_REAL, 1e-6, "Relative optimality tolerance");
+    addOption("OptTolAbs", OT_REAL, 0, "Absolute optimality tolerance");
+    addOption("Pivot", OT_REAL, 1e-8, "Initial pivot threshold");
+    addOption("XTol", OT_REAL, 1e-15, "Relative solution change tolerance");
+    addOption("Mu", OT_REAL, 0.1, "Initial barrier parameter");
+    addOption("ObjRange", OT_REAL, 1e-8, "Maximum objective value");
+    addOption("OutLev", OT_INTEGER, 2, "Log output level");
+    addOption("Debug", OT_INTEGER, 0, "Debug level");
 
 
 
@@ -103,15 +103,15 @@ namespace casadi{
   }
 
 
-  KnitroInternal::~KnitroInternal(){
+  KnitroInternal::~KnitroInternal() {
     // Free KNITRO memory
-    if(kc_handle_){
+    if (kc_handle_) {
       /*    KTR_free(&kc_handle_);
             kc_handle_ = 0;*/
     }
   }
 
-  void KnitroInternal::init(){
+  void KnitroInternal::init() {
     // Call the init method of the base class
     NLPSolverInternal::init();
 
@@ -151,7 +151,7 @@ namespace casadi{
     // Get/generate required functions
     gradF();
     jacG();
-    if(true){ // NOTE: should be only if HessOpt
+    if (true) { // NOTE: should be only if HessOpt
       hessLag();
     }
 
@@ -162,7 +162,7 @@ namespace casadi{
 
   }
 
-  void KnitroInternal::evaluate(){
+  void KnitroInternal::evaluate() {
     // Allocate KNITRO memory block (move back to init!)
     casadi_assert(kc_handle_==0);
     kc_handle_ = KTR_new();
@@ -176,12 +176,12 @@ namespace casadi{
     // Hessian sparsity
     int nnzH = hessLag_.isNull() ? 0 : hessLag_.output().sizeL();
     vector<int> Hcol(nnzH), Hrow(nnzH);
-    if(nnzH>0){
+    if (nnzH>0) {
       const vector<int> &colind = hessLag_.output().colind();
       const vector<int> &row = hessLag_.output().row();
       int nz=0;
-      for(int cc=0; cc<colind.size()-1; ++cc){
-        for(int el=colind[cc]; el<colind[cc+1] && row[el]<=cc; ++el){
+      for (int cc=0; cc<colind.size()-1; ++cc) {
+        for (int el=colind[cc]; el<colind[cc+1] && row[el]<=cc; ++el) {
           Hcol[nz] = cc;
           Hrow[nz] = row[el];
           nz++;
@@ -197,50 +197,50 @@ namespace casadi{
     }
 
     // Set user set options
-    for(std::map<std::string, double>::iterator it=double_param_.begin();
-        it!=double_param_.end(); ++it){
+    for (std::map<std::string, double>::iterator it=double_param_.begin();
+        it!=double_param_.end(); ++it) {
       status = KTR_set_double_param_by_name(kc_handle_, it->first.c_str(), it->second);
-      if(status!=0){
+      if (status!=0) {
         throw CasadiException("KnitroInternal::evaluate: cannot set " + it->first);
       }
     }
 
-    for(std::map<std::string, int>::iterator it=int_param_.begin(); it!=int_param_.end(); ++it){
+    for (std::map<std::string, int>::iterator it=int_param_.begin(); it!=int_param_.end(); ++it) {
       status = KTR_set_int_param_by_name(kc_handle_, it->first.c_str(), it->second);
-      if(status!=0){
+      if (status!=0) {
         throw CasadiException("KnitroInternal::evaluate: cannot set " + it->first);
       }
     }
 
-    for(std::map<std::string, std::string>::iterator it=string_param_.begin();
-        it!=string_param_.end(); ++it){
+    for (std::map<std::string, std::string>::iterator it=string_param_.begin();
+        it!=string_param_.end(); ++it) {
       status = KTR_set_char_param_by_name(kc_handle_, it->first.c_str(), it->second.c_str());
-      if(status!=0){
+      if (status!=0) {
         throw CasadiException("KnitroInternal::evaluate: cannot set " + it->first);
       }
     }
 
     // Type of constraints
-    vector<int> cType(ng_,KTR_CONTYPE_GENERAL);
-    if(hasSetOption("contype")){
+    vector<int> cType(ng_, KTR_CONTYPE_GENERAL);
+    if (hasSetOption("contype")) {
       vector<int> contype = getOption("contype");
       casadi_assert(contype.size()==cType.size());
-      copy(contype.begin(),contype.end(),cType.begin());
+      copy(contype.begin(), contype.end(), cType.begin());
     }
 
     // "Correct" upper and lower bounds
-    for(vector<double>::iterator it=input(NLP_SOLVER_LBX).begin();
+    for (vector<double>::iterator it=input(NLP_SOLVER_LBX).begin();
         it!=input(NLP_SOLVER_LBX).end(); ++it)
-      if(isinf(*it)) *it = -KTR_INFBOUND;
-    for(vector<double>::iterator it=input(NLP_SOLVER_UBX).begin();
+      if (isinf(*it)) *it = -KTR_INFBOUND;
+    for (vector<double>::iterator it=input(NLP_SOLVER_UBX).begin();
         it!=input(NLP_SOLVER_UBX).end(); ++it)
-      if(isinf(*it)) *it =  KTR_INFBOUND;
-    for(vector<double>::iterator it=input(NLP_SOLVER_LBG).begin();
+      if (isinf(*it)) *it =  KTR_INFBOUND;
+    for (vector<double>::iterator it=input(NLP_SOLVER_LBG).begin();
         it!=input(NLP_SOLVER_LBG).end(); ++it)
-      if(isinf(*it)) *it = -KTR_INFBOUND;
-    for(vector<double>::iterator it=input(NLP_SOLVER_UBG).begin();
+      if (isinf(*it)) *it = -KTR_INFBOUND;
+    for (vector<double>::iterator it=input(NLP_SOLVER_UBG).begin();
         it!=input(NLP_SOLVER_UBG).end(); ++it)
-      if(isinf(*it)) *it =  KTR_INFBOUND;
+      if (isinf(*it)) *it =  KTR_INFBOUND;
 
     // Initialize KNITRO
     status = KTR_init_problem(kc_handle_, nx_, KTR_OBJGOAL_MINIMIZE, KTR_OBJTYPE_GENERAL,
@@ -262,7 +262,7 @@ namespace casadi{
     status = KTR_set_grad_callback(kc_handle_, &callback);
     casadi_assert_message(status==0, "KTR_set_grad_callbackfailed");
 
-    if(nnzH>0){
+    if (nnzH>0) {
       status = KTR_set_hess_callback(kc_handle_, &callback);
       casadi_assert_message(status==0, "KTR_set_hess_callbackfailed");
     }
@@ -299,69 +299,69 @@ namespace casadi{
                                const int nnzH, const double* const x, const double* const lambda,
                                double* const obj, double* const c, double* const objGrad,
                                double* const jac, double* const hessian, double* const hessVector,
-                               void *userParams){
-    try{
+                               void *userParams) {
+    try {
       // Get a pointer to the calling object
       KnitroInternal* this_ = static_cast<KnitroInternal*>(userParams);
 
       // Direct to the correct function
-      switch(evalRequestCode){
-      case KTR_RC_EVALFC: this_->evalfc(x,*obj,c); break;
-      case KTR_RC_EVALGA: this_->evalga(x,objGrad,jac); break;
-      case KTR_RC_EVALH:  this_->evalh(x,lambda,hessian); break;
-      default: casadi_assert_message(0,"KnitroInternal::callback: unknown method");
+      switch (evalRequestCode) {
+      case KTR_RC_EVALFC: this_->evalfc(x, *obj, c); break;
+      case KTR_RC_EVALGA: this_->evalga(x, objGrad, jac); break;
+      case KTR_RC_EVALH:  this_->evalh(x, lambda, hessian); break;
+      default: casadi_assert_message(0, "KnitroInternal::callback: unknown method");
       }
 
       return 0;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "KnitroInternal::callback caugth exception: " << ex.what() << endl;
       return -1;
     }
   }
 
-  void KnitroInternal::evalfc(const double* x, double& obj, double *c){
+  void KnitroInternal::evalfc(const double* x, double& obj, double *c) {
     // Pass the argument to the function
-    nlp_.setInput(x,NL_X);
-    nlp_.setInput(input(NLP_SOLVER_P),NL_P);
+    nlp_.setInput(x, NL_X);
+    nlp_.setInput(input(NLP_SOLVER_P), NL_P);
 
     // Evaluate the function
     nlp_.evaluate();
 
     // Get the result
     nlp_.output(NL_F).get(obj);
-    nlp_.output(NL_G).get(c,DENSE);
+    nlp_.output(NL_G).get(c, DENSE);
 
     // Printing
-    if(monitored("eval_f")){
+    if (monitored("eval_f")) {
       cout << "x = " << nlp_.input(NL_X) << endl;
       cout << "f = " << nlp_.output(NL_F) << endl;
     }
-    if(monitored("eval_g")){
+    if (monitored("eval_g")) {
       cout << "x = " << nlp_.input(NL_X) << endl;
       cout << "g = " << nlp_.output(NL_G) << endl;
     }
   }
 
-  void KnitroInternal::evalga(const double* x, double* objGrad, double* jac){
+  void KnitroInternal::evalga(const double* x, double* objGrad, double* jac) {
     // Pass the argument to the function
-    gradF_.setInput(x,NL_X);
-    gradF_.setInput(input(NLP_SOLVER_P),NL_P);
+    gradF_.setInput(x, NL_X);
+    gradF_.setInput(input(NLP_SOLVER_P), NL_P);
 
     // Evaluate the function using adjoint mode AD
     gradF_.evaluate();
 
     // Get the result
-    gradF_.output().get(objGrad,DENSE);
+    gradF_.output().get(objGrad, DENSE);
 
     // Printing
-    if(monitored("eval_grad_f")){
+    if (monitored("eval_grad_f")) {
       cout << "x = " << gradF_.input(NL_X) << endl;
       cout << "grad_f = " << gradF_.output() << endl;
     }
 
     // Pass the argument to the Jacobian function
-    jacG_.setInput(x,NL_X);
-    jacG_.setInput(input(NLP_SOLVER_P),NL_P);
+    jacG_.setInput(x, NL_X);
+    jacG_.setInput(input(NLP_SOLVER_P), NL_P);
 
     // Evaluate the Jacobian function
     jacG_.evaluate();
@@ -370,27 +370,27 @@ namespace casadi{
     jacG_.output().get(jac);
 
     // Printing
-    if(monitored("eval_jac_g")){
+    if (monitored("eval_jac_g")) {
       cout << "x = " << jacG_.input(NL_X) << endl;
       cout << "jac_g = " << jacG_.output() << endl;
     }
   }
 
-  void KnitroInternal::evalh(const double* x, const double* lambda, double* hessian){
+  void KnitroInternal::evalh(const double* x, const double* lambda, double* hessian) {
     // Pass the argument to the function
-    hessLag_.setInput(x,NL_X);
-    hessLag_.setInput(input(NLP_SOLVER_P),NL_P);
-    hessLag_.setInput(1.0,NL_NUM_IN+NL_F);
-    hessLag_.setInput(lambda,NL_NUM_IN+NL_G);
+    hessLag_.setInput(x, NL_X);
+    hessLag_.setInput(input(NLP_SOLVER_P), NL_P);
+    hessLag_.setInput(1.0, NL_NUM_IN+NL_F);
+    hessLag_.setInput(lambda, NL_NUM_IN+NL_G);
 
     // Evaluate
     hessLag_.evaluate();
 
     // Get results
-    hessLag_.output().get(hessian,SPARSESYM);
+    hessLag_.output().get(hessian, SPARSESYM);
 
     // Printing
-    if(monitored("eval_h")){
+    if (monitored("eval_h")) {
       cout << "eval_h" << endl;
       cout << "x = " << hessLag_.input(0) << endl;
       cout << "lambda = " << hessLag_.input(1) << endl;

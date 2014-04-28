@@ -23,13 +23,13 @@
 #ifndef SDP_SOCP_INTERNAL_HPP
 #define SDP_SOCP_INTERNAL_HPP
 
-#include "casadi/symbolic/function/socp_solver_internal.hpp"
-#include "casadi/symbolic/function/sdp_solver.hpp"
+#include "casadi/core/function/socp_solver_internal.hpp"
+#include "casadi/core/function/sdp_solver.hpp"
 
 #include "sdp_socp_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for SDPSOCPInternal
    *

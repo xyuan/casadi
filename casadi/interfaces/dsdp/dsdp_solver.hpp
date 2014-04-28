@@ -23,7 +23,7 @@
 #ifndef DSDP_SOLVER_HPP
 #define DSDP_SOLVER_HPP
 
-#include "casadi/symbolic/function/sdp_solver.hpp"
+#include "casadi/core/function/sdp_solver.hpp"
 #include <casadi/interfaces/dsdp/casadi_dsdp_interface_export.h>
 
 namespace casadi {
@@ -65,7 +65,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static SDPSolver creator(const SDPStructure &st){ return DSDPSolver(st);}
+  static SDPSolver creator(const SDPStructure &st) { return DSDPSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

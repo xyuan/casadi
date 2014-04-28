@@ -21,17 +21,17 @@
  */
 
 #include "integration_tools.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/implicit_function.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/function/integrator.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/implicit_function.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/function/integrator.hpp"
 
 #include <vector>
 
 using namespace std;
 
-namespace casadi{
+namespace casadi {
 
   const long double legendre_points1[] = { 0.00000000000000000000, 0.50000000000000000000 };
   const long double legendre_points2[] =
@@ -101,20 +101,20 @@ namespace casadi{
     { 0, radau_points1, radau_points2, radau_points3, radau_points4, radau_points5,
       radau_points6, radau_points7, radau_points8, radau_points9};
 
-  const long double** collocation_points[] = {legendre_points,radau_points};
+  const long double** collocation_points[] = {legendre_points, radau_points};
 
   template<typename RealT>
   std::vector<RealT> collocationPointsGen(int order, const std::string& scheme) {
     if (scheme=="radau") {
-      casadi_assert_message(order>0 && order<10,"Error in collocationPoints(order, scheme): "
+      casadi_assert_message(order>0 && order<10, "Error in collocationPoints(order, scheme): "
                             "only order up to 9 supported for scheme 'radau', but got "
                             << order << ".");
-      return std::vector<RealT>(radau_points[order],radau_points[order]+order+1);
+      return std::vector<RealT>(radau_points[order], radau_points[order]+order+1);
     } else if (scheme=="legendre") {
-      casadi_assert_message(order>0 && order<10,"Error in collocationPoints(order, scheme): "
+      casadi_assert_message(order>0 && order<10, "Error in collocationPoints(order, scheme): "
                             "only order up to 9 supported for scheme 'legendre', but got "
                             << order << ".");
-      return std::vector<RealT>(legendre_points[order],legendre_points[order]+order+1);
+      return std::vector<RealT>(legendre_points[order], legendre_points[order]+order+1);
     } else {
       casadi_error("Error in collocationPoints(order, scheme): unknown scheme '"
                    << scheme << "'. Select one of 'radau', 'legendre'.");
@@ -122,17 +122,17 @@ namespace casadi{
   }
 
   std::vector<double> collocationPoints(int order, const std::string& scheme) {
-    return collocationPointsGen<double>(order,scheme);
+    return collocationPointsGen<double>(order, scheme);
   }
 
   std::vector<long double> collocationPointsL(int order, const std::string& scheme) {
-    return collocationPointsGen<long double>(order,scheme);
+    return collocationPointsGen<long double>(order, scheme);
   }
 
   Function explicitRK(Function& f, const MX& tf, int order, int ne) {
-    casadi_assert_message(ne>=1,"Parameter ne (number of elements must be at least 1), but got "
+    casadi_assert_message(ne>=1, "Parameter ne (number of elements must be at least 1), but got "
                           << ne << ".");
-    casadi_assert_message(order==4,"Only RK order 4 is supported now.");
+    casadi_assert_message(order==4, "Only RK order 4 is supported now.");
     casadi_assert_message(f.getNumInputs()==DAE_NUM_IN && f.getNumOutputs()==DAE_NUM_OUT,
                           "Supplied function must adhere to dae scheme.");
     casadi_assert_message(f.output(DAE_ALG).isEmpty() && f.input(DAE_Z).isEmpty(),
@@ -140,8 +140,8 @@ namespace casadi{
     casadi_assert_message(f.output(DAE_QUAD).isEmpty(),
                           "Supplied function cannot have quadrature states.");
 
-    MX X = MX::sym("X",f.input(DAE_X).sparsity());
-    MX P = MX::sym("P",f.input(DAE_P).sparsity());
+    MX X = MX::sym("X", f.input(DAE_X).sparsity());
+    MX P = MX::sym("P", f.input(DAE_P).sparsity());
     MX X0 = X;
     MX t = 0;
     MX dt = tf/ne;
@@ -165,8 +165,8 @@ namespace casadi{
         for (int jj=0;jj<j;++jj) {
           XL+=k.at(jj)*A.at(j-1).at(jj);
         }
-        //std::cout << "help: " << A.at(j-1) << "," << c.at(j) << std::endl;
-        k[j] = dt*f.call(daeIn("x",X+XL,"p",P,"t",t+dt*c.at(j)))[DAE_ODE];
+        //std::cout << "help: " << A.at(j-1) << ", " << c.at(j) << std::endl;
+        k[j] = dt*f.call(daeIn("x", X+XL, "p", P, "t", t+dt*c.at(j)))[DAE_ODE];
       }
 
       for (int j=0;j<order;++j) {
@@ -176,7 +176,7 @@ namespace casadi{
       t+= dt;
     }
 
-    MXFunction ret(integratorIn("x0",X0,"p",P),integratorOut("xf",X));
+    MXFunction ret(integratorIn("x0", X0, "p", P), integratorOut("xf", X));
 
     return ret;
   }
@@ -199,16 +199,16 @@ namespace casadi{
     SX tau = SX::sym("tau");
 
     // For all collocation points
-    for(int j=0; j<deg+1; ++j){
+    for (int j=0; j<deg+1; ++j) {
       // Construct Lagrange polynomials to get the polynomial basis at the collocation point
       SX L = 1;
-      for(int j2=0; j2<deg+1; ++j2){
-        if(j2 != j){
+      for (int j2=0; j2<deg+1; ++j2) {
+        if (j2 != j) {
           L *= (tau-tau_root[j2])/(tau_root[j]-tau_root[j2]);
         }
       }
 
-      SXFunction lfcn(tau,L);
+      SXFunction lfcn(tau, L);
       lfcn.init();
 
       // Evaluate the polynomial at the final time to get the
@@ -221,7 +221,7 @@ namespace casadi{
       // get the coefficients of the continuity equation
       Function tfcn = lfcn.tangent();
       tfcn.init();
-      for(int j2=0; j2<deg+1; ++j2){
+      for (int j2=0; j2<deg+1; ++j2) {
         tfcn.setInput(tau_root[j2]);
         tfcn.evaluate();
         C[j2][j] = tfcn.output().at(0);
@@ -232,21 +232,21 @@ namespace casadi{
 
   Function implicitRK(Function& f, implicitFunctionCreator impl, const Dictionary& impl_options,
                       const MX& tf, int order, const std::string& scheme, int ne) {
-    casadi_assert_message(ne>=1,"Parameter ne (number of elements must be at least 1), "
+    casadi_assert_message(ne>=1, "Parameter ne (number of elements must be at least 1), "
                           "but got " << ne << ".");
-    casadi_assert_message(order==4,"Only RK order 4 is supported now.");
+    casadi_assert_message(order==4, "Only RK order 4 is supported now.");
     casadi_assert_message(f.getNumInputs()==DAE_NUM_IN && f.getNumOutputs()==DAE_NUM_OUT,
                           "Supplied function must adhere to dae scheme.");
     casadi_assert_message(f.output(DAE_QUAD).isEmpty(),
                           "Supplied function cannot have quadrature states.");
 
     // Obtain collocation points
-    std::vector<double> tau_root = collocationPoints(order,"legendre");
+    std::vector<double> tau_root = collocationPoints(order, "legendre");
 
     // Retrieve collocation interpolating matrices
     std::vector < std::vector <double> > C;
     std::vector < double > D;
-    collocationInterpolators(tau_root,C,D);
+    collocationInterpolators(tau_root, C, D);
 
     // Retrieve problem dimensions
     int nx = f.input(DAE_X).size();
@@ -254,9 +254,9 @@ namespace casadi{
     int np = f.input(DAE_P).size();
 
     //Variables for one finite element
-    MX X = MX::sym("X",nx);
-    MX P = MX::sym("P",np);
-    MX V = MX::sym("V",order*(nx+nz)); // Unknowns
+    MX X = MX::sym("X", nx);
+    MX P = MX::sym("P", np);
+    MX V = MX::sym("V", order*(nx+nz)); // Unknowns
 
     MX X0 = X;
 
@@ -268,14 +268,14 @@ namespace casadi{
     std::vector<MX> Zc;Zc.reserve(order);
 
     // Splitting the unknowns
-    std::vector<int> splitPositions = range(0,order*nx,nx);
+    std::vector<int> splitPositions = range(0, order*nx, nx);
     if (nz>0) {
-      std::vector<int> Zc_pos = range(order*nx,order*nx+(order+1)*nz,nz);
-      splitPositions.insert( splitPositions.end(), Zc_pos.begin(), Zc_pos.end() );
+      std::vector<int> Zc_pos = range(order*nx, order*nx+(order+1)*nz, nz);
+      splitPositions.insert(splitPositions.end(), Zc_pos.begin(), Zc_pos.end());
     } else {
       splitPositions.push_back(order*nx);
     }
-    std::vector<MX> Vs = vertsplit(V,splitPositions);
+    std::vector<MX> Vs = vertsplit(V, splitPositions);
 
     // Extracting unknowns from Z
     for (int i=0;i<order;++i) {
@@ -304,9 +304,9 @@ namespace casadi{
       std::vector<MX> f_out;
       MX t_l = t0_l+tau_root[j]*h;
       if (nz>0) {
-        f_out = f.call(daeIn("t",t_l,"x",Xc[j],"p",P,"z",Zc[j-1]));
+        f_out = f.call(daeIn("t", t_l, "x", Xc[j], "p", P, "z", Zc[j-1]));
       } else {
-        f_out = f.call(daeIn("t",t_l,"x",Xc[j],"p",P));
+        f_out = f.call(daeIn("t", t_l, "x", Xc[j], "p", P));
       }
       V_eq.push_back(h*f_out[DAE_ODE]-xp_j);
       V_eq.push_back(f_out[DAE_ALG]);
@@ -321,28 +321,28 @@ namespace casadi{
     vfcn_inputs.push_back(t0_l);
     vfcn_inputs.push_back(h);
 
-    Function vfcn = MXFunction(vfcn_inputs,vertcat(V_eq));
+    Function vfcn = MXFunction(vfcn_inputs, vertcat(V_eq));
     vfcn.init();
 
     try {
       // Attempt to convert to SXFunction to decrease overhead
       vfcn = SXFunction(vfcn);
       vfcn.init();
-    } catch (CasadiException & e) {
+    } catch(CasadiException & e) {
       //
     }
 
     // Create a implicit function instance to solve the system of equations
-    ImplicitFunction ifcn = impl(vfcn,Function(),LinearSolver());
+    ImplicitFunction ifcn = impl(vfcn, Function(), LinearSolver());
     ifcn.setOption(impl_options);
     ifcn.init();
 
     // Get an expression for the state at the end of the finite element
     std::vector<MX> ifcn_call_in(5);
     ifcn_call_in[0] = MX::zeros(V.sparsity());
-    std::copy(vfcn_inputs.begin()+1,vfcn_inputs.end(),ifcn_call_in.begin()+1);
-    std::vector<MX> ifcn_call_out = ifcn.call(ifcn_call_in,true);
-    Vs = vertsplit(ifcn_call_out[0],splitPositions);
+    std::copy(vfcn_inputs.begin()+1, vfcn_inputs.end(), ifcn_call_in.begin()+1);
+    std::vector<MX> ifcn_call_out = ifcn.call(ifcn_call_in, true);
+    Vs = vertsplit(ifcn_call_out[0], splitPositions);
 
     MX XF = 0;
     for (int i=0;i<order+1;++i) {
@@ -352,7 +352,7 @@ namespace casadi{
 
     // Get the discrete time dynamics
     ifcn_call_in.erase(ifcn_call_in.begin());
-    MXFunction F = MXFunction(ifcn_call_in,XF);
+    MXFunction F = MXFunction(ifcn_call_in, XF);
     F.init();
 
     // Loop over all finite elements
@@ -371,7 +371,7 @@ namespace casadi{
     }
 
     // Create a ruturn function with Integrator signature
-    MXFunction ret = MXFunction(integratorIn("x0",X0,"p",P),integratorOut("xf",X));
+    MXFunction ret = MXFunction(integratorIn("x0", X0, "p", P), integratorOut("xf", X));
     ret.init();
 
     return ret;

@@ -21,12 +21,12 @@
  */
 
 #include "sqp_internal.hpp"
-#include "casadi/symbolic/std_vector_tools.hpp"
-#include "casadi/symbolic/matrix/sparsity_tools.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/casadi_calculus.hpp"
+#include "casadi/core/std_vector_tools.hpp"
+#include "casadi/core/matrix/sparsity_tools.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
+#include "casadi/core/function/sx_function.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/casadi_calculus.hpp"
 #include <ctime>
 #include <iomanip>
 #include <fstream>
@@ -34,9 +34,9 @@
 #include <cfloat>
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
-  SQPInternal::SQPInternal(const Function& nlp) : NLPSolverInternal(nlp){
+  SQPInternal::SQPInternal(const Function& nlp) : NLPSolverInternal(nlp) {
     casadi_warning("The SQP method is under development");
     addOption("qp_solver",         OT_QPSOLVER,   GenericType(),
               "The QP solver to be used by the SQP method");
@@ -75,10 +75,10 @@ namespace casadi{
   }
 
 
-  SQPInternal::~SQPInternal(){
+  SQPInternal::~SQPInternal() {
   }
 
-  void SQPInternal::init(){
+  void SQPInternal::init() {
     // Call the init method of the base class
     NLPSolverInternal::init();
 
@@ -98,20 +98,22 @@ namespace casadi{
     // Get/generate required functions
     gradF();
     jacG();
-    if(exact_hessian_){
+    if (exact_hessian_) {
       hessLag();
     }
 
     // Allocate a QP solver
-    Sparsity H_sparsity = exact_hessian_ ? hessLag().output().sparsity() : Sparsity::dense(nx_,nx_);
+    Sparsity H_sparsity = exact_hessian_ ? hessLag().output().sparsity()
+        : Sparsity::dense(nx_, nx_);
     H_sparsity = H_sparsity + Sparsity::diag(nx_);
-    Sparsity A_sparsity = jacG().isNull() ? Sparsity::sparse(0,nx_) : jacG().output().sparsity();
+    Sparsity A_sparsity = jacG().isNull() ? Sparsity::sparse(0, nx_)
+        : jacG().output().sparsity();
 
     QPSolverCreator qp_solver_creator = getOption("qp_solver");
-    qp_solver_ = qp_solver_creator(qpStruct("h",H_sparsity,"a",A_sparsity));
+    qp_solver_ = qp_solver_creator(qpStruct("h", H_sparsity, "a", A_sparsity));
 
     // Set options if provided
-    if(hasSetOption("qp_solver_options")){
+    if (hasSetOption("qp_solver_options")) {
       Dictionary qp_solver_options = getOption("qp_solver_options");
       qp_solver_.setOption(qp_solver_options);
     }
@@ -155,13 +157,13 @@ namespace casadi{
     gf_.resize(nx_);
 
     // Create Hessian update function
-    if(!exact_hessian_){
+    if (!exact_hessian_) {
       // Create expressions corresponding to Bk, x, x_old, gLag and gLag_old
-      SX Bk = SX::sym("Bk",H_sparsity);
-      SX x = SX::sym("x",input(NLP_SOLVER_X0).sparsity());
-      SX x_old = SX::sym("x",x.sparsity());
-      SX gLag = SX::sym("gLag",x.sparsity());
-      SX gLag_old = SX::sym("gLag_old",x.sparsity());
+      SX Bk = SX::sym("Bk", H_sparsity);
+      SX x = SX::sym("x", input(NLP_SOLVER_X0).sparsity());
+      SX x_old = SX::sym("x", x.sparsity());
+      SX gLag = SX::sym("gLag", x.sparsity());
+      SX gLag_old = SX::sym("gLag_old", x.sparsity());
 
       SX sk = x - x_old;
       SX yk = gLag - gLag_old;
@@ -184,7 +186,7 @@ namespace casadi{
       bfgs_in[BFGS_X_OLD] = x_old;
       bfgs_in[BFGS_GLAG] = gLag;
       bfgs_in[BFGS_GLAG_OLD] = gLag_old;
-      bfgs_ = SXFunction(bfgs_in,Bk_new);
+      bfgs_ = SXFunction(bfgs_in, Bk_new);
       bfgs_.init();
 
       // Initial Hessian approximation
@@ -192,10 +194,10 @@ namespace casadi{
     }
 
     // Header
-    if(static_cast<bool>(getOption("print_header"))){
+    if (static_cast<bool>(getOption("print_header"))) {
       cout << "-------------------------------------------" << endl;
       cout << "This is casadi::SQPMethod." << endl;
-      if(exact_hessian_){
+      if (exact_hessian_) {
         cout << "Using exact Hessian" << endl;
       } else {
         cout << "Using limited memory BFGS Hessian approximation" << endl;
@@ -209,7 +211,7 @@ namespace casadi{
     }
   }
 
-  void SQPInternal::evaluate(){
+  void SQPInternal::evaluate() {
     if (inputs_check_) checkInputs();
     checkInitialBounds();
 
@@ -232,11 +234,11 @@ namespace casadi{
     const vector<double>& ubg = input(NLP_SOLVER_UBG).data();
 
     // Set linearization point to initial guess
-    copy(x_init.begin(),x_init.end(),x_.begin());
+    copy(x_init.begin(), x_init.end(), x_.begin());
 
     // Initialize Lagrange multipliers of the NLP
-    copy(input(NLP_SOLVER_LAM_G0).begin(),input(NLP_SOLVER_LAM_G0).end(),mu_.begin());
-    copy(input(NLP_SOLVER_LAM_X0).begin(),input(NLP_SOLVER_LAM_X0).end(),mu_x_.begin());
+    copy(input(NLP_SOLVER_LAM_G0).begin(), input(NLP_SOLVER_LAM_G0).end(), mu_.begin());
+    copy(input(NLP_SOLVER_LAM_X0).begin(), input(NLP_SOLVER_LAM_X0).end(), mu_x_.begin());
 
     t_eval_f_ = t_eval_grad_f_ = t_eval_g_ = t_eval_jac_g_ = t_eval_h_ =
         t_callback_fun_ = t_callback_prepare_ = t_mainloop_ = 0;
@@ -246,24 +248,24 @@ namespace casadi{
     double time1 = clock();
 
     // Initial constraint Jacobian
-    eval_jac_g(x_,gk_,Jk_);
+    eval_jac_g(x_, gk_, Jk_);
 
     // Initial objective gradient
-    eval_grad_f(x_,fk_,gf_);
+    eval_grad_f(x_, fk_, gf_);
 
     // Initialize or reset the Hessian or Hessian approximation
     reg_ = 0;
-    if(exact_hessian_){
-      eval_h(x_,mu_,1.0,Bk_);
+    if (exact_hessian_) {
+      eval_h(x_, mu_, 1.0, Bk_);
     } else {
       reset_h();
     }
 
     // Evaluate the initial gradient of the Lagrangian
-    copy(gf_.begin(),gf_.end(),gLag_.begin());
-    if(ng_>0) DMatrix::mul_no_alloc_tn(Jk_,mu_,gLag_);
+    copy(gf_.begin(), gf_.end(), gLag_.begin());
+    if (ng_>0) DMatrix::mul_no_alloc_tn(Jk_, mu_, gLag_);
     // gLag += mu_x_;
-    transform(gLag_.begin(),gLag_.end(),mu_x_.begin(),gLag_.begin(),plus<double>());
+    transform(gLag_.begin(), gLag_.end(), mu_x_.begin(), gLag_.begin(), plus<double>());
 
     // Number of SQP iterations
     int iter = 0;
@@ -282,7 +284,7 @@ namespace casadi{
     double t = 0;
 
     // MAIN OPTIMIZATION LOOP
-    while(true){
+    while (true) {
 
       // Primal infeasability
       double pr_inf = primalInfeasibility(x_, lbx, ubx, gk_, lbg, ubg);
@@ -294,10 +296,10 @@ namespace casadi{
       double dx_norminf = norm_inf(dx_);
 
       // Print header occasionally
-      if(iter % 10 == 0) printIteration(cout);
+      if (iter % 10 == 0) printIteration(cout);
 
       // Printing information about the actual iterate
-      printIteration(cout,iter,fk_,pr_inf,gLag_norminf,dx_norminf,reg_,ls_iter,ls_success);
+      printIteration(cout, iter, fk_, pr_inf, gLag_norminf, dx_norminf, reg_, ls_iter, ls_success);
 
       if (gather_stats_) {
         Dictionary & iterations = stats_["iterations"];
@@ -330,7 +332,7 @@ namespace casadi{
         double time2 = clock();
         t_callback_prepare_ += (time2-time1)/CLOCKS_PER_SEC;
         time1 = clock();
-        int ret = callback_(ref_,user_data_);
+        int ret = callback_(ref_, user_data_);
         time2 = clock();
         t_callback_fun_ += (time2-time1)/CLOCKS_PER_SEC;
         if (ret) {
@@ -342,14 +344,14 @@ namespace casadi{
       }
 
       // Checking convergence criteria
-      if (pr_inf < tol_pr_ && gLag_norminf < tol_du_){
+      if (pr_inf < tol_pr_ && gLag_norminf < tol_du_) {
         cout << endl;
         cout << "casadi::SQPMethod: Convergence achieved after " << iter << " iterations." << endl;
         stats_["return_status"] = "Solve_Succeeded";
         break;
       }
 
-      if (iter >= max_iter_){
+      if (iter >= max_iter_) {
         cout << endl;
         cout << "casadi::SQPMethod: Maximum number of iterations reached." << endl;
         stats_["return_status"] = "Maximum_Iterations_Exceeded";
@@ -369,24 +371,24 @@ namespace casadi{
 
       log("Formulating QP");
       // Formulate the QP
-      transform(lbx.begin(),lbx.end(),x_.begin(),qp_LBX_.begin(),minus<double>());
-      transform(ubx.begin(),ubx.end(),x_.begin(),qp_UBX_.begin(),minus<double>());
-      transform(lbg.begin(),lbg.end(),gk_.begin(),qp_LBA_.begin(),minus<double>());
-      transform(ubg.begin(),ubg.end(),gk_.begin(),qp_UBA_.begin(),minus<double>());
+      transform(lbx.begin(), lbx.end(), x_.begin(), qp_LBX_.begin(), minus<double>());
+      transform(ubx.begin(), ubx.end(), x_.begin(), qp_UBX_.begin(), minus<double>());
+      transform(lbg.begin(), lbg.end(), gk_.begin(), qp_LBA_.begin(), minus<double>());
+      transform(ubg.begin(), ubg.end(), gk_.begin(), qp_UBA_.begin(), minus<double>());
 
       // Solve the QP
-      solve_QP(Bk_,gf_,qp_LBX_,qp_UBX_,Jk_,qp_LBA_,qp_UBA_,dx_,qp_DUAL_X_,qp_DUAL_A_);
+      solve_QP(Bk_, gf_, qp_LBX_, qp_UBX_, Jk_, qp_LBA_, qp_UBA_, dx_, qp_DUAL_X_, qp_DUAL_A_);
       log("QP solved");
 
       // Detecting indefiniteness
-      double gain = quad_form(dx_,Bk_);
-      if (gain < 0){
+      double gain = quad_form(dx_, Bk_);
+      if (gain < 0) {
         casadi_warning("Indefinite Hessian detected...");
       }
 
       // Calculate penalty parameter of merit function
-      sigma_ = std::max(sigma_,1.01*norm_inf(qp_DUAL_X_));
-      sigma_ = std::max(sigma_,1.01*norm_inf(qp_DUAL_A_));
+      sigma_ = std::max(sigma_, 1.01*norm_inf(qp_DUAL_X_));
+      sigma_ = std::max(sigma_, 1.01*norm_inf(qp_DUAL_A_));
 
       // Calculate L1-merit function in the actual iterate
       double l1_infeas = primalInfeasibility(x_, lbx, ubx, gk_, lbg, ubg);
@@ -398,7 +400,7 @@ namespace casadi{
 
       // Storing the actual merit function value in a list
       merit_mem_.push_back(L1merit);
-      if (merit_mem_.size() > merit_memsize_){
+      if (merit_mem_.size() > merit_memsize_) {
         merit_mem_.pop_front();
       }
       // Stepsize
@@ -413,17 +415,17 @@ namespace casadi{
 
       // Line-search
       log("Starting line-search");
-      if(max_iter_ls_>0){ // max_iter_ls_== 0 disables line-search
+      if (max_iter_ls_>0) { // max_iter_ls_== 0 disables line-search
 
         // Line-search loop
-        while (true){
-          for(int i=0; i<nx_; ++i) x_cand_[i] = x_[i] + t * dx_[i];
+        while (true) {
+          for (int i=0; i<nx_; ++i) x_cand_[i] = x_[i] + t * dx_[i];
 
           try {
             // Evaluating objective and constraints
-            eval_f(x_cand_,fk_cand);
-            eval_g(x_cand_,gk_cand_);
-          } catch (const CasadiException& ex) {
+            eval_f(x_cand_, fk_cand);
+            eval_g(x_cand_, gk_cand_);
+          } catch(const CasadiException& ex) {
             // Silent ignore; line-search failed
             ls_iter++;
             // Backtracking
@@ -439,14 +441,14 @@ namespace casadi{
           L1merit_cand = fk_cand + sigma_ * l1_infeas;
           // Calculating maximal merit function value so far
           double meritmax = *max_element(merit_mem_.begin(), merit_mem_.end());
-          if (L1merit_cand <= meritmax + t * c1_ * L1dir){
+          if (L1merit_cand <= meritmax + t * c1_ * L1dir) {
             // Accepting candidate
             log("Line-search completed, candidate accepted");
             break;
           }
 
           // Line-search not successful, but we accept it.
-          if(ls_iter == max_iter_ls_){
+          if (ls_iter == max_iter_ls_) {
             ls_success = false;
             log("Line-search completed, maximum number of iterations");
             break;
@@ -457,68 +459,69 @@ namespace casadi{
         }
 
         // Candidate accepted, update dual variables
-        for(int i=0; i<ng_; ++i) mu_[i] = t * qp_DUAL_A_[i] + (1 - t) * mu_[i];
-        for(int i=0; i<nx_; ++i) mu_x_[i] = t * qp_DUAL_X_[i] + (1 - t) * mu_x_[i];
+        for (int i=0; i<ng_; ++i) mu_[i] = t * qp_DUAL_A_[i] + (1 - t) * mu_[i];
+        for (int i=0; i<nx_; ++i) mu_x_[i] = t * qp_DUAL_X_[i] + (1 - t) * mu_x_[i];
 
         // Candidate accepted, update the primal variable
-        copy(x_.begin(),x_.end(),x_old_.begin());
-        copy(x_cand_.begin(),x_cand_.end(),x_.begin());
+        copy(x_.begin(), x_.end(), x_old_.begin());
+        copy(x_cand_.begin(), x_cand_.end(), x_.begin());
 
       } else {
         // Full step
-        copy(qp_DUAL_A_.begin(),qp_DUAL_A_.end(),mu_.begin());
-        copy(qp_DUAL_X_.begin(),qp_DUAL_X_.end(),mu_x_.begin());
+        copy(qp_DUAL_A_.begin(), qp_DUAL_A_.end(), mu_.begin());
+        copy(qp_DUAL_X_.begin(), qp_DUAL_X_.end(), mu_x_.begin());
 
-        copy(x_.begin(),x_.end(),x_old_.begin());
+        copy(x_.begin(), x_.end(), x_old_.begin());
         // x+=dx
-        transform(x_.begin(),x_.end(),dx_.begin(),x_.begin(),plus<double>());
+        transform(x_.begin(), x_.end(), dx_.begin(), x_.begin(), plus<double>());
       }
 
-      if(!exact_hessian_){
+      if (!exact_hessian_) {
         // Evaluate the gradient of the Lagrangian with the old x but new mu (for BFGS)
-        copy(gf_.begin(),gf_.end(),gLag_old_.begin());
-        if(ng_>0) DMatrix::mul_no_alloc_tn(Jk_,mu_,gLag_old_);
+        copy(gf_.begin(), gf_.end(), gLag_old_.begin());
+        if (ng_>0) DMatrix::mul_no_alloc_tn(Jk_, mu_, gLag_old_);
         // gLag_old += mu_x_;
-        transform(gLag_old_.begin(),gLag_old_.end(),mu_x_.begin(),gLag_old_.begin(),plus<double>());
+        transform(gLag_old_.begin(), gLag_old_.end(), mu_x_.begin(), gLag_old_.begin(),
+                  plus<double>());
       }
 
       // Evaluate the constraint Jacobian
       log("Evaluating jac_g");
-      eval_jac_g(x_,gk_,Jk_);
+      eval_jac_g(x_, gk_, Jk_);
 
       // Evaluate the gradient of the objective function
       log("Evaluating grad_f");
-      eval_grad_f(x_,fk_,gf_);
+      eval_grad_f(x_, fk_, gf_);
 
       // Evaluate the gradient of the Lagrangian with the new x and new mu
-      copy(gf_.begin(),gf_.end(),gLag_.begin());
-      if(ng_>0) DMatrix::mul_no_alloc_tn(Jk_,mu_,gLag_);
+      copy(gf_.begin(), gf_.end(), gLag_.begin());
+      if (ng_>0) DMatrix::mul_no_alloc_tn(Jk_, mu_, gLag_);
       // gLag += mu_x_;
-      transform(gLag_.begin(),gLag_.end(),mu_x_.begin(),gLag_.begin(),plus<double>());
+      transform(gLag_.begin(), gLag_.end(), mu_x_.begin(), gLag_.begin(), plus<double>());
 
       // Updating Lagrange Hessian
-      if( !exact_hessian_){
+      if (!exact_hessian_) {
         log("Updating Hessian (BFGS)");
         // BFGS with careful updates and restarts
-        if (iter % lbfgs_memory_ == 0){
+        if (iter % lbfgs_memory_ == 0) {
           // Reset Hessian approximation by dropping all off-diagonal entries
           const vector<int>& colind = Bk_.colind();      // Access sparsity (column offset)
           const vector<int>& row = Bk_.row();            // Access sparsity (row)
           vector<double>& data = Bk_.data();             // Access nonzero elements
-          for(int cc=0; cc<colind.size()-1; ++cc){          // Loop over the columns of the Hessian
-            for(int el=colind[cc]; el<colind[cc+1]; ++el){
+          for (int cc=0; cc<colind.size()-1; ++cc) {     // Loop over the columns of the Hessian
+            for (int el=colind[cc]; el<colind[cc+1]; ++el) {
               // Loop over the nonzero elements of the column
-              if(cc!=row[el]) data[el] = 0;               // Remove if off-diagonal entries
+              if (cc!=row[el]) data[el] = 0;               // Remove if off-diagonal entries
             }
           }
         }
 
         // Pass to BFGS update function
-        bfgs_.setInput(Bk_,BFGS_BK);
-        bfgs_.setInput(x_,BFGS_X);
-        bfgs_.setInput(x_old_,BFGS_X_OLD);
-        bfgs_.setInput(gLag_,BFGS_GLAG);
-        bfgs_.setInput(gLag_old_,BFGS_GLAG_OLD);
+        bfgs_.setInput(Bk_, BFGS_BK);
+        bfgs_.setInput(x_, BFGS_X);
+        bfgs_.setInput(x_old_, BFGS_X_OLD);
+        bfgs_.setInput(gLag_, BFGS_GLAG);
+        bfgs_.setInput(gLag_old_, BFGS_GLAG_OLD);
 
         // Update the Hessian approximation
         bfgs_.evaluate();
@@ -528,7 +531,7 @@ namespace casadi{
       } else {
         // Exact Hessian
         log("Evaluating hessian");
-        eval_h(x_,mu_,1.0,Bk_);
+        eval_h(x_, mu_, 1.0, Bk_);
       }
     }
 
@@ -589,7 +592,7 @@ namespace casadi{
     stats_["n_eval_h"] = n_eval_h_;
   }
 
-  void SQPInternal::printIteration(std::ostream &stream){
+  void SQPInternal::printIteration(std::ostream &stream) {
     stream << setw(4)  << "iter";
     stream << setw(15) << "objective";
     stream << setw(10) << "inf_pr";
@@ -603,7 +606,7 @@ namespace casadi{
 
   void SQPInternal::printIteration(std::ostream &stream, int iter, double obj,
                                    double pr_inf, double du_inf,
-                                   double dx_norm, double rg, int ls_trials, bool ls_success){
+                                   double dx_norm, double rg, int ls_trials, bool ls_success) {
     stream << setw(4) << iter;
     stream << scientific;
     stream << setw(15) << setprecision(6) << obj;
@@ -611,7 +614,7 @@ namespace casadi{
     stream << setw(10) << setprecision(2) << du_inf;
     stream << setw(10) << setprecision(2) << dx_norm;
     stream << fixed;
-    if(rg>0){
+    if (rg>0) {
       stream << setw(7) << setprecision(2) << log10(rg);
     } else {
       stream << setw(7) << "-";
@@ -621,7 +624,7 @@ namespace casadi{
     stream << endl;
   }
 
-  double SQPInternal::quad_form(const std::vector<double>& x, const DMatrix& A){
+  double SQPInternal::quad_form(const std::vector<double>& x, const DMatrix& A) {
     // Assert dimensions
     casadi_assert(x.size()==A.size1() && x.size()==A.size2());
 
@@ -634,9 +637,9 @@ namespace casadi{
     double ret=0;
 
     // Loop over the columns of A
-    for(int cc=0; cc<x.size(); ++cc){
+    for (int cc=0; cc<x.size(); ++cc) {
       // Loop over the nonzeros of A
-      for(int el=A_colind[cc]; el<A_colind[cc+1]; ++el){
+      for (int el=A_colind[cc]; el<A_colind[cc+1]; ++el) {
         // Get row
         int rr = A_row[el];
 
@@ -648,9 +651,9 @@ namespace casadi{
     return ret;
   }
 
-  void SQPInternal::reset_h(){
+  void SQPInternal::reset_h() {
     // Initial Hessian approximation of BFGS
-    if ( !exact_hessian_){
+    if (!exact_hessian_) {
       Bk_.set(B_init_);
     }
 
@@ -661,35 +664,35 @@ namespace casadi{
     }
   }
 
-  double SQPInternal::getRegularization(const Matrix<double>& H){
+  double SQPInternal::getRegularization(const Matrix<double>& H) {
     const vector<int>& colind = H.colind();
     const vector<int>& row = H.row();
     const vector<double>& data = H.data();
     double reg_param = 0;
-    for(int cc=0; cc<colind.size()-1; ++cc){
+    for (int cc=0; cc<colind.size()-1; ++cc) {
       double mineig = 0;
-      for(int el=colind[cc]; el<colind[cc+1]; ++el){
+      for (int el=colind[cc]; el<colind[cc+1]; ++el) {
         int rr = row[el];
-        if(rr == cc){
+        if (rr == cc) {
           mineig += data[el];
         } else {
           mineig -= fabs(data[el]);
         }
       }
-      reg_param = fmin(reg_param,mineig);
+      reg_param = fmin(reg_param, mineig);
     }
     return -reg_param;
   }
 
-  void SQPInternal::regularize(Matrix<double>& H, double reg){
+  void SQPInternal::regularize(Matrix<double>& H, double reg) {
     const vector<int>& colind = H.colind();
     const vector<int>& row = H.row();
     vector<double>& data = H.data();
 
-    for(int cc=0; cc<colind.size()-1; ++cc){
-      for(int el=colind[cc]; el<colind[cc+1]; ++el){
+    for (int cc=0; cc<colind.size()-1; ++cc) {
+      for (int el=colind[cc]; el<colind[cc+1]; ++el) {
         int rr = row[el];
-        if(rr==cc){
+        if (rr==cc) {
           data[el] += reg;
         }
       }
@@ -698,16 +701,16 @@ namespace casadi{
 
 
   void SQPInternal::eval_h(const std::vector<double>& x, const std::vector<double>& lambda,
-                           double sigma, Matrix<double>& H){
-    try{
+                           double sigma, Matrix<double>& H) {
+    try {
       // Get function
       Function& hessLag = this->hessLag();
 
       // Pass the argument to the function
-      hessLag.setInput(x,HESSLAG_X);
-      hessLag.setInput(input(NLP_SOLVER_P),HESSLAG_P);
-      hessLag.setInput(sigma,HESSLAG_LAM_F);
-      hessLag.setInput(lambda,HESSLAG_LAM_G);
+      hessLag.setInput(x, HESSLAG_X);
+      hessLag.setInput(input(NLP_SOLVER_P), HESSLAG_P);
+      hessLag.setInput(sigma, HESSLAG_LAM_F);
+      hessLag.setInput(lambda, HESSLAG_LAM_G);
 
       // Evaluate
       hessLag.evaluate();
@@ -722,38 +725,38 @@ namespace casadi{
       }
 
       // Determing regularization parameter with Gershgorin theorem
-      if(regularize_){
+      if (regularize_) {
         reg_ = getRegularization(H);
-        if(reg_ > 0){
-          regularize(H,reg_);
+        if (reg_ > 0) {
+          regularize(H, reg_);
         }
       }
 
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_h failed: " << ex.what() << endl;
       throw;
     }
   }
 
-  void SQPInternal::eval_g(const std::vector<double>& x, std::vector<double>& g){
+  void SQPInternal::eval_g(const std::vector<double>& x, std::vector<double>& g) {
     try {
       double time1 = clock();
 
       // Quick return if no constraints
-      if(ng_==0) return;
+      if (ng_==0) return;
 
       // Pass the argument to the function
-      nlp_.setInput(x,NL_X);
-      nlp_.setInput(input(NLP_SOLVER_P),NL_P);
+      nlp_.setInput(x, NL_X);
+      nlp_.setInput(input(NLP_SOLVER_P), NL_P);
 
       // Evaluate the function and tape
       nlp_.evaluate();
 
       // Ge the result
-      nlp_.output(NL_G).get(g,DENSE);
+      nlp_.output(NL_G).get(g, DENSE);
 
       // Printing
-      if(monitored("eval_g")){
+      if (monitored("eval_g")) {
         cout << "x = " << nlp_.input(NL_X) << endl;
         cout << "g = " << nlp_.output(NL_G) << endl;
       }
@@ -761,32 +764,32 @@ namespace casadi{
       double time2 = clock();
       t_eval_g_ += (time2-time1)/CLOCKS_PER_SEC;
       n_eval_g_ += 1;
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_g failed: " << ex.what() << endl;
       throw;
     }
   }
 
   void SQPInternal::eval_jac_g(const std::vector<double>& x, std::vector<double>& g,
-                               Matrix<double>& J){
-    try{
+                               Matrix<double>& J) {
+    try {
       double time1 = clock();
 
       // Quich finish if no constraints
-      if(ng_==0) return;
+      if (ng_==0) return;
 
       // Get function
       Function& jacG = this->jacG();
 
       // Pass the argument to the function
-      jacG.setInput(x,NL_X);
-      jacG.setInput(input(NLP_SOLVER_P),NL_P);
+      jacG.setInput(x, NL_X);
+      jacG.setInput(input(NLP_SOLVER_P), NL_P);
 
       // Evaluate the function
       jacG.evaluate();
 
       // Get the output
-      jacG.output(1+NL_G).get(g,DENSE);
+      jacG.output(1+NL_G).get(g, DENSE);
       jacG.output().get(J);
 
       if (monitored("eval_jac_g")) {
@@ -800,14 +803,14 @@ namespace casadi{
       t_eval_jac_g_ += (time2-time1)/CLOCKS_PER_SEC;
       n_eval_jac_g_ += 1;
 
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_jac_g failed: " << ex.what() << endl;
       throw;
     }
   }
 
   void SQPInternal::eval_grad_f(const std::vector<double>& x, double& f,
-                                std::vector<double>& grad_f){
+                                std::vector<double>& grad_f) {
     try {
       double time1 = clock();
 
@@ -815,18 +818,18 @@ namespace casadi{
       Function& gradF = this->gradF();
 
       // Pass the argument to the function
-      gradF.setInput(x,NL_X);
-      gradF.setInput(input(NLP_SOLVER_P),NL_P);
+      gradF.setInput(x, NL_X);
+      gradF.setInput(input(NLP_SOLVER_P), NL_P);
 
       // Evaluate, adjoint mode
       gradF.evaluate();
 
       // Get the result
-      gradF.output().get(grad_f,DENSE);
+      gradF.output().get(grad_f, DENSE);
       gradF.output(1+NL_X).get(f);
 
       // Printing
-      if (monitored("eval_f")){
+      if (monitored("eval_f")) {
         cout << "x = " << x << endl;
         cout << "f = " << f << endl;
       }
@@ -839,29 +842,29 @@ namespace casadi{
       t_eval_grad_f_ += (time2-time1)/CLOCKS_PER_SEC;
       n_eval_grad_f_ += 1;
 
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_grad_f failed: " << ex.what() << endl;
       throw;
     }
   }
 
-  void SQPInternal::eval_f(const std::vector<double>& x, double& f){
+  void SQPInternal::eval_f(const std::vector<double>& x, double& f) {
     try {
        // Log time
       double time1 = clock();
 
       // Pass the argument to the function
-      nlp_.setInput(x,NL_X);
-      nlp_.setInput(input(NLP_SOLVER_P),NL_P);
+      nlp_.setInput(x, NL_X);
+      nlp_.setInput(input(NLP_SOLVER_P), NL_P);
 
       // Evaluate the function
       nlp_.evaluate();
 
       // Get the result
-      nlp_.getOutput(f,NL_F);
+      nlp_.getOutput(f, NL_F);
 
       // Printing
-      if(monitored("eval_f")){
+      if (monitored("eval_f")) {
         cout << "x = " << nlp_.input(NL_X) << endl;
         cout << "f = " << f << endl;
       }
@@ -869,7 +872,7 @@ namespace casadi{
       t_eval_f_ += (time2-time1)/CLOCKS_PER_SEC;
       n_eval_f_ += 1;
 
-    } catch (exception& ex){
+    } catch(exception& ex) {
       cerr << "eval_f failed: " << ex.what() << endl;
       throw;
     }
@@ -880,11 +883,11 @@ namespace casadi{
                              const Matrix<double>& A, const std::vector<double>& lbA,
                              const std::vector<double>& ubA,
                              std::vector<double>& x_opt, std::vector<double>& lambda_x_opt,
-                             std::vector<double>& lambda_A_opt){
+                             std::vector<double>& lambda_A_opt) {
 
     // Pass data to QP solver
     qp_solver_.setInput(H, QP_SOLVER_H);
-    qp_solver_.setInput(g,QP_SOLVER_G);
+    qp_solver_.setInput(g, QP_SOLVER_G);
 
     // Hot-starting if possible
     qp_solver_.setInput(x_opt, QP_SOLVER_X0);
@@ -897,7 +900,7 @@ namespace casadi{
     qp_solver_.setInput(ubx, QP_SOLVER_UBX);
 
     // Pass linear bounds
-    if(ng_>0){
+    if (ng_>0) {
       qp_solver_.setInput(A, QP_SOLVER_A);
       qp_solver_.setInput(lbA, QP_SOLVER_LBA);
       qp_solver_.setInput(ubA, QP_SOLVER_UBA);
@@ -919,10 +922,10 @@ namespace casadi{
     qp_solver_.evaluate();
 
     // Get the optimal solution
-    qp_solver_.getOutput(x_opt,QP_SOLVER_X);
-    qp_solver_.getOutput(lambda_x_opt,QP_SOLVER_LAM_X);
-    qp_solver_.getOutput(lambda_A_opt,QP_SOLVER_LAM_A);
-    if (monitored("dx")){
+    qp_solver_.getOutput(x_opt, QP_SOLVER_X);
+    qp_solver_.getOutput(lambda_x_opt, QP_SOLVER_LAM_X);
+    qp_solver_.getOutput(lambda_A_opt, QP_SOLVER_LAM_A);
+    if (monitored("dx")) {
       cout << "dx = " << x_opt << endl;
     }
   }
@@ -932,18 +935,18 @@ namespace casadi{
                                           const std::vector<double>& ubx,
                                           const std::vector<double>& g,
                                           const std::vector<double>& lbg,
-                                          const std::vector<double>& ubg){
+                                          const std::vector<double>& ubg) {
     // Linf-norm of the primal infeasibility
     double pr_inf = 0;
 
     // Bound constraints
-    for(int j=0; j<x.size(); ++j){
+    for (int j=0; j<x.size(); ++j) {
       pr_inf = max(pr_inf, lbx[j] - x[j]);
       pr_inf = max(pr_inf, x[j] - ubx[j]);
     }
 
     // Nonlinear constraints
-    for(int j=0; j<g.size(); ++j){
+    for (int j=0; j<g.size(); ++j) {
       pr_inf = max(pr_inf, lbg[j] - g[j]);
       pr_inf = max(pr_inf, g[j] - ubg[j]);
     }

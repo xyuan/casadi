@@ -29,11 +29,11 @@
 #include <vector>
 #include <iomanip>
 
-#include "casadi/symbolic/std_vector_tools.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
-#include "casadi/symbolic/matrix/sparsity_tools.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
+#include "casadi/core/std_vector_tools.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
+#include "casadi/core/matrix/sparsity_tools.hpp"
+#include "casadi/core/function/mx_function.hpp"
 
 #include "snopt_internal.hpp"
 #include "wsnopt.hpp"
@@ -807,7 +807,7 @@ namespace casadi {
         t_callback_fun_ += static_cast<double>(clock()-time0)/CLOCKS_PER_SEC;
         n_callback_fun_ += 1;
       }
-    } catch (std::exception& ex) {
+    } catch(std::exception& ex) {
       std::cerr << "eval_nlp failed: " << ex.what() << std::endl;
       *mode = -1;  // Reduce step size - we've got problems
       return;
@@ -871,10 +871,10 @@ namespace casadi {
         int iPrint = getOption("_iprint");
         int Error = 0;
         // snsetr_(snopt_name.c_str(), &value, &iPrint, &iSumm, &Error,
-        //         getPtr(snopt_cw_),&clen,
-        //         getPtr(snopt_iw_),&ilen,
-        //         getPtr(snopt_rw_),&rlen,
-        //         bufferlen,clen*8);
+        //         getPtr(snopt_cw_), &clen,
+        //         getPtr(snopt_iw_), &ilen,
+        //         getPtr(snopt_rw_), &rlen,
+        //         bufferlen, clen*8);
         snopt_setr(snopt_name.c_str(), &bufferlen, &value, &iPrint, &iSumm, &Error,
                    getPtr(snopt_cw_), &clen,
                    getPtr(snopt_iw_), &ilen,

@@ -23,10 +23,10 @@
 #ifndef IPOPT_SOLVER_HPP
 #define IPOPT_SOLVER_HPP
 
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 #include <casadi/interfaces/ipopt/casadi_ipopt_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
   class IpoptInternal;
 
@@ -64,9 +64,9 @@ namespace casadi{
 
     /// \brief Create an NLP solver instance
     explicit IpoptSolver(const Function& nlp
-                         /**< nlp function: \f$ [\mathbb{R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
-                          * [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
-                         );
+                         /**< nlp function: \f$ [\mathbb {R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
+                          * [\mathbb {R} \times \mathbb{R}^{n_g}]\f$*/
+                         );  // NOLINT(whitespace/parens)
 
     /** \brief Get the reduced Hessian.
      * Requires a patched sIPOPT installation, see CasADi documentation. */
@@ -83,7 +83,7 @@ namespace casadi{
 #ifdef SWIG
     %callback("%s_cb");
 #endif
-    static NLPSolver creator(const Function& nlp){ return IpoptSolver(nlp);}
+    static NLPSolver creator(const Function& nlp) { return IpoptSolver(nlp);}
 #ifdef SWIG
     %nocallback;
 #endif

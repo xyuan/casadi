@@ -23,10 +23,10 @@
 #ifndef KNITRO_SOLVER_HPP
 #define KNITRO_SOLVER_HPP
 
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 #include <casadi/interfaces/knitro/casadi_knitro_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
 class KnitroInternal;
 
@@ -41,9 +41,9 @@ class CASADI_KNITRO_INTERFACE_EXPORT KnitroSolver : public NLPSolver {
 
     /// \brief Create an NLP solver instance
     explicit KnitroSolver(const Function& nlp
-                          /**< nlp function: \f$ [\mathbb{R}^{n_x} \times
-                           * \mathbb{R}^{n_p}] \mapsto [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
-                         );
+                          /**< nlp function: \f$ [\mathbb {R}^{n_x} \times
+                           * \mathbb {R}^{n_p}] \mapsto [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
+                         );  // NOLINT(whitespace/parens)
 
     /// Access functions of the node
     KnitroInternal* operator->();
@@ -65,13 +65,13 @@ class CASADI_KNITRO_INTERFACE_EXPORT KnitroSolver : public NLPSolver {
     #ifdef SWIG
     %callback("%s_cb");
     #endif
-    static NLPSolver creator(const Function& nlp){ return KnitroSolver(nlp);}
+    static NLPSolver creator(const Function& nlp) { return KnitroSolver(nlp);}
     #ifdef SWIG
     %nocallback;
     #endif
 
     /// @Joris: This would be an alternative
-    static NLPSolverCreator getCreator(){return creator;}
+    static NLPSolverCreator getCreator() {return creator;}
 
 };
 

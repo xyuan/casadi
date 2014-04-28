@@ -26,7 +26,7 @@
 #include "../../control/dple_solver.hpp"
 #include <casadi/interfaces/slicot/casadi_slicot_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
   /// Forward declaration of internal class
   class PsdIndefDpleInternal;
@@ -69,7 +69,7 @@ namespace casadi{
     %callback("%s_cb");
     #endif
     static DpleSolver creator(const std::vector< Sparsity > & A, const std::vector< Sparsity > &V)
-    { return PsdIndefDpleSolver(A,V); }
+    { return PsdIndefDpleSolver(A, V); }
     #ifdef SWIG
     %nocallback;
     #endif

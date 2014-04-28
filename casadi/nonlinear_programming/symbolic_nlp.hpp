@@ -23,12 +23,12 @@
 #ifndef SYMBOLIC_NLP_HPP
 #define SYMBOLIC_NLP_HPP
 
-#include <casadi/symbolic/casadi.hpp>
+#include <casadi/core/casadi.hpp>
 
 #include <casadi/nonlinear_programming/casadi_nonlinear_programming_export.h>
 
 
-namespace casadi{
+namespace casadi {
 
 // Forward declaration
 class SymbolicNLPInternal;
@@ -37,7 +37,7 @@ class SymbolicNLPInternal;
   \date 2012
   \author Joel Andersson
 */
-class CASADI_NONLINEAR_PROGRAMMING_EXPORT SymbolicNLP : public PrintableObject{
+class CASADI_NONLINEAR_PROGRAMMING_EXPORT SymbolicNLP : public PrintableObject {
   public:
 
     /** @name Symbolic representation of the NLP

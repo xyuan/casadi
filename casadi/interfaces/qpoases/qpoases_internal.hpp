@@ -23,13 +23,13 @@
 #ifndef QPOASES_INTERNAL_HPP
 #define QPOASES_INTERNAL_HPP
 
-#include "casadi/symbolic/function/qp_solver_internal.hpp"
+#include "casadi/core/function/qp_solver_internal.hpp"
 #include "qpoases_solver.hpp"
 
 #include <qpOASES.hpp>
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for QPOasesSolver
    *
@@ -58,7 +58,7 @@ public:
   protected:
 
     /// QP Solver
-    union{
+    union {
       qpOASES::QProblemB *qp_;
     };
 

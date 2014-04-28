@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "casadi/symbolic/casadi_exception.hpp"
+#include "casadi/core/casadi_exception.hpp"
 
 #include <casadi/optimal_control/casadi_optimal_control_export.h>
 
@@ -36,9 +36,9 @@
 class TiXmlElement;
 class TiXmlNode;
 
-namespace casadi{
+namespace casadi {
 
-class CASADI_OPTIMAL_CONTROL_EXPORT XMLNode{
+class CASADI_OPTIMAL_CONTROL_EXPORT XMLNode {
 public:
   XMLNode();
   ~XMLNode();
@@ -47,24 +47,24 @@ public:
   void setAttribute(const std::string& attribute_name, const std::string& attribute);
 
   /** \brief  Get an attribute by its name */
-  std::string getAttribute(const std::string& attribute_name) const{
+  std::string getAttribute(const std::string& attribute_name) const {
     std::string ret;
-    readAttribute(attribute_name,ret,true);
+    readAttribute(attribute_name, ret, true);
     return ret;
   }
 
   /** \brief  Read the value of an attribute */
   template<typename T>
-  void readAttribute(const std::string& attribute_name, T& val, bool assert_existance=true) const{
+  void readAttribute(const std::string& attribute_name, T& val, bool assert_existance=true) const {
     // find the attribute
     std::map<std::string, std::string>::const_iterator it = attributes_.find(attribute_name);
 
     // check if the attribute exists
-    if(it == attributes_.end()){
+    if (it == attributes_.end()) {
       casadi_assert_message(!assert_existance,
                             "Error in XMLNode::readAttribute: could not find " + attribute_name);
     } else {
-      readString(it->second,val);
+      readString(it->second, val);
     }
   }
 
@@ -99,11 +99,11 @@ public:
   bool checkName(const std::string& str) const;
 
   /** \brief  Get the text field */
-  std::string getText() const{ return text_; }
+  std::string getText() const { return text_; }
 
   /** \brief  Get value of text field */
   template<typename T>
-  void getText(T& val) const{ readString(text_,val);}
+  void getText(T& val) const { readString(text_, val);}
 
   /** \brief  Read the string value of a string (i.e. copy) */
   static void readString(const std::string& str, std::string& val);
@@ -129,7 +129,7 @@ public:
 
     std::map<std::string, std::string>  attributes_;
     std::vector<XMLNode>                children_;
-    std::map<std::string,int>           child_indices_; // the index of the children
+    std::map<std::string, int>           child_indices_; // the index of the children
                                                         // sorted by their name
 
     std::string name_;

@@ -23,10 +23,10 @@
 #ifndef CSPARSE_CHOLESKY_HPP
 #define CSPARSE_CHOLESKY_HPP
 
-#include "casadi/symbolic/function/linear_solver.hpp"
+#include "casadi/core/function/linear_solver.hpp"
 #include <casadi/interfaces/csparse/casadi_csparse_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
 
 /** \brief  Forward declaration of internal class */
@@ -37,7 +37,7 @@ class CSparseCholeskyInternal;
  @copydoc LinearSolver_doc
 *
 * CSparseCholesky is an casadi::Function mapping from 2 inputs
-* [ A (matrix),b (vector)] to one output [x (vector)].
+* [ A (matrix), b (vector)] to one output [x (vector)].
 *
 * \verbatim
 *  A = LL'
@@ -58,7 +58,7 @@ class CSparseCholeskyInternal;
 * step and is therefore more expensive if A is invariant.
 *
 */
-class CASADI_CSPARSE_INTERFACE_EXPORT CSparseCholesky : public LinearSolver{
+class CASADI_CSPARSE_INTERFACE_EXPORT CSparseCholesky : public LinearSolver {
 public:
 
   /// Default (empty) constructor
@@ -89,7 +89,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static LinearSolver creator(const Sparsity& sp, int rhs){ return CSparseCholesky(sp, rhs);}
+  static LinearSolver creator(const Sparsity& sp, int rhs) { return CSparseCholesky(sp, rhs);}
   #ifdef SWIG
   %nocallback;
   #endif

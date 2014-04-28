@@ -24,19 +24,19 @@
 #define STABILIZED_SQP_INTERNAL_HPP
 
 #include "stabilized_sqp_method.hpp"
-#include "casadi/symbolic/function/nlp_solver_internal.hpp"
-#include "casadi/symbolic/function/stabilized_qp_solver.hpp"
+#include "casadi/core/function/nlp_solver_internal.hpp"
+#include "casadi/core/function/stabilized_qp_solver.hpp"
 #include <deque>
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-class CASADI_NONLINEAR_PROGRAMMING_EXPORT StabilizedSQPInternal : public NLPSolverInternal{
+class CASADI_NONLINEAR_PROGRAMMING_EXPORT StabilizedSQPInternal : public NLPSolverInternal {
 
 public:
   explicit StabilizedSQPInternal(const Function& nlp);
   virtual ~StabilizedSQPInternal();
-  virtual StabilizedSQPInternal* clone() const{ return new StabilizedSQPInternal(*this);}
+  virtual StabilizedSQPInternal* clone() const { return new StabilizedSQPInternal(*this);}
 
   virtual void init();
   virtual void evaluate();
@@ -82,14 +82,14 @@ public:
   double nu_;
   double muR_;
   double muLS;
-  double Merit_,Merit_cand_, Merit_mu_,Merit_mu_cand_;
+  double Merit_, Merit_cand_, Merit_mu_, Merit_mu_cand_;
 
   // Optimality measure and adjustment parameters
   double tau_;
   double phiWeight_;
   double yMax_;
   double phiComb_;
-  double phiMaxO_, phiMaxV_, phiV_,phiO_;
+  double phiMaxO_, phiMaxV_, phiV_, phiO_;
 
   // Trust Region parameters
   double TRDelta_, TReta1_, TReta2_, gamma1_, gamma2_, gamma3_;
@@ -125,7 +125,7 @@ public:
   std::vector<double> gf_, QPgf_;
 
   /// BFGS update function
-  enum BFGSMdoe{ BFGS_BK, BFGS_X, BFGS_X_OLD, BFGS_GLAG, BFGS_GLAG_OLD, BFGS_NUM_IN};
+  enum BFGSMdoe { BFGS_BK, BFGS_X, BFGS_X_OLD, BFGS_GLAG, BFGS_GLAG_OLD, BFGS_NUM_IN};
   Function bfgs_;
 
   /// Initial Hessian approximation (BFGS)
@@ -197,7 +197,7 @@ public:
                              const std::vector<double>& g,
                              const std::vector<double>& lbg, const std::vector<double>& ubg);
 
-  /// Calculates <tt>inner_prod(x,mul(A,x))</tt>
+  /// Calculates <tt>inner_prod(x, mul(A, x))</tt>
   static double quad_form(const std::vector<double>& x, const DMatrix& A);
 
   /// Calculate the merit function gradient

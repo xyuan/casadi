@@ -23,13 +23,13 @@
 #ifndef QP_LP_INTERNAL_HPP
 #define QP_LP_INTERNAL_HPP
 
-#include "casadi/symbolic/function/lp_internal.hpp"
-#include "casadi/symbolic/function/qp_solver.hpp"
+#include "casadi/core/function/lp_internal.hpp"
+#include "casadi/core/function/qp_solver.hpp"
 
 #include "qp_lp_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for QPLPInternal
    *

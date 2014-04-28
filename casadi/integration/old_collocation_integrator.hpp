@@ -23,10 +23,10 @@
 #ifndef OLD_COLLOCATION_INTEGRATOR_HPP
 #define OLD_COLLOCATION_INTEGRATOR_HPP
 
-#include "casadi/symbolic/function/integrator.hpp"
+#include "casadi/core/function/integrator.hpp"
 #include <casadi/integration/casadi_integration_export.h>
 
-namespace casadi{
+namespace casadi {
 
   class OldCollocationIntegratorInternal;
 
@@ -70,7 +70,7 @@ namespace casadi{
     %callback("%s_cb");
 #endif
     static Integrator creator(const Function& f, const Function& g)
-    { return OldCollocationIntegrator(f,g);}
+    { return OldCollocationIntegrator(f, g);}
 #ifdef SWIG
     %nocallback;
 #endif

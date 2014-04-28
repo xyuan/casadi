@@ -24,19 +24,19 @@
 #define SQP_INTERNAL_HPP
 
 #include "sqp_method.hpp"
-#include "casadi/symbolic/function/nlp_solver_internal.hpp"
-#include "casadi/symbolic/function/qp_solver.hpp"
+#include "casadi/core/function/nlp_solver_internal.hpp"
+#include "casadi/core/function/qp_solver.hpp"
 #include <deque>
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-class CASADI_NONLINEAR_PROGRAMMING_EXPORT SQPInternal : public NLPSolverInternal{
+class CASADI_NONLINEAR_PROGRAMMING_EXPORT SQPInternal : public NLPSolverInternal {
 
 public:
   explicit SQPInternal(const Function& nlp);
   virtual ~SQPInternal();
-  virtual SQPInternal* clone() const{ return new SQPInternal(*this);}
+  virtual SQPInternal* clone() const { return new SQPInternal(*this);}
 
   virtual void init();
   virtual void evaluate();
@@ -94,7 +94,7 @@ public:
   std::vector<double> gf_;
 
   /// BFGS update function
-  enum BFGSMdoe{ BFGS_BK, BFGS_X, BFGS_X_OLD, BFGS_GLAG, BFGS_GLAG_OLD, BFGS_NUM_IN};
+  enum BFGSMdoe { BFGS_BK, BFGS_X, BFGS_X_OLD, BFGS_GLAG, BFGS_GLAG_OLD, BFGS_NUM_IN};
   Function bfgs_;
 
   /// Initial Hessian approximation (BFGS)
@@ -164,7 +164,7 @@ public:
                              const std::vector<double>& g, const std::vector<double>& lbg,
                              const std::vector<double>& ubg);
 
-  /// Calculates <tt>inner_prod(x,mul(A,x))</tt>
+  /// Calculates <tt>inner_prod(x, mul(A, x))</tt>
   static double quad_form(const std::vector<double>& x, const DMatrix& A);
 
   // Accumulated time since last reset:

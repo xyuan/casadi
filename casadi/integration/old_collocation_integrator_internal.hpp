@@ -24,15 +24,15 @@
 #define OLD_COLLOCATION_INTEGRATOR_INTERNAL_HPP
 
 #include "old_collocation_integrator.hpp"
-#include "casadi/symbolic/function/integrator_internal.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/implicit_function.hpp"
+#include "casadi/core/function/integrator_internal.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/implicit_function.hpp"
 #include "integration_tools.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-  class CASADI_INTEGRATION_EXPORT OldCollocationIntegratorInternal : public IntegratorInternal{
+  class CASADI_INTEGRATION_EXPORT OldCollocationIntegratorInternal : public IntegratorInternal {
 
   public:
 
@@ -40,7 +40,7 @@ namespace casadi{
     explicit OldCollocationIntegratorInternal(const Function& f, const Function& g);
 
     /// Deep copy data members
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /// Clone
     virtual OldCollocationIntegratorInternal* clone() const
@@ -48,7 +48,7 @@ namespace casadi{
 
     /// Create a new integrator
     virtual OldCollocationIntegratorInternal* create(const Function& f, const Function& g) const
-    { return new OldCollocationIntegratorInternal(f,g);}
+    { return new OldCollocationIntegratorInternal(f, g);}
 
     /// Destructor
     virtual ~OldCollocationIntegratorInternal();
@@ -60,7 +60,7 @@ namespace casadi{
     virtual void reset();
 
     /// Reset the backward problem and take time to tf
-    virtual void resetB(){}
+    virtual void resetB() {}
 
     ///  Integrate until a specified time point
     virtual void integrate(double t_out);

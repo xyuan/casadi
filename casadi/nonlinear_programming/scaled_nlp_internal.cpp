@@ -22,16 +22,16 @@
 
 #include "nlp_qp_internal.hpp"
 
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/fx/sx_function.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/fx/sx_function.hpp"
 
 using namespace std;
 namespace casadi {
 
-NLPQPInternal* NLPQPInternal::clone() const{
+NLPQPInternal* NLPQPInternal::clone() const {
   // Return a deep copy
   NLPQPInternal* node = new NLPQPInternal(st_);
-  if(!node->is_init_)
+  if (!node->is_init_)
     node->init();
   return node;
 }
@@ -45,7 +45,7 @@ NLPQPInternal::NLPQPInternal(const std::vector<CRSSparsity> &st) : QPSolverInter
 
 }
 
-NLPQPInternal::~NLPQPInternal(){
+NLPQPInternal::~NLPQPInternal() {
 }
 
 void NLPQPInternal::evaluate(int nfdir, int nadir) {
@@ -86,18 +86,18 @@ void NLPQPInternal::evaluate(int nfdir, int nadir) {
   output(QP_SOLVER_LAM_X).set(nlpsolver_.output(NLP_SOLVER_LAM_X));
 }
 
-void NLPQPInternal::init(){
+void NLPQPInternal::init() {
 
 
   QPSolverInternal::init();
 
   // Create a symbolic matrix for the decision variables
-  SXMatrix X = ssym("X",n_,1);
+  SXMatrix X = ssym("X", n_,1);
 
   // Parameters to the problem
-  SXMatrix H = ssym("H",input(QP_SOLVER_H).sparsity());
-  SXMatrix G = ssym("G",input(QP_SOLVER_G).sparsity());
-  SXMatrix A = ssym("A",input(QP_SOLVER_A).sparsity());
+  SXMatrix H = ssym("H", input(QP_SOLVER_H).sparsity());
+  SXMatrix G = ssym("G", input(QP_SOLVER_G).sparsity());
+  SXMatrix A = ssym("A", input(QP_SOLVER_A).sparsity());
 
   // Put parameters in a vector
   std::vector< SXMatrix > par;
@@ -106,16 +106,16 @@ void NLPQPInternal::init(){
   par.push_back(A.data());
 
   // The nlp looks exactly like a mathematical description of the NLP
-  SXFunction QP_SOLVER_nlp(nlpIn("x",X,"p",vertcat(par)),
-		    nlpOut("f",mul(trans(G),X) + 0.5*mul(mul(trans(X),H),X),
-			   "g",mul(A,X)));
+  SXFunction QP_SOLVER_nlp(nlpIn("x", X, "p", vertcat(par)),
+		    nlpOut("f", mul(trans(G), X) + 0.5*mul(mul(trans(X), H), X),
+			   "g", mul(A, X)));
 
   // Create an nlpsolver instance
   NLPSolverCreator nlpsolver_creator = getOption("nlp_solver");
   nlpsolver_ = nlpsolver_creator(QP_SOLVER_nlp);
 
   nlpsolver_.setQPOptions();
-  if(hasSetOption("nlp_solver_options")){
+  if (hasSetOption("nlp_solver_options")) {
     nlpsolver_.setOption(getOption("nlp_solver_options"));
   }
 

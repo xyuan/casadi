@@ -23,14 +23,14 @@
 #ifndef SDP_SDQP_INTERNAL_HPP
 #define SDP_SDQP_INTERNAL_HPP
 
-#include "casadi/symbolic/function/sdqp_solver_internal.hpp"
-#include "casadi/symbolic/function/sdp_solver.hpp"
+#include "casadi/core/function/sdqp_solver_internal.hpp"
+#include "casadi/core/function/sdp_solver.hpp"
 #include "casadi/interfaces/csparse/csparse_cholesky.hpp"
 
 #include "sdp_sdqp_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for SDPSDQPInternal
    *
@@ -44,10 +44,10 @@ namespace casadi{
     explicit SDPSDQPInternal(const std::vector<Sparsity> &st);
 
     /** \brief Clone */
-    virtual SDPSDQPInternal* clone() const{ return new SDPSDQPInternal(*this);}
+    virtual SDPSDQPInternal* clone() const { return new SDPSDQPInternal(*this);}
 
     /// Deep copy data members
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /** \brief Destructor */
     virtual ~SDPSDQPInternal();

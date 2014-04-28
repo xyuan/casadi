@@ -23,11 +23,11 @@
 #ifndef SCPGEN_HPP
 #define SCPGEN_HPP
 
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 
 #include <casadi/nonlinear_programming/casadi_nonlinear_programming_export.h>
 
-namespace casadi{
+namespace casadi {
 
   class SCPgenInternal;
 
@@ -45,9 +45,9 @@ namespace casadi{
 
     /// \brief Create an NLP solver instance
     explicit SCPgen(const Function& nlp
-                    /**< nlp function: \f$ [\mathbb{R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
-                       [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
-                    );
+                    /**< nlp function: \f$ [\mathbb {R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
+                       [\mathbb {R} \times \mathbb{R}^{n_g}]\f$*/
+                    );  // NOLINT(whitespace/parens)
 
     /// Access functions of the node
     SCPgenInternal* operator->();
@@ -60,7 +60,7 @@ namespace casadi{
 #ifdef SWIG
     %callback("%s_cb");
 #endif
-    static NLPSolver creator(const Function& nlp){ return SCPgen(nlp);}
+    static NLPSolver creator(const Function& nlp) { return SCPgen(nlp);}
 #ifdef SWIG
     %nocallback;
 #endif

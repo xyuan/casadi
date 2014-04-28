@@ -21,11 +21,11 @@
  */
 
 %{
-#include "casadi/symbolic/mx/mx.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
+#include "casadi/core/mx/mx.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
 %}
 
-%include "casadi/symbolic/mx/mx.hpp"
+%include "casadi/core/mx/mx.hpp"
 
 
 
@@ -43,6 +43,9 @@
   
   %pythoncode %{
   def __array_custom__(self,*args,**kwargs):
+    import numpy as np
+    if np.__version__=="1.8.1": #1083
+      return np.array(np.nan)
     raise Exception("MX cannot be converted to an array. MX.__array__ purely exists to allow ufunc/numpy goodies")
     
   def __iter__(self):

@@ -23,7 +23,7 @@
 #ifndef SOCP_QCQP_SOLVER_HPP
 #define SOCP_QCQP_SOLVER_HPP
 
-#include "casadi/symbolic/function/qcqp_solver.hpp"
+#include "casadi/core/function/qcqp_solver.hpp"
 
 #include <casadi/convex_programming/casadi_convex_programming_export.h>
 
@@ -50,7 +50,7 @@ class SOCPQCQPInternal;
    *    x
    *
    *   min  t
-   *    x,t  f(x) <= t
+   *    x, t  f(x) <= t
    * \endverbatim
    *
    *  This implementation makes use of the following identity:
@@ -92,7 +92,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static QCQPSolver creator(const QCQPStructure & st){ return SOCPQCQPSolver(st);}
+  static QCQPSolver creator(const QCQPStructure & st) { return SOCPQCQPSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

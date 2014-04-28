@@ -23,7 +23,7 @@
 #ifndef QP_LP_SOLVER_HPP
 #define QP_LP_SOLVER_HPP
 
-#include "casadi/symbolic/function/lp_solver.hpp"
+#include "casadi/core/function/lp_solver.hpp"
 
 #include <casadi/convex_programming/casadi_convex_programming_export.h>
 
@@ -64,7 +64,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static LPSolver creator(const LPStructure & st){ return QPLPSolver(st);}
+  static LPSolver creator(const LPStructure & st) { return QPLPSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

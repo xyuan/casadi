@@ -23,7 +23,7 @@
 #ifndef NEWTON_IMPLICIT_SOLVER_HPP
 #define NEWTON_IMPLICIT_SOLVER_HPP
 
-#include "casadi/symbolic/function/implicit_function.hpp"
+#include "casadi/core/function/implicit_function.hpp"
 
 #include <casadi/nonlinear_programming/casadi_nonlinear_programming_export.h>
 
@@ -64,7 +64,7 @@ public:
   static ImplicitFunction creator(const Function& f,
                                   const Function& jac,
                                   const LinearSolver& linsol)
-  { return NewtonImplicitSolver(f,jac,linsol);}
+  { return NewtonImplicitSolver(f, jac, linsol);}
   #ifdef SWIG
   %nocallback;
   #endif

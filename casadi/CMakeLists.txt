@@ -21,13 +21,18 @@ macro(casadi_library name)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${name}_export.h
   DESTINATION include/${RELPATH})
   
-  if(NOT "${name}" STREQUAL "casadi_symbolic")
-    target_link_libraries(${name} casadi_symbolic)
+  if(NOT "${name}" STREQUAL "casadi_core")
+    target_link_libraries(${name} casadi_core)
   endif()
   set(CASADI_MODULES ${CASADI_MODULES} ${name} PARENT_SCOPE)
   install(TARGETS ${name}
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+  )
+  SET_TARGET_PROPERTIES(
+    ${name}
+  PROPERTIES
+    SOVERSION ${PACKAGE_SO_VERSION}
   )
   add_style_check_target(${name} "${ARGN}")
   set(LINT_TARGETS ${LINT_TARGETS} "lint_${name}" PARENT_SCOPE)
@@ -35,7 +40,7 @@ macro(casadi_library name)
   set(SPELL_TARGETS ${SPELL_TARGETS} "spell_${name}" PARENT_SCOPE)
 endmacro()
 
-add_subdirectory(symbolic)  # needed by all except external_packages
+add_subdirectory(core)  # needed by all except external_packages
 add_subdirectory(interfaces)             # needs external_packages
 add_subdirectory(nonlinear_programming)  # needs interfaces
 add_subdirectory(convex_programming)     # needs interfaces
@@ -80,7 +85,6 @@ foreach(name ${CASADI_MODULES})
   endfunction()
   
   obtain_interface_link_libraries(${name} OUTPUT)
-  message("${name} : ${OUTPUT}")
   set(PC_REQUIRES)
   set(PC_LIBRARIES)
   
@@ -100,7 +104,12 @@ foreach(name ${CASADI_MODULES})
 
   set(PC_LIBRARIES_LIST "-l${name}")
   foreach(LIB ${PC_LIBRARIES})
-    set(PC_LIBRARIES_LIST "${PC_LIBRARIES_LIST} -l${LIB}")
+    string(REGEX MATCH "[\\/](lib)?([a-zA-Z0-9_]+)\\.[a-zA-Z0-9_]+$" LIBMATCH ${LIB})
+    if(LIBMATCH)
+      set(PC_LIBRARIES_LIST "${PC_LIBRARIES_LIST} -l${CMAKE_MATCH_2}")
+    else()
+      set(PC_LIBRARIES_LIST "${PC_LIBRARIES_LIST} -l${LIB}")
+    endif()
   endforeach()
   get_target_property(PC_LINK_LIBRARIES ${name} "LINK_LIBRARIES")
   configure_file(

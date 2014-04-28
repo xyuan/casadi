@@ -22,12 +22,12 @@
 
 #include "simple_indef_dple_internal.hpp"
 #include <cassert>
-#include "../symbolic/std_vector_tools.hpp"
-#include "../symbolic/matrix/matrix_tools.hpp"
-#include "../symbolic/mx/mx_tools.hpp"
-#include "../symbolic/sx/sx_tools.hpp"
-#include "../symbolic/function/mx_function.hpp"
-#include "../symbolic/function/sx_function.hpp"
+#include "../core/std_vector_tools.hpp"
+#include "../core/matrix/matrix_tools.hpp"
+#include "../core/mx/mx_tools.hpp"
+#include "../core/sx/sx_tools.hpp"
+#include "../core/function/mx_function.hpp"
+#include "../core/function/sx_function.hpp"
 
 #include <numeric>
 
@@ -35,14 +35,14 @@ INPUTSCHEME(DPLEInput)
 OUTPUTSCHEME(DPLEOutput)
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
   SimpleIndefDpleInternal::SimpleIndefDpleInternal(
       const std::vector< Sparsity > & A,
-      const std::vector< Sparsity > &V) : DpleInternal(A,V) {
+      const std::vector< Sparsity > &V) : DpleInternal(A, V) {
 
     // set default options
-    setOption("name","unnamed_simple_indef_dple_solver"); // name of the function
+    setOption("name", "unnamed_simple_indef_dple_solver"); // name of the function
 
     addOption("linear_solver",            OT_LINEARSOLVER, GenericType(),
               "User-defined linear solver class. Needed for sensitivities.");
@@ -51,11 +51,11 @@ namespace casadi{
 
   }
 
-  SimpleIndefDpleInternal::~SimpleIndefDpleInternal(){
+  SimpleIndefDpleInternal::~SimpleIndefDpleInternal() {
 
   }
 
-  void SimpleIndefDpleInternal::init(){
+  void SimpleIndefDpleInternal::init() {
 
     DpleInternal::init();
 
@@ -67,11 +67,11 @@ namespace casadi{
     n_ = A_[0].size1();
 
 
-    MX As = MX::sym("A",n_,K_*n_);
-    MX Vs = MX::sym("V",n_,K_*n_);
+    MX As = MX::sym("A", n_, K_*n_);
+    MX Vs = MX::sym("V", n_, K_*n_);
 
-    std::vector< MX > Vss = horzsplit(Vs,n_);
-    std::vector< MX > Ass = horzsplit(As,n_);
+    std::vector< MX > Vss = horzsplit(Vs, n_);
+    std::vector< MX > Ass = horzsplit(As, n_);
 
     for (int k=0;k<K_;++k) {
       Vss[k]=(Vss[k]+Vss[k].T())/2;
@@ -79,25 +79,26 @@ namespace casadi{
 
     std::vector< MX > AA_list(K_);
     for (int k=0;k<K_;++k) {
-      AA_list[k] = kron(Ass[k],Ass[k]);
+      AA_list[k] = kron(Ass[k], Ass[k]);
     }
 
     MX AA = blkdiag(AA_list);
 
-    MX A_total = DMatrix::eye(n_*n_*K_)-vertcat(AA(range(K_*n_*n_-n_*n_,K_*n_*n_),range(K_*n_*n_)),
-                                                AA(range(K_*n_*n_-n_*n_),range(K_*n_*n_)));
+    MX A_total = DMatrix::eye(n_*n_*K_) -
+        vertcat(AA(range(K_*n_*n_-n_*n_, K_*n_*n_), range(K_*n_*n_)),
+                AA(range(K_*n_*n_-n_*n_), range(K_*n_*n_)));
 
     std::vector<MX> Vss_shift;
     Vss_shift.push_back(Vss.back());
-    Vss_shift.insert(Vss_shift.end(),Vss.begin(),Vss.begin()+K_-1);
+    Vss_shift.insert(Vss_shift.end(), Vss.begin(), Vss.begin()+K_-1);
 
-    MX Pf = solve(A_total,vec(horzcat(Vss_shift)),getOption("linear_solver"));
-    MX P = reshape(Pf,n_,K_*n_);
+    MX Pf = solve(A_total, vec(horzcat(Vss_shift)), getOption("linear_solver"));
+    MX P = reshape(Pf, n_, K_*n_);
 
     std::vector<MX> v_in;
     v_in.push_back(As);
     v_in.push_back(Vs);
-    f_ = MXFunction(v_in,P);
+    f_ = MXFunction(v_in, P);
     f_.setInputScheme(SCHEME_DPLEInput);
     f_.setOutputScheme(SCHEME_DPLEOutput);
     f_.init();
@@ -105,30 +106,29 @@ namespace casadi{
 
 
 
-  void SimpleIndefDpleInternal::evaluate(){
+  void SimpleIndefDpleInternal::evaluate() {
     for (int i=0;i<getNumInputs();++i) {
-      std::copy(input(i).begin(),input(i).end(),f_.input(i).begin());
+      std::copy(input(i).begin(), input(i).end(), f_.input(i).begin());
     }
     f_.evaluate();
     for (int i=0;i<getNumOutputs();++i) {
-      std::copy(f_.output(i).begin(),f_.output(i).end(),output(i).begin());
+      std::copy(f_.output(i).begin(), f_.output(i).end(), output(i).begin());
     }
   }
 
   Function SimpleIndefDpleInternal::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd,nadj);
+    return f_.derivative(nfwd, nadj);
   }
 
 
   void SimpleIndefDpleInternal::deepCopyMembers(
-      std::map<SharedObjectNode*,SharedObject>& already_copied)
-  {
+      std::map<SharedObjectNode*, SharedObject>& already_copied) {
     DpleInternal::deepCopyMembers(already_copied);
   }
 
-  SimpleIndefDpleInternal* SimpleIndefDpleInternal::clone() const{
+  SimpleIndefDpleInternal* SimpleIndefDpleInternal::clone() const {
     // Return a deep copy
-    SimpleIndefDpleInternal* node = new SimpleIndefDpleInternal(A_,V_);
+    SimpleIndefDpleInternal* node = new SimpleIndefDpleInternal(A_, V_);
     node->setOption(dictionary());
     return node;
   }

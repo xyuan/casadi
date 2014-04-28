@@ -23,11 +23,11 @@
 #ifndef STABILIZED_SQIC_INTERNAL_HPP
 #define STABILIZED_SQIC_INTERNAL_HPP
 
-#include "casadi/symbolic/function/stabilized_qp_solver_internal.hpp"
+#include "casadi/core/function/stabilized_qp_solver_internal.hpp"
 #include "stabilized_sqic_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
 /** \brief Internal class for StabilizedSQICSolver
  *
@@ -63,10 +63,10 @@ public:
     static void sqic_error(const std::string& module, int flag);
 
     /// Calculate the error message map
-    static std::map<int,std::string> calc_flagmap();
+    static std::map<int, std::string> calc_flagmap();
 
     /// Error message map
-    static std::map<int,std::string> flagmap;
+    static std::map<int, std::string> flagmap;
   protected:
 
     /// Flag: is already initialized

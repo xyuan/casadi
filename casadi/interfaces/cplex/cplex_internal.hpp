@@ -23,19 +23,19 @@
 #define CPLEX_INTERNAL_HPP
 
 #include "ilcplex/cplex.h"
-#include "casadi/symbolic/function/qp_solver_internal.hpp"
+#include "casadi/core/function/qp_solver_internal.hpp"
 #include "cplex_solver.hpp"
 
 #include <string>
 
 /// \cond INTERNAL
 
-namespace casadi{
+namespace casadi {
 
   /** Internal class for CplexSolver
       @copydoc QPSolver_doc
   */
-  class CASADI_CPLEX_INTERFACE_EXPORT CplexInternal : public QPSolverInternal{
+  class CASADI_CPLEX_INTERFACE_EXPORT CplexInternal : public QPSolverInternal {
     friend class CplexSolver;
   public:
     /** \brief Default constructor */
@@ -85,7 +85,7 @@ namespace casadi{
     /// Nature of problem (always minimization)
     int objsen_;
 
-    /// Determines relation >,<,= in the linear constraints
+    /// Determines relation >,<, = in the linear constraints
     std::vector<char> sense_;
 
     /// Coefficients of matrix A (constraint Jacobian)

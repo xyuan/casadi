@@ -21,20 +21,19 @@
  */
 
 #include "implicit_fixed_step_integrator_internal.hpp"
-#include "casadi/symbolic/std_vector_tools.hpp"
-#include "casadi/symbolic/matrix/sparsity_tools.hpp"
-#include "casadi/symbolic/matrix/matrix_tools.hpp"
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
+#include "casadi/core/std_vector_tools.hpp"
+#include "casadi/core/matrix/sparsity_tools.hpp"
+#include "casadi/core/matrix/matrix_tools.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/function/sx_function.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
   ImplicitFixedStepIntegratorInternal::ImplicitFixedStepIntegratorInternal(const Function& f,
-                                                                           const Function& g) :
-      FixedStepIntegratorInternal(f,g)
-  {
+                                                                           const Function& g)
+      : FixedStepIntegratorInternal(f, g) {
     addOption("implicit_solver",               OT_IMPLICITFUNCTION,  GenericType(),
               "An implicit function solver");
     addOption("implicit_solver_options",       OT_DICTIONARY, GenericType(),
@@ -42,17 +41,16 @@ namespace casadi{
   }
 
   void ImplicitFixedStepIntegratorInternal::deepCopyMembers(
-    std::map<SharedObjectNode*,SharedObject>& already_copied)
-  {
+      std::map<SharedObjectNode*, SharedObject>& already_copied) {
     FixedStepIntegratorInternal::deepCopyMembers(already_copied);
-    implicit_solver_ = deepcopy(implicit_solver_,already_copied);
-    backward_implicit_solver_ = deepcopy(backward_implicit_solver_,already_copied);
+    implicit_solver_ = deepcopy(implicit_solver_, already_copied);
+    backward_implicit_solver_ = deepcopy(backward_implicit_solver_, already_copied);
   }
 
-  ImplicitFixedStepIntegratorInternal::~ImplicitFixedStepIntegratorInternal(){
+  ImplicitFixedStepIntegratorInternal::~ImplicitFixedStepIntegratorInternal() {
   }
 
-  void ImplicitFixedStepIntegratorInternal::init(){
+  void ImplicitFixedStepIntegratorInternal::init() {
     // Call the base class init
     FixedStepIntegratorInternal::init();
 
@@ -60,13 +58,13 @@ namespace casadi{
     implicitFunctionCreator implicit_function_creator = getOption("implicit_solver");
 
     // Allocate an NLP solver
-    implicit_solver_ = implicit_function_creator(F_,Function(),LinearSolver());
-    implicit_solver_.setOption("name",string(getOption("name")) + "_implicit_solver");
-    implicit_solver_.setOption("implicit_input",DAE_Z);
-    implicit_solver_.setOption("implicit_output",DAE_ALG);
+    implicit_solver_ = implicit_function_creator(F_, Function(), LinearSolver());
+    implicit_solver_.setOption("name", string(getOption("name")) + "_implicit_solver");
+    implicit_solver_.setOption("implicit_input", DAE_Z);
+    implicit_solver_.setOption("implicit_output", DAE_ALG);
 
     // Pass options
-    if(hasSetOption("implicit_solver_options")){
+    if (hasSetOption("implicit_solver_options")) {
       const Dictionary& implicit_solver_options = getOption("implicit_solver_options");
       implicit_solver_.setOption(implicit_solver_options);
     }
@@ -75,20 +73,21 @@ namespace casadi{
     implicit_solver_.init();
 
     // Allocate a root-finding solver for the backward problem
-    if(nRZ_>0){
+    if (nRZ_>0) {
 
       // Get the NLP creator function
       implicitFunctionCreator backward_implicit_function_creator = getOption("implicit_solver");
 
       // Allocate an NLP solver
-      backward_implicit_solver_ = backward_implicit_function_creator(G_,Function(),LinearSolver());
+      backward_implicit_solver_ =
+          backward_implicit_function_creator(G_, Function(), LinearSolver());
       backward_implicit_solver_.setOption("name",
                                           string(getOption("name")) + "_backward_implicit_solver");
-      backward_implicit_solver_.setOption("implicit_input",RDAE_RZ);
-      backward_implicit_solver_.setOption("implicit_output",RDAE_ALG);
+      backward_implicit_solver_.setOption("implicit_input", RDAE_RZ);
+      backward_implicit_solver_.setOption("implicit_output", RDAE_ALG);
 
       // Pass options
-      if(hasSetOption("implicit_solver_options")){
+      if (hasSetOption("implicit_solver_options")) {
         const Dictionary& backward_implicit_solver_options = getOption("implicit_solver_options");
         backward_implicit_solver_.setOption(backward_implicit_solver_options);
       }

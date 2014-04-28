@@ -23,7 +23,7 @@
 #ifndef DPLE_SOLVER_HPP
 #define DPLE_SOLVER_HPP
 
-#include "../symbolic/function/function.hpp"
+#include "../core/function/function.hpp"
 
 #include <casadi/control/casadi_control_export.h>
 
@@ -46,10 +46,10 @@
 
 
 */
-namespace casadi{
+namespace casadi {
 
   /// Input arguments of a \e dple solver [dpleIn]
-  enum DPLEInput{
+  enum DPLEInput {
     /// A matrices (horzcat when const_dim, blkdiag otherwise) [a]
     DPLE_A,
     /// V matrices (horzcat when const_dim, blkdiag otherwise) [v]
@@ -58,7 +58,7 @@ namespace casadi{
   };
 
   /// Output arguments of a \e dple solver [dpleOut]
-  enum DPLEOutput{
+  enum DPLEOutput {
     /// Lyapunov matrix (horzcat when const_dim, blkdiag otherwise) (Cholesky of P if pos_def) [p]
     DPLE_P,
     /// Number of arguments.

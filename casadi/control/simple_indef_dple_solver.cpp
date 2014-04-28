@@ -25,26 +25,26 @@
 #include <cassert>
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
-  SimpleIndefDpleSolver::SimpleIndefDpleSolver(){
+  SimpleIndefDpleSolver::SimpleIndefDpleSolver() {
 
   }
 
   SimpleIndefDpleSolver::SimpleIndefDpleSolver(const std::vector< Sparsity > & A,
                                                const std::vector< Sparsity > &V) {
-    assignNode(new SimpleIndefDpleInternal(A,V));
+    assignNode(new SimpleIndefDpleInternal(A, V));
   }
 
-  SimpleIndefDpleInternal* SimpleIndefDpleSolver::operator->(){
+  SimpleIndefDpleInternal* SimpleIndefDpleSolver::operator->() {
     return static_cast<SimpleIndefDpleInternal*>(Function::operator->());
   }
 
-  const SimpleIndefDpleInternal* SimpleIndefDpleSolver::operator->() const{
+  const SimpleIndefDpleInternal* SimpleIndefDpleSolver::operator->() const {
     return static_cast<const SimpleIndefDpleInternal*>(Function::operator->());
   }
 
-  bool SimpleIndefDpleSolver::checkNode() const{
+  bool SimpleIndefDpleSolver::checkNode() const {
     return dynamic_cast<const SimpleIndefDpleInternal*>(get())!=0;
   }
 

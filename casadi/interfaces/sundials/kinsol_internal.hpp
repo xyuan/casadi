@@ -24,7 +24,7 @@
 #define KINSOL_INTERNAL_HPP
 
 #include "kinsol_solver.hpp"
-#include "casadi/symbolic/function/implicit_function_internal.hpp"
+#include "casadi/core/function/implicit_function_internal.hpp"
 #include <nvector/nvector_serial.h>   /* serial N_Vector types, fcts., and macros */
 #include <sundials/sundials_dense.h>  /* definitions DlsMat DENSE_ELEM */
 #include <sundials/sundials_types.h>  /* definition of type double */
@@ -38,11 +38,11 @@
 #include <ctime>
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-  typedef std::pair< std::string,std::string> Message;
+  typedef std::pair< std::string, std::string> Message;
 
-  class CASADI_SUNDIALS_INTERFACE_EXPORT KinsolInternal : public ImplicitFunctionInternal{
+  class CASADI_SUNDIALS_INTERFACE_EXPORT KinsolInternal : public ImplicitFunctionInternal {
     friend class KinsolSolver;
   public:
     /** \brief  Constructor */
@@ -57,7 +57,7 @@ namespace casadi{
     /** \brief  Create a new ImplicitFunctionInternal */
     virtual ImplicitFunctionInternal* create(const Function& f, const Function& jac,
                                              const LinearSolver& linsol) const
-    { return new KinsolInternal(f,jac,linsol);}
+    { return new KinsolInternal(f, jac, linsol);}
 
     /** \brief  Initialize stage */
     virtual void init();
@@ -127,7 +127,7 @@ namespace casadi{
     static std::map<int, Message > calc_flagmap();
 
     // Error message map
-    static std::map<int,Message> flagmap;
+    static std::map<int, Message> flagmap;
 
 
     // Raise an error specific to KinSol

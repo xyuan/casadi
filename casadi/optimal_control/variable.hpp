@@ -24,27 +24,27 @@
 #define VARIABLE_HPP
 
 #include <iostream>
-#include "casadi/symbolic/function/sx_function.hpp"
-#include "casadi/symbolic/mx/mx.hpp"
+#include "casadi/core/function/sx_function.hpp"
+#include "casadi/core/mx/mx.hpp"
 
 #include <casadi/optimal_control/casadi_optimal_control_export.h>
 
-namespace casadi{
+namespace casadi {
 
   /// Time variability of a variable (see Fritzon page 89)
-  enum Variability{CONSTANT,PARAMETER,DISCRETE,CONTINUOUS};
+  enum Variability {CONSTANT, PARAMETER, DISCRETE, CONTINUOUS};
 
   /// Causality of a variable
-  enum Causality{INPUT,OUTPUT,INTERNAL};
+  enum Causality {INPUT, OUTPUT, INTERNAL};
 
   /// Dynamics of the variable
-  enum Dynamics{ALGEBRAIC,DIFFERENTIAL};
+  enum Dynamics {ALGEBRAIC, DIFFERENTIAL};
 
   /// Dynamics of the variable
-  enum Alias{NO_ALIAS,ALIAS,NEGATED_ALIAS};
+  enum Alias {NO_ALIAS, ALIAS, NEGATED_ALIAS};
 
   /// Variable category
-  enum Category{
+  enum Category {
     /** Unknown, not set */
     CAT_UNKNOWN,
     /** A state derivative */
@@ -67,7 +67,7 @@ namespace casadi{
       \date 2012-2014
       \author Joel Andersson
    */
-  struct CASADI_OPTIMAL_CONTROL_EXPORT Variable : public PrintableObject{
+  struct CASADI_OPTIMAL_CONTROL_EXPORT Variable : public PrintableObject {
 
     /// Default constructor
     Variable();
@@ -149,7 +149,7 @@ namespace casadi{
   private:
 #ifndef SWIG
     // Timed variables
-    std::map<double,SXElement> timed_;
+    std::map<double, SXElement> timed_;
 
     // Print
     virtual void repr(std::ostream &stream) const;

@@ -22,16 +22,16 @@
 
 #include "qp_lp_internal.hpp"
 
-#include "casadi/symbolic/sx/sx_tools.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
+#include "casadi/core/sx/sx_tools.hpp"
+#include "casadi/core/function/sx_function.hpp"
 
 using namespace std;
 namespace casadi {
 
-QPLPInternal* QPLPInternal::clone() const{
+QPLPInternal* QPLPInternal::clone() const {
   // Return a deep copy
   QPLPInternal* node = new QPLPInternal(st_);
-  if(!node->is_init_)
+  if (!node->is_init_)
     node->init();
   return node;
 }
@@ -44,10 +44,10 @@ QPLPInternal::QPLPInternal(const std::vector<Sparsity> &st) : LPSolverInternal(s
 
 }
 
-QPLPInternal::~QPLPInternal(){
+QPLPInternal::~QPLPInternal() {
 }
 
-void QPLPInternal::evaluate(){
+void QPLPInternal::evaluate() {
 
   // Pass inputs of LP to QP form
   qpsolver_.input(QP_SOLVER_A).set(input(LP_SOLVER_A));
@@ -72,17 +72,17 @@ void QPLPInternal::evaluate(){
   output(QP_SOLVER_LAM_X).set(qpsolver_.output(LP_SOLVER_LAM_X));
 }
 
-void QPLPInternal::init(){
+void QPLPInternal::init() {
 
   LPSolverInternal::init();
 
   // Create an qpsolver instance
   QPSolverCreator qpsolver_creator = getOption("qp_solver");
-  qpsolver_ = qpsolver_creator(qpStruct("h",Sparsity::sparse(n_,n_),
-                                        "a",input(LP_SOLVER_A).sparsity()));
+  qpsolver_ = qpsolver_creator(qpStruct("h", Sparsity::sparse(n_, n_),
+                                        "a", input(LP_SOLVER_A).sparsity()));
 
   qpsolver_.setLPOptions();
-  if(hasSetOption("qp_solver_options")){
+  if (hasSetOption("qp_solver_options")) {
     qpsolver_.setOption(getOption("qp_solver_options"));
   }
 

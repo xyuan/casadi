@@ -23,7 +23,7 @@
 #ifndef OOQP_SOLVER_HPP
 #define OOQP_SOLVER_HPP
 
-#include "casadi/symbolic/function/qp_solver.hpp"
+#include "casadi/core/function/qp_solver.hpp"
 #include <casadi/interfaces/ooqp/casadi_ooqp_interface_export.h>
 
 namespace casadi {
@@ -63,7 +63,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static QPSolver creator(const QPStructure &st){ return OOQPSolver(st);}
+  static QPSolver creator(const QPStructure &st) { return OOQPSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

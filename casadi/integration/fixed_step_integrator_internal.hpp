@@ -24,20 +24,20 @@
 #define FIXED_STEP_INTEGRATOR_INTERNAL_HPP
 
 #include "fixed_step_integrator.hpp"
-#include "casadi/symbolic/function/integrator_internal.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
+#include "casadi/core/function/integrator_internal.hpp"
+#include "casadi/core/function/mx_function.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-  class CASADI_INTEGRATION_EXPORT FixedStepIntegratorInternal : public IntegratorInternal{
+  class CASADI_INTEGRATION_EXPORT FixedStepIntegratorInternal : public IntegratorInternal {
   public:
 
     /// Constructor
     explicit FixedStepIntegratorInternal(const Function& f, const Function& g);
 
     /// Deep copy data members
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /// Clone
     virtual FixedStepIntegratorInternal* clone() const = 0;
@@ -73,10 +73,10 @@ namespace casadi{
     virtual void calculateInitialConditionsB();
 
     /// Get explicit dynamics
-    virtual Function& getExplicit(){ return F_;}
+    virtual Function& getExplicit() { return F_;}
 
     /// Get explicit dynamics (backward problem)
-    virtual Function& getExplicitB(){ return G_;}
+    virtual Function& getExplicitB() { return G_;}
 
     // Discrete time dynamics
     Function F_, G_;

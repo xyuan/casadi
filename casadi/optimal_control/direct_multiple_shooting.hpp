@@ -23,12 +23,12 @@
 #ifndef DIRECT_MULTIPLE_SHOOTING_HPP
 #define DIRECT_MULTIPLE_SHOOTING_HPP
 
-#include "casadi/symbolic/function/ocp_solver.hpp"
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/ocp_solver.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 
 #include <casadi/optimal_control/casadi_optimal_control_export.h>
 
-namespace casadi{
+namespace casadi {
   class DirectMultipleShootingInternal;
 
 
@@ -45,7 +45,7 @@ namespace casadi{
    *   \author Joel Andersson
    *   \date 2011
   */
-class CASADI_OPTIMAL_CONTROL_EXPORT DirectMultipleShooting : public OCPSolver{
+class CASADI_OPTIMAL_CONTROL_EXPORT DirectMultipleShooting : public OCPSolver {
   public:
     /// Default constructor
     DirectMultipleShooting();
@@ -88,7 +88,7 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectMultipleShooting : public OCPSolver{
     void getConstraintBounds(std::vector<double>& G_min, std::vector<double>& G_max) const;
 
     /// Set the optimal solution
-    void setOptimalSolution( const std::vector<double> &V_opt );
+    void setOptimalSolution(const std::vector<double> &V_opt);
 
     // Access the underlying NLPSolver object
     NLPSolver getNLPSolver() const;

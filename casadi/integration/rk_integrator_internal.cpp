@@ -21,24 +21,23 @@
  */
 
 #include "rk_integrator_internal.hpp"
-#include "casadi/symbolic/mx/mx_tools.hpp"
+#include "casadi/core/mx/mx_tools.hpp"
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
   RKIntegratorInternal::RKIntegratorInternal(const Function& f, const Function& g) :
-      FixedStepIntegratorInternal(f,g) { }
+      FixedStepIntegratorInternal(f, g) { }
 
   void RKIntegratorInternal::deepCopyMembers(
-    std::map<SharedObjectNode*,SharedObject>& already_copied)
-  {
+      std::map<SharedObjectNode*, SharedObject>& already_copied) {
     FixedStepIntegratorInternal::deepCopyMembers(already_copied);
   }
 
-  RKIntegratorInternal::~RKIntegratorInternal(){
+  RKIntegratorInternal::~RKIntegratorInternal() {
   }
 
-  void RKIntegratorInternal::init(){
+  void RKIntegratorInternal::init() {
     // Call the base class init
     FixedStepIntegratorInternal::init();
 
@@ -47,16 +46,16 @@ namespace casadi{
                           "Explicit Runge-Kutta integrators do not support algebraic variables");
   }
 
-  void RKIntegratorInternal::setupFG(){
+  void RKIntegratorInternal::setupFG() {
 
     // Symbolic inputs
-    MX x0 = MX::sym("x0",f_.input(DAE_X).sparsity());
-    MX p = MX::sym("p",f_.input(DAE_P).sparsity());
-    MX t = MX::sym("t",f_.input(DAE_T).sparsity());
+    MX x0 = MX::sym("x0", f_.input(DAE_X).sparsity());
+    MX p = MX::sym("p", f_.input(DAE_P).sparsity());
+    MX t = MX::sym("t", f_.input(DAE_T).sparsity());
 
     // Intermediate variables (does not enter in F_, only in G_)
-    MX v = MX::sym("v",x0.size1(),x0.size2()*3);
-    vector<MX> x = horzsplit(v,x0.size2());
+    MX v = MX::sym("v", x0.size1(), x0.size2()*3);
+    vector<MX> x = horzsplit(v, x0.size2());
     casadi_assert(x.size()==3);
 
     // Definitions of x
@@ -113,18 +112,18 @@ namespace casadi{
       f_res[DAE_ODE] = xf;
       f_res[DAE_QUAD] = qf;
       f_res[DAE_ALG] = horzcat(x_def);
-      F_ = MXFunction(f_arg,f_res);
+      F_ = MXFunction(f_arg, f_res);
       F_.init();
     }
 
     // Backward integration
-    if(!g_.isNull()){
+    if (!g_.isNull()) {
       // Symbolic inputs
-      MX rx0 = MX::sym("x0",g_.input(RDAE_RX).sparsity());
-      MX rp = MX::sym("p",g_.input(RDAE_RP).sparsity());
+      MX rx0 = MX::sym("x0", g_.input(RDAE_RX).sparsity());
+      MX rp = MX::sym("p", g_.input(RDAE_RP).sparsity());
 
       // Intermediate variables (do not enter in G_)
-      MX rv = MX::sym("rv",rx0.size1(),3*rx0.size2());
+      MX rv = MX::sym("rv", rx0.size1(), 3*rx0.size2());
       vector<MX> rx_def(3);
 
       // Arguments when calling g
@@ -180,7 +179,7 @@ namespace casadi{
       g_res[RDAE_ODE] = rxf;
       g_res[RDAE_QUAD] = rqf;
       g_res[RDAE_ALG] = horzcat(rx_def);
-      G_ = MXFunction(g_arg,g_res);
+      G_ = MXFunction(g_arg, g_res);
       G_.init();
     }
   }

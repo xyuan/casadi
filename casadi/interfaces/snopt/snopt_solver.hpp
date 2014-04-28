@@ -23,10 +23,10 @@
 #ifndef SNOPT_SOLVER_HPP
 #define SNOPT_SOLVER_HPP
 
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 #include <casadi/interfaces/snopt/casadi_snopt_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
   class SnoptInternal;
 
@@ -42,10 +42,10 @@ namespace casadi{
     SnoptSolver();
 
     /// \brief Create an NLP solver instance
-    explicit SnoptSolver( const Function& nlp
-                          /**< nlp function: \f$ [\mathbb{R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
-                           * [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
-                         );
+    explicit SnoptSolver(const Function& nlp
+                         /**< nlp function: \f$ [\mathbb {R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
+                          * [\mathbb {R} \times \mathbb{R}^{n_g}]\f$*/
+                        );  //NOLINT(whitespace/parens)
 
     /// Access functions of the node
     SnoptInternal* operator->();
@@ -61,7 +61,7 @@ namespace casadi{
 #ifdef SWIG
     %callback("%s_cb");
 #endif
-    static NLPSolver creator(const Function& nlp){ return SnoptSolver(nlp);}
+    static NLPSolver creator(const Function& nlp) { return SnoptSolver(nlp);}
 #ifdef SWIG
     %nocallback;
 #endif

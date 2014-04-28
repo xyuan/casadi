@@ -24,12 +24,12 @@
 #define NLP_IMPLICIT_INTERNAL_HPP
 
 #include "nlp_implicit_solver.hpp"
-#include "casadi/symbolic/function/implicit_function_internal.hpp"
-#include "casadi/symbolic/function/nlp_solver.hpp"
-#include "casadi/symbolic/function/linear_solver.hpp"
+#include "casadi/core/function/implicit_function_internal.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
+#include "casadi/core/function/linear_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for NLPImplicitInternal
    *
@@ -46,15 +46,15 @@ namespace casadi{
     virtual ~NLPImplicitInternal();
 
     /** \brief  Clone */
-    virtual NLPImplicitInternal* clone() const{ return new NLPImplicitInternal(*this);}
+    virtual NLPImplicitInternal* clone() const { return new NLPImplicitInternal(*this);}
 
     /** \brief  Deep copy data members */
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /** \brief  Create a new ImplicitFunctionInternal */
     virtual NLPImplicitInternal* create(const Function& f, const Function& jac,
                                         const LinearSolver& linsol) const
-    { return new NLPImplicitInternal(f,jac,linsol);}
+    { return new NLPImplicitInternal(f, jac, linsol);}
 
     /** \brief  Initialize */
     virtual void init();

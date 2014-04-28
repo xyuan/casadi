@@ -23,10 +23,10 @@
 #ifndef WORHP_SOLVER_HPP
 #define WORHP_SOLVER_HPP
 
-#include "casadi/symbolic/function/nlp_solver.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
 #include <casadi/interfaces/worhp/casadi_worhp_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
   class WorhpInternal;
 
@@ -44,9 +44,9 @@ namespace casadi{
 
     /// \brief Create an NLP solver instance
     explicit WorhpSolver(const Function& nlp
-                         /**< nlp function: \f$ [\mathbb{R}^{n_x} \times \mathbb{R}^{n_p}]
-                          * \mapsto [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
-                         );
+                         /**< nlp function: \f$ [\mathbb {R}^{n_x} \times \mathbb{R}^{n_p}]
+                          * \mapsto [\mathbb {R} \times \mathbb{R}^{n_g}]\f$*/
+                        );  // NOLINT(whitespace/parens)
 
     /// Access functions of the node
     WorhpInternal* operator->();
@@ -62,7 +62,7 @@ namespace casadi{
 #ifdef SWIG
     %callback("%s_cb");
 #endif
-    static NLPSolver creator(const Function& nlp){ return WorhpSolver(nlp);}
+    static NLPSolver creator(const Function& nlp) { return WorhpSolver(nlp);}
 #ifdef SWIG
     %nocallback;
 #endif

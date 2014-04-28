@@ -66,7 +66,7 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build/lib)
 set(CASADI_SWIG_FLAGS ${CASADI_SWIG_FLAGS} "-I${CMAKE_CURRENT_SOURCE_DIR}/swig_lib")
 set(CASADI_SWIG_FLAGS ${CASADI_SWIG_FLAGS} "-DCASADI_MODULE")
 
-set(CASADI_SWIG_MAIN_MODULE casadi_symbolic)
+set(CASADI_SWIG_MAIN_MODULE casadi_core)
 
 set(USE_SWIG_FLAGS_python ${USE_SWIG_FLAGS_python} "-DPy_USING_UNICODE")
 set(USE_SWIG_FLAGS_python ${USE_SWIG_FLAGS_python} "-noproxydel")
@@ -180,20 +180,19 @@ The idea is to supply a directory that python knows about (included in PYTHONPAT
 endif()
 
 # Construct a dynamic loader for python
-file(WRITE "${PROJECT_BINARY_DIR}/python/casadi/casadi.py" "failed_interfaces={}\nloaded_interfaces=[]\n")
+file(WRITE "${PROJECT_BINARY_DIR}/python/casadi/casadi.py" "failed_modules={}\nloaded_modules=[]\n")
 foreach(my_module ${CASADI_MODULES})
 file(APPEND "${PROJECT_BINARY_DIR}/python/casadi/casadi.py"
 "try:\n"
 "  from ${my_module} import *\n"
-"  loaded_interfaces.append('${my_module}')\n"
+"  loaded_modules.append('${my_module}')\n"
 "except Exception as e:\n"
-"  failed_interfaces['${my_module}'] = str(e)\n"
+"  failed_modules['${my_module}'] = str(e)\n"
 )
 endforeach()
 
-#since in the main CMakeLists.txt we used "add_subdirectory(swig EXCLUDE_FROM_ALL)" the following install command won't add anything to "make install"
 install(DIRECTORY ${PROJECT_BINARY_DIR}/python/casadi
-  DESTINATION .
+  DESTINATION "${PYTHON_PREFIX}"
   COMPONENT install_python
   USE_SOURCE_PERMISSIONS
   PATTERN .pyc EXCLUDE
@@ -201,28 +200,29 @@ install(DIRECTORY ${PROJECT_BINARY_DIR}/python/casadi
   PATTERN .py EXCLUDE
 )
 
-install(DIRECTORY ${PROJECT_BINARY_DIR}/lib/
-  DESTINATION casadi
-  COMPONENT install_python
-  USE_SOURCE_PERMISSIONS
-  PATTERN .svn EXCLUDE
-)
+foreach(my_module ${modules_python})
+  install(TARGETS ${my_module}
+    DESTINATION "${PYTHON_PREFIX}/casadi"
+    COMPONENT install_python
+  )
+endforeach()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/tools
-  DESTINATION casadi
+  DESTINATION "${PYTHON_PREFIX}/casadi"
   COMPONENT install_python
   USE_SOURCE_PERMISSIONS
   PATTERN .pyc EXCLUDE
   PATTERN .svn EXCLUDE
 )
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/python/__init__.py
-  DESTINATION casadi
+  DESTINATION "${PYTHON_PREFIX}/casadi"
   COMPONENT install_python
 )
 foreach(my_module ${CASADI_MODULES})
   install(FILES ${PROJECT_BINARY_DIR}/swig/${my_module}.py
-    DESTINATION casadi
-    COMPONENT install_python)
+    DESTINATION "${PYTHON_PREFIX}/casadi"
+    COMPONENT install_python
+  )
 endforeach()
 
 #creation of a custom installation command
@@ -249,12 +249,12 @@ add_custom_target(${my_module}_json
 add_dependencies(${my_module}_json ${my_module}_xml DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/json/generate.py ${PROJECT_BINARY_DIR}/swig/${my_module}XML_wrap.xml)
 endforeach()
 
-foreach(my_module ${CASADI_MODULES})
-install(FILES ${PROJECT_BINARY_DIR}/swig/${my_module}.json
-  DESTINATION share/casadi
-  COMPONENT componentjson
-)
-endforeach()
+#foreach(my_module ${CASADI_MODULES})
+#install(FILES ${PROJECT_BINARY_DIR}/swig/${my_module}.json
+#  DESTINATION share/casadi
+#  COMPONENT componentjson
+#)
+#endforeach()
 
 
 #set(CPACK_MONOLITHIC_INSTALL FALSE)

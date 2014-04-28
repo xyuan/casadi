@@ -23,10 +23,10 @@
 #ifndef CSPARSE_HPP
 #define CSPARSE_HPP
 
-#include "casadi/symbolic/function/linear_solver.hpp"
+#include "casadi/core/function/linear_solver.hpp"
 #include <casadi/interfaces/csparse/casadi_csparse_interface_export.h>
 
-namespace casadi{
+namespace casadi {
 
 
   /** \brief  Forward declaration of internal class */
@@ -37,7 +37,7 @@ namespace casadi{
    @copydoc LinearSolver_doc
    *
    * CSparse is an casadi::Function mapping from 2 inputs
-   * [ A (matrix),b (vector)] to one output [x (vector)].
+   * [ A (matrix), b (vector)] to one output [x (vector)].
    *
    * The usual procedure to use CSparse is: \n
    *  -# init()
@@ -51,7 +51,7 @@ namespace casadi{
    * step and is therefore more expensive if A is invariant.
    *
    */
-  class CASADI_CSPARSE_INTERFACE_EXPORT CSparse : public LinearSolver{
+  class CASADI_CSPARSE_INTERFACE_EXPORT CSparse : public LinearSolver {
   public:
 
     /// Default (empty) constructor
@@ -73,7 +73,7 @@ namespace casadi{
 #ifdef SWIG
     %callback("%s_cb");
 #endif
-    static LinearSolver creator(const Sparsity& sp, int nrhs){ return CSparse(sp,nrhs);}
+    static LinearSolver creator(const Sparsity& sp, int nrhs) { return CSparse(sp, nrhs);}
 #ifdef SWIG
     %nocallback;
 #endif

@@ -24,16 +24,16 @@
 #define DIRECT_MULTIPLE_SHOOTING_INTERNAL_HPP
 
 #include "direct_multiple_shooting.hpp"
-#include "casadi/symbolic/function/ocp_solver_internal.hpp"
+#include "casadi/core/function/ocp_solver_internal.hpp"
 
-#include "casadi/symbolic/function/parallelizer.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
+#include "casadi/core/function/parallelizer.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/sx_function.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-class CASADI_OPTIMAL_CONTROL_EXPORT DirectMultipleShootingInternal : public OCPSolverInternal{
+class CASADI_OPTIMAL_CONTROL_EXPORT DirectMultipleShootingInternal : public OCPSolverInternal {
   friend class DirectMultipleShooting;
 
   public:
@@ -64,7 +64,7 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectMultipleShootingInternal : public OCPS
     void getConstraintBounds(std::vector<double>& G_min, std::vector<double>& G_max) const;
 
     // Set the optimal solution
-    void setOptimalSolution( const std::vector<double> &V_opt );
+    void setOptimalSolution(const std::vector<double> &V_opt);
 
     // Prints out a human readable report about possible constraint violations - all constraints
     void reportConstraints(std::ostream &stream=std::cout);

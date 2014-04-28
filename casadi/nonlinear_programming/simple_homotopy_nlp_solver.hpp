@@ -23,11 +23,11 @@
 #ifndef SIMPLE_HOMOTOPY_NLP_SOLVER_HPP
 #define SIMPLE_HOMOTOPY_NLP_SOLVER_HPP
 
-#include "casadi/symbolic/function/homotopy_nlp_solver.hpp"
+#include "casadi/core/function/homotopy_nlp_solver.hpp"
 
 #include <casadi/nonlinear_programming/casadi_nonlinear_programming_export.h>
 
-namespace casadi{
+namespace casadi {
 
   class SimpleHomotopyNLPInternal;
 
@@ -45,9 +45,9 @@ namespace casadi{
     /// \brief Create an NLP solver instance
     explicit SimpleHomotopyNLPSolver(const Function& hnlp
                                      /**< nlp function:
-                                        \f$ [\mathbb{R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
-                                        [\mathbb{R} \times \mathbb{R}^{n_g}]\f$*/
-                                     );
+                                        \f$ [\mathbb {R}^{n_x} \times \mathbb{R}^{n_p}] \mapsto
+                                        [\mathbb {R} \times \mathbb{R}^{n_g}]\f$*/
+                                     );  // NOLINT(whitespace/parens)
 
     /// Access functions of the node
     SimpleHomotopyNLPInternal* operator->();
@@ -60,7 +60,7 @@ namespace casadi{
 #ifdef SWIG
     %callback("%s_cb");
 #endif
-    static HomotopyNLPSolver creator(const Function& hnlp){ return SimpleHomotopyNLPSolver(hnlp);}
+    static HomotopyNLPSolver creator(const Function& hnlp) { return SimpleHomotopyNLPSolver(hnlp);}
 #ifdef SWIG
     %nocallback;
 #endif

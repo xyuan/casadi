@@ -24,12 +24,12 @@
 #define NEWTON_IMPLICIT_INTERNAL_HPP
 
 #include "newton_implicit_solver.hpp"
-#include "casadi/symbolic/function/implicit_function_internal.hpp"
-#include "casadi/symbolic/function/nlp_solver.hpp"
-#include "casadi/symbolic/function/linear_solver.hpp"
+#include "casadi/core/function/implicit_function_internal.hpp"
+#include "casadi/core/function/nlp_solver.hpp"
+#include "casadi/core/function/linear_solver.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal class for NewtonImplicitInternal
    *
@@ -47,12 +47,12 @@ namespace casadi{
     virtual ~NewtonImplicitInternal();
 
     /** \brief  Clone */
-    virtual NewtonImplicitInternal* clone() const{ return new NewtonImplicitInternal(*this);}
+    virtual NewtonImplicitInternal* clone() const { return new NewtonImplicitInternal(*this);}
 
     /** \brief  Create a new ImplicitFunctionInternal */
     virtual ImplicitFunctionInternal* create(const Function& f, const Function& jac,
                                              const LinearSolver& linsol) const
-    { return new NewtonImplicitInternal(f,jac,linsol);}
+    { return new NewtonImplicitInternal(f, jac, linsol);}
 
     /** \brief  Initialize */
     virtual void init();

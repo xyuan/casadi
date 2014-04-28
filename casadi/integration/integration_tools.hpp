@@ -25,13 +25,13 @@
 
 #include <vector>
 #include <algorithm>
-#include "casadi/symbolic/casadi_exception.hpp"
-#include "casadi/symbolic/options_functionality.hpp"
-#include "casadi/symbolic/mx/mx.hpp"
+#include "casadi/core/casadi_exception.hpp"
+#include "casadi/core/options_functionality.hpp"
+#include "casadi/core/mx/mx.hpp"
 
 #include <casadi/integration/casadi_integration_export.h>
 
-namespace casadi{
+namespace casadi {
 
   ///@{
   /** \brief Obtain collocation points of specific order and scheme
@@ -95,7 +95,7 @@ extern const long double** collocation_points[2];
 #endif // SWIG
 
   // Type of collocation points
-  enum CollocationPoints{LEGENDRE,RADAU};
+  enum CollocationPoints {LEGENDRE, RADAU};
 
   /** \brief Construct an explicit Runge-Kutta integrator
   * \param f dynamical system

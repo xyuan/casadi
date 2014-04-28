@@ -24,16 +24,16 @@
 #define DIRECT_COLLOCATION_INTERNAL_HPP
 
 #include "direct_collocation.hpp"
-#include "casadi/symbolic/function/ocp_solver_internal.hpp"
-#include "casadi/symbolic/function/parallelizer.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/sx_function.hpp"
+#include "casadi/core/function/ocp_solver_internal.hpp"
+#include "casadi/core/function/parallelizer.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/sx_function.hpp"
 #include "casadi/integration/integration_tools.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
-class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocationInternal : public OCPSolverInternal{
+class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocationInternal : public OCPSolverInternal {
   friend class DirectCollocation;
 
   public:
@@ -42,7 +42,7 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocationInternal : public OCPSolver
                               const Function& cfcn, const Function& rfcn);
 
     // clone
-    virtual DirectCollocationInternal* clone() const{ return new DirectCollocationInternal(*this);}
+    virtual DirectCollocationInternal* clone() const { return new DirectCollocationInternal(*this);}
 
     // Destructor
     virtual ~DirectCollocationInternal();
@@ -63,7 +63,7 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocationInternal : public OCPSolver
     void getConstraintBounds(std::vector<double>& G_min, std::vector<double>& G_max) const;
 
     // Set the optimal solution
-    void setOptimalSolution( const std::vector<double> &V_opt );
+    void setOptimalSolution(const std::vector<double> &V_opt);
 
     // Prints out a human readable report about possible constraint violations - all constraints
     void reportConstraints(std::ostream &stream=std::cout);

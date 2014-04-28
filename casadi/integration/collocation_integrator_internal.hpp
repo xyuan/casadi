@@ -25,22 +25,22 @@
 
 #include "collocation_integrator.hpp"
 #include "implicit_fixed_step_integrator_internal.hpp"
-#include "casadi/symbolic/function/mx_function.hpp"
-#include "casadi/symbolic/function/implicit_function.hpp"
+#include "casadi/core/function/mx_function.hpp"
+#include "casadi/core/function/implicit_function.hpp"
 #include "integration_tools.hpp"
 
 /// \cond INTERNAL
-namespace casadi{
+namespace casadi {
 
   class CASADI_INTEGRATION_EXPORT CollocationIntegratorInternal :
-        public ImplicitFixedStepIntegratorInternal{
+        public ImplicitFixedStepIntegratorInternal {
   public:
 
     /// Constructor
     explicit CollocationIntegratorInternal(const Function& f, const Function& g);
 
     /// Deep copy data members
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /// Clone
     virtual CollocationIntegratorInternal* clone() const
@@ -48,7 +48,7 @@ namespace casadi{
 
     /// Create a new integrator
     virtual CollocationIntegratorInternal* create(const Function& f, const Function& g) const
-    { return new CollocationIntegratorInternal(f,g);}
+    { return new CollocationIntegratorInternal(f, g);}
 
     /// Destructor
     virtual ~CollocationIntegratorInternal();

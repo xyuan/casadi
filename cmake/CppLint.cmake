@@ -26,12 +26,9 @@ find_package(PythonInterp)
 set(STYLE_FILTER)
 
 # disable unwanted filters
-set(STYLE_FILTER ${STYLE_FILTER}-whitespace/braces,)
 set(STYLE_FILTER ${STYLE_FILTER}-whitespace/semicolon,)
 set(STYLE_FILTER ${STYLE_FILTER}-whitespace/blank_line,)
-set(STYLE_FILTER ${STYLE_FILTER}-whitespace/comma,)
 set(STYLE_FILTER ${STYLE_FILTER}-whitespace/operators,)
-set(STYLE_FILTER ${STYLE_FILTER}-whitespace/parens,)
 set(STYLE_FILTER ${STYLE_FILTER}-whitespace/indent,)
 set(STYLE_FILTER ${STYLE_FILTER}-whitespace/comments,)
 
@@ -44,6 +41,9 @@ set(STYLE_FILTER ${STYLE_FILTER}-readability/streams,)
 set(STYLE_FILTER ${STYLE_FILTER}-runtime/references,)
 set(STYLE_FILTER ${STYLE_FILTER}-runtime/int,)
 set(STYLE_FILTER ${STYLE_FILTER}-runtime/explicit,)
+
+# THESE SHOW LEGITAMITE WARNINGS WHICH SHOULD BE FIXED:
+set(STYLE_FILTER ${STYLE_FILTER}-runtime/printf,)
 
 # Add a target that runs cpplint.py
 #

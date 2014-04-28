@@ -24,25 +24,25 @@
 #include "newton_implicit_solver.hpp"
 
 using namespace std;
-namespace casadi{
+namespace casadi {
 
-  NewtonImplicitSolver::NewtonImplicitSolver(){
+  NewtonImplicitSolver::NewtonImplicitSolver() {
   }
 
   NewtonImplicitSolver::NewtonImplicitSolver(const Function& f, const Function& jac,
                                              const LinearSolver& linsol) {
-    assignNode(new NewtonImplicitInternal(f,jac,linsol));
+    assignNode(new NewtonImplicitInternal(f, jac, linsol));
   }
 
-  NewtonImplicitInternal* NewtonImplicitSolver::operator->(){
+  NewtonImplicitInternal* NewtonImplicitSolver::operator->() {
     return static_cast<NewtonImplicitInternal*>(Function::operator->());
   }
 
-  const NewtonImplicitInternal* NewtonImplicitSolver::operator->() const{
+  const NewtonImplicitInternal* NewtonImplicitSolver::operator->() const {
     return static_cast<const NewtonImplicitInternal*>(Function::operator->());
   }
 
-  bool NewtonImplicitSolver::checkNode() const{
+  bool NewtonImplicitSolver::checkNode() const {
     return dynamic_cast<const NewtonImplicitInternal*>(get());
   }
 

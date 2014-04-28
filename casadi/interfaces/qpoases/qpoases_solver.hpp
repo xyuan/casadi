@@ -23,7 +23,7 @@
 #ifndef QPOASES_SOLVER_HPP
 #define QPOASES_SOLVER_HPP
 
-#include "casadi/symbolic/function/qp_solver.hpp"
+#include "casadi/core/function/qp_solver.hpp"
 #include <casadi/interfaces/qpoases/casadi_qpoases_interface_export.h>
 
 namespace casadi {
@@ -63,7 +63,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static QPSolver creator(const QPStructure& st){ return QPOasesSolver(st);}
+  static QPSolver creator(const QPStructure& st) { return QPOasesSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif

@@ -25,11 +25,11 @@
 
 #include "dple_solver.hpp"
 #include "dple_internal.hpp"
-#include "../symbolic/function/function_internal.hpp"
+#include "../core/function/function_internal.hpp"
 
 /// \cond INTERNAL
 
-namespace casadi{
+namespace casadi {
 
   /** \brief Internal storage for DpleSolver related data
 
@@ -37,7 +37,7 @@ namespace casadi{
      \author Joris Gillis
       \date 2014
   */
-  class CASADI_CONTROL_EXPORT DpleInternal : public FunctionInternal{
+  class CASADI_CONTROL_EXPORT DpleInternal : public FunctionInternal {
   public:
     /** \brief  Constructor
      *  \param[in] A  List of sparsities of A_i
@@ -53,14 +53,14 @@ namespace casadi{
     virtual DpleInternal* clone() const=0;
 
     /** \brief  Deep copy data members */
-    virtual void deepCopyMembers(std::map<SharedObjectNode*,SharedObject>& already_copied);
+    virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /** \brief  Create a new solver */
     virtual DpleInternal* create(const std::vector< Sparsity > & A,
                                  const std::vector< Sparsity > &V) const = 0;
 
     /** \brief  Print solver statistics */
-    virtual void printStats(std::ostream &stream) const{}
+    virtual void printStats(std::ostream &stream) const {}
 
     /** \brief  evaluate */
     virtual void evaluate()=0;

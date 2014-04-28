@@ -23,7 +23,7 @@
 #ifndef STABILIZED_SQIC_SOLVER_HPP
 #define STABILIZED_SQIC_SOLVER_HPP
 
-#include "casadi/symbolic/function/stabilized_qp_solver.hpp"
+#include "casadi/core/function/stabilized_qp_solver.hpp"
 #include <casadi/interfaces/sqic/casadi_sqic_interface_export.h>
 
 namespace casadi {
@@ -55,7 +55,7 @@ public:
   #ifdef SWIG
   %callback("%s_cb");
   #endif
-  static StabilizedQPSolver creator(const QPStructure &st){ return StabilizedSQICSolver(st);}
+  static StabilizedQPSolver creator(const QPStructure &st) { return StabilizedSQICSolver(st);}
   #ifdef SWIG
   %nocallback;
   #endif
