@@ -1,8 +1,5 @@
 # libraries
-set(SNOPT_LIBS_LIST
-  snopt7
-  snprint7
-  snblas)
+set(SNOPT_LIBS_LIST snopt7)
 
 set(SNOPT_LIBRARIES)
 foreach(LIB in ${SNOPT_LIBS_LIST})
@@ -19,12 +16,11 @@ endforeach()
 
 if(SNOPT_LIBRARIES)
   set(SNOPT_LIBRARIES ${SNOPT_LIBRARIES})
-  message(STATUS "Found Snopt libs: ${SNOPT_LIBRARIES}")
+  message(STATUS "Found Snopt libs")
   set(SNOPT_FOUND_LIBS TRUE)
 else()
   message(STATUS "Could not find Snopt libs")
 endif()
-
 
 if(SNOPT_FOUND_LIBS)
   set(SNOPT_FOUND TRUE)
