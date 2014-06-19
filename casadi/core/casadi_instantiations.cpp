@@ -84,7 +84,10 @@ namespace casadi {
 
 namespace std {
   #ifndef _MSC_VER
-  template class std::numeric_limits<casadi::SXElement>;
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmismatched-tags"
+  template struct std::numeric_limits<casadi::SXElement>;
+  #pragma GCC diagnostic pop
   #endif
 
 } // namespace std
