@@ -70,6 +70,11 @@ namespace casadi {
     casadi_assert_message(const_dim_,
                           "const_dim option set to False: Solver only handles the True case.");
 
+    for (int k=0;k<K_;k++) {
+      casadi_assert_message(A_[k].isDense(), "Solver requires arguments to be dense.");
+      casadi_assert_message(V_[k].isDense(), "Solver requires arguments to be dense.");
+    }
+
     n_ = A_[0].size1();
 
     // Allocate data structures
@@ -981,7 +986,10 @@ namespace casadi {
                      &nnKa_[k].data()[0]);
 
         dense_mul_nt(n_, n_, n_, &nnKa_[k].data()[0], &Vbar[n_*n_*k], &Abar[n_*n_*k]);
-        dense_mul_nn(n_, n_, n_, &nnKa_[k].data()[0], &Vbar[n_*n_*k], &Abar[n_*n_*k]);
+      }
+
+      for (int i=0;i<Abar.size();++i) {
+        Abar[i]*=2;
       }
 
       std::fill(P_bar.data().begin(), P_bar.data().end(), 0);
