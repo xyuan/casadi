@@ -20,25 +20,27 @@
  *
  */
 
-#ifndef QP_SOLVER_INTERNAL_HPP
-#define QP_SOLVER_INTERNAL_HPP
+#ifndef CASADI_QP_SOLVER_INTERNAL_HPP
+#define CASADI_QP_SOLVER_INTERNAL_HPP
 
 #include "qp_solver.hpp"
 #include "function_internal.hpp"
-
+#include "plugin_interface.hpp"
 
 /// \cond INTERNAL
 namespace casadi {
 
   /// Internal class
-  class CASADI_CORE_EXPORT QPSolverInternal : public FunctionInternal {
+  class CASADI_CORE_EXPORT
+  QpSolverInternal : public FunctionInternal,
+                     public PluginInterface<QpSolverInternal> {
   public:
 
     // Constructor
-    QPSolverInternal(const std::vector<Sparsity> &st);
+    QpSolverInternal(const std::vector<Sparsity> &st);
 
     // Destructor
-    virtual ~QPSolverInternal() = 0;
+    virtual ~QpSolverInternal() = 0;
 
     // Initialize
     virtual void init();
@@ -58,6 +60,15 @@ namespace casadi {
     /** Generate native code in the interfaced language for debugging */
     virtual void generateNativeCode(std::ostream& file) const {}
 
+    // Creator function for internal class
+    typedef QpSolverInternal* (*Creator)(const QPStructure& st);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
+
   protected:
 
     /// Problem structure
@@ -73,5 +84,5 @@ namespace casadi {
 
 } // namespace casadi
 /// \endcond
-#endif //QP_SOLVER_INTERNAL_HPP
+#endif // CASADI_QP_SOLVER_INTERNAL_HPP
 

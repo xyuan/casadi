@@ -28,21 +28,28 @@
 using namespace std;
 namespace casadi {
 
-  HomotopyNLPSolver::HomotopyNLPSolver() {
+  HomotopyNlpSolver::HomotopyNlpSolver() {
   }
 
-  HomotopyNLPInternal* HomotopyNLPSolver::operator->() {
+  HomotopyNLPInternal* HomotopyNlpSolver::operator->() {
     return static_cast<HomotopyNLPInternal*>(Function::operator->());
   }
 
-  const HomotopyNLPInternal* HomotopyNLPSolver::operator->() const {
+  const HomotopyNLPInternal* HomotopyNlpSolver::operator->() const {
     return static_cast<const HomotopyNLPInternal*>(Function::operator->());
   }
 
-  bool HomotopyNLPSolver::checkNode() const {
+  bool HomotopyNlpSolver::checkNode() const {
     return dynamic_cast<const HomotopyNLPInternal*>(get())!=0;
   }
 
+  void HomotopyNlpSolver::loadPlugin(const std::string& name) {
+    HomotopyNLPInternal::loadPlugin(name);
+  }
+
+  std::string HomotopyNlpSolver::doc(const std::string& name) {
+    return HomotopyNLPInternal::getPlugin(name).doc;
+  }
 
 } // namespace casadi
 

@@ -20,11 +20,12 @@
  *
  */
 
-#ifndef LINEAR_SOLVER_INTERNAL_HPP
-#define LINEAR_SOLVER_INTERNAL_HPP
+#ifndef CASADI_LINEAR_SOLVER_INTERNAL_HPP
+#define CASADI_LINEAR_SOLVER_INTERNAL_HPP
 
 #include "linear_solver.hpp"
 #include "function_internal.hpp"
+#include "plugin_interface.hpp"
 
 /// \cond INTERNAL
 
@@ -33,7 +34,9 @@ namespace casadi {
   /** Internal class
       @copydoc LinearSolver_doc
   */
-  class CASADI_CORE_EXPORT LinearSolverInternal : public FunctionInternal {
+  class CASADI_CORE_EXPORT
+  LinearSolverInternal : public FunctionInternal,
+                         public PluginInterface<LinearSolverInternal> {
   public:
     /// Constructor
     LinearSolverInternal(const Sparsity& sparsity, int nrhs);
@@ -83,6 +86,16 @@ namespace casadi {
     void spSolve(DMatrix& X, const DMatrix& B, bool transpose) const;
     ///@}
 
+
+    /// Solve the system of equations <tt>Lx = b</tt>
+    virtual void solveL(double* x, int nrhs, bool transpose);
+
+    /// Obtain a symbolic Cholesky factorization
+    virtual Sparsity getFactorizationSparsity(bool transpose) const;
+
+    /// Obtain a numeric Cholesky factorization
+    virtual DMatrix getFactorization(bool transpose) const;
+
     /// Dulmage-Mendelsohn decomposition
     std::vector<int> rowperm_, colperm_, rowblock_, colblock_;
 
@@ -95,11 +108,20 @@ namespace casadi {
     int nnz() const { return input(LINSOL_A).size();}
     const std::vector<int>& row() const { return input(LINSOL_A).row();}
     const std::vector<int>& colind() const { return input(LINSOL_A).colind();}
+
+    // Creator function for internal class
+    typedef LinearSolverInternal* (*Creator)(const Sparsity& sp, int nrhs);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
   };
 
 
 } // namespace casadi
 /// \endcond
 
-#endif //LINEAR_SOLVER_INTERNAL_HPP
+#endif // CASADI_LINEAR_SOLVER_INTERNAL_HPP
 

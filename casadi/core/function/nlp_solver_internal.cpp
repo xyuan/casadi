@@ -26,13 +26,13 @@
 #include "../sx/sx_tools.hpp"
 #include "../mx/mx_tools.hpp"
 
-INPUTSCHEME(NLPSolverInput)
-OUTPUTSCHEME(NLPSolverOutput)
+INPUTSCHEME(NlpSolverInput)
+OUTPUTSCHEME(NlpSolverOutput)
 
 using namespace std;
 namespace casadi {
 
-  NLPSolverInternal::NLPSolverInternal(const Function& nlp) : nlp_(nlp) {
+  NlpSolverInternal::NlpSolverInternal(const Function& nlp) : nlp_(nlp) {
 
     // Set default options
     setOption("name", "unnamed NLP solver"); // name of the function
@@ -64,10 +64,13 @@ namespace casadi {
               "If set to true, the input shape of F will not be checked.");
     addOption("warn_initial_bounds", OT_BOOLEAN,  false,
               "Warn if the initial guess does not satisfy LBX and UBX");
+    addOption("eval_errors_fatal", OT_BOOLEAN, false,
+              "When errors occur during evaluation of f,g,...,"
+              "stop the iterations");
 
     // Enable string notation for IO
-    input_.scheme = SCHEME_NLPSolverInput;
-    output_.scheme = SCHEME_NLPSolverOutput;
+    input_.scheme = SCHEME_NlpSolverInput;
+    output_.scheme = SCHEME_NlpSolverOutput;
 
     // Make the ref object a non-refence counted pointer to this (as reference counting would
     // prevent deletion of the object)
@@ -75,12 +78,12 @@ namespace casadi {
 
   }
 
-  NLPSolverInternal::~NLPSolverInternal() {
+  NlpSolverInternal::~NlpSolverInternal() {
     // Explicitly remove the pointer to this (as the counter would otherwise be decreased)
     ref_.assignNodeNoCount(0);
   }
 
-  void NLPSolverInternal::init() {
+  void NlpSolverInternal::init() {
     // Initialize the NLP
     nlp_.init(false);
     casadi_assert_message(nlp_.getNumInputs()==NL_NUM_IN,
@@ -142,9 +145,11 @@ namespace casadi {
     }
 
     callback_step_ = getOption("iteration_callback_step");
+    eval_errors_fatal_ = getOption("eval_errors_fatal");
+
   }
 
-  void NLPSolverInternal::checkInitialBounds() {
+  void NlpSolverInternal::checkInitialBounds() {
     if (static_cast<bool>(getOption("warn_initial_bounds"))) {
       bool violated = false;
       for (int k=0;k<input(NLP_SOLVER_X0).size();++k) {
@@ -155,13 +160,13 @@ namespace casadi {
           violated = true;
         }
       }
-      if (violated) casadi_warning("NLPSolver: The initial guess does not satisfy LBX and UBX. "
+      if (violated) casadi_warning("NlpSolver: The initial guess does not satisfy LBX and UBX. "
                                    "Option 'warn_initial_bounds' controls this warning.");
     }
   }
 
 
-  void NLPSolverInternal::reportConstraints(std::ostream &stream) {
+  void NlpSolverInternal::reportConstraints(std::ostream &stream) {
 
     stream << "Reporting NLP constraints" << endl;
     FunctionInternal::reportConstraints(stream, output(NLP_SOLVER_X), input(NLP_SOLVER_LBX),
@@ -172,21 +177,21 @@ namespace casadi {
                                         input(NLP_SOLVER_UBG), "constraints", tol);
   }
 
-  Function& NLPSolverInternal::gradF() {
+  Function& NlpSolverInternal::gradF() {
     if (gradF_.isNull()) {
       gradF_ = getGradF();
     }
     return gradF_;
   }
 
-  Function& NLPSolverInternal::jacF() {
+  Function& NlpSolverInternal::jacF() {
     if (jacF_.isNull()) {
       jacF_ = getJacF();
     }
     return jacF_;
   }
 
-  Function NLPSolverInternal::getJacF() {
+  Function NlpSolverInternal::getJacF() {
     Function jacF;
     if (hasSetOption("jac_f")) {
       jacF = getOption("jac_f");
@@ -209,7 +214,7 @@ namespace casadi {
     return jacF;
   }
 
-  Function NLPSolverInternal::getGradF() {
+  Function NlpSolverInternal::getGradF() {
     Function gradF;
     if (hasSetOption("grad_f")) {
       gradF = getOption("grad_f");
@@ -232,14 +237,14 @@ namespace casadi {
     return gradF;
   }
 
-  Function& NLPSolverInternal::jacG() {
+  Function& NlpSolverInternal::jacG() {
     if (jacG_.isNull()) {
       jacG_ = getJacG();
     }
     return jacG_;
   }
 
-  Function NLPSolverInternal::getJacG() {
+  Function NlpSolverInternal::getJacG() {
     Function jacG;
 
     // Return null if no constraints
@@ -266,14 +271,14 @@ namespace casadi {
     return jacG;
   }
 
-  Function& NLPSolverInternal::gradLag() {
+  Function& NlpSolverInternal::gradLag() {
     if (gradLag_.isNull()) {
       gradLag_ = getGradLag();
     }
     return gradLag_;
   }
 
-  Function NLPSolverInternal::getGradLag() {
+  Function NlpSolverInternal::getGradLag() {
     Function gradLag;
     if (hasSetOption("grad_lag")) {
       gradLag = getOption("grad_lag");
@@ -288,14 +293,14 @@ namespace casadi {
     return gradLag;
   }
 
-  Function& NLPSolverInternal::hessLag() {
+  Function& NlpSolverInternal::hessLag() {
     if (hessLag_.isNull()) {
       hessLag_ = getHessLag();
     }
     return hessLag_;
   }
 
-  Function NLPSolverInternal::getHessLag() {
+  Function NlpSolverInternal::getHessLag() {
     Function hessLag;
     if (hasSetOption("hess_lag")) {
       hessLag = getOption("hess_lag");
@@ -319,14 +324,14 @@ namespace casadi {
     return hessLag;
   }
 
-  Sparsity& NLPSolverInternal::spHessLag() {
+  Sparsity& NlpSolverInternal::spHessLag() {
     if (spHessLag_.isNull()) {
       spHessLag_ = getSpHessLag();
     }
     return spHessLag_;
   }
 
-  Sparsity NLPSolverInternal::getSpHessLag() {
+  Sparsity NlpSolverInternal::getSpHessLag() {
     Sparsity spHessLag;
     if (false /*hasSetOption("hess_lag_sparsity")*/) {
       // NOTE: No such option yet, need support for GenericType(Sparsity)
@@ -340,7 +345,7 @@ namespace casadi {
     return spHessLag;
   }
 
-  void NLPSolverInternal::checkInputs() const {
+  void NlpSolverInternal::checkInputs() const {
     for (int i=0;i<input(NLP_SOLVER_LBX).size();++i) {
       casadi_assert_message(input(NLP_SOLVER_LBX).at(i)<=input(NLP_SOLVER_UBX).at(i),
                             "LBX[i] <= UBX[i] was violated for i=" << i
@@ -353,6 +358,21 @@ namespace casadi {
                             << ". Got LBG[i]=" << input(NLP_SOLVER_LBG).at(i)
                             << " and UBG[i]=" << input(NLP_SOLVER_UBG).at(i));
     }
+  }
+
+  std::map<std::string, NlpSolverInternal::Plugin> NlpSolverInternal::solvers_;
+
+  const std::string NlpSolverInternal::infix_ = "nlpsolver";
+
+  DMatrix NlpSolverInternal::getReducedHessian() {
+    casadi_error("NlpSolverInternal::getReducedHessian not defined for class "
+                 << typeid(*this).name());
+    return DMatrix();
+  }
+
+  void NlpSolverInternal::setOptionsFromFile(const std::string & file) {
+    casadi_error("NlpSolverInternal::setOptionsFromFile not defined for class "
+                 << typeid(*this).name());
   }
 
 } // namespace casadi

@@ -25,24 +25,31 @@
 using namespace std;
 namespace casadi {
 
+  SocpSolver::SocpSolver() {
+  }
 
-SOCPSolver::SOCPSolver() {
-}
+  SocpSolverInternal* SocpSolver::operator->() {
+    return static_cast<SocpSolverInternal*>(Function::operator->());
+  }
 
-SOCPSolverInternal* SOCPSolver::operator->() {
-  return static_cast<SOCPSolverInternal*>(Function::operator->());
-}
+  const SocpSolverInternal* SocpSolver::operator->() const {
+    return static_cast<const SocpSolverInternal*>(Function::operator->());
+  }
 
-const SOCPSolverInternal* SOCPSolver::operator->() const {
-    return static_cast<const SOCPSolverInternal*>(Function::operator->());
-}
+  bool SocpSolver::checkNode() const {
+    return dynamic_cast<const SocpSolverInternal*>(get())!=0;
+  }
 
-bool SOCPSolver::checkNode() const {
-  return dynamic_cast<const SOCPSolverInternal*>(get())!=0;
-}
+  SocpSolver::SocpSolver(const std::string& name, const SOCPStructure& st) {
+    assignNode(SocpSolverInternal::getPlugin(name).creator(st));
+  }
+
+  void SocpSolver::loadPlugin(const std::string& name) {
+    SocpSolverInternal::loadPlugin(name);
+  }
+
+  std::string SocpSolver::doc(const std::string& name) {
+    return SocpSolverInternal::getPlugin(name).doc;
+  }
 
 } // namespace casadi
-
-
-
-

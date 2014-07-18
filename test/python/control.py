@@ -30,13 +30,17 @@ import time
 
 dplesolvers = []
 try:
-  dplesolvers.append((PsdIndefDpleSolver,{"linear_solver": CSparse}))
+  LinearSolver.loadPlugin("csparse")
+  DpleSolver.loadPlugin("slicot")
+  dplesolvers.append(("slicot",{"linear_solver": "csparse"}))
 except:
   pass
   
   
 try:
-  dplesolvers.append((SimpleIndefDpleSolver,{"linear_solver": CSparse}))
+  LinearSolver.loadPlugin("csparse")
+  DpleSolver.loadPlugin("simple")
+  dplesolvers.append(("simple",{"linear_solver": "csparse"}))
 except:
   pass
   
@@ -58,7 +62,7 @@ class ControlTests(casadiTestCase):
           V_ = [mul(v,v.T) for v in [DMatrix(numpy.random.random((n,n))) for i in range(K)]]
           
           
-          solver = Solver([Sparsity.dense(n,n) for i in range(K)],[Sparsity.dense(n,n) for i in range(K)])
+          solver = DpleSolver(Solver,[Sparsity.dense(n,n) for i in range(K)],[Sparsity.dense(n,n) for i in range(K)])
           solver.setOption(options)
           solver.init()
           solver.setInput(horzcat(A_),DPLE_A)
@@ -81,7 +85,7 @@ class ControlTests(casadiTestCase):
           A_total = DMatrix.eye(n*n*K) - vertcat([AA[-n*n:,:],AA[:-n*n,:]])
           
           
-          Pf = solve(A_total,vec(Vss),CSparse)
+          Pf = solve(A_total,vec(Vss),"csparse")
           P = Pf.reshape((n,K*n))
           
           refsol = MXFunction([As,Vs],[P])
@@ -106,13 +110,13 @@ class ControlTests(casadiTestCase):
           self.checkarray(a0ref,a1ref)
           self.checkarray(a0,a1)
 
-          self.checkfunction(solver,refsol,sens_der=False,hessian=False,evals=1)
+          self.checkfunction(solver,refsol,sens_der=True,hessian=True,evals=2)
   
   @memory_heavy()
   def test_dple_large(self):
     
     for Solver, options in dplesolvers:
-      if "Simple" in str(Solver): continue
+      if "simple" in str(Solver): continue
       for K in ([1,2,3,4,5] if args.run_slow else [1,2,3]):
         for n in ([2,3,4,8,16,32] if args.run_slow else [2,3,4]):
           numpy.random.seed(1)
@@ -122,7 +126,7 @@ class ControlTests(casadiTestCase):
           V_ = [mul(v,v.T) for v in [DMatrix(numpy.random.random((n,n))) for i in range(K)]]
           
           
-          solver = Solver([Sparsity.dense(n,n) for i in range(K)],[Sparsity.dense(n,n) for i in range(K)])
+          solver = DpleSolver(Solver,[Sparsity.dense(n,n) for i in range(K)],[Sparsity.dense(n,n) for i in range(K)])
           solver.setOption(options)
           solver.init()
           solver.setInput(horzcat(A_),DPLE_A)

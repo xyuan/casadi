@@ -25,34 +25,41 @@
 using namespace std;
 namespace casadi {
 
+  StabilizedQpSolver::StabilizedQpSolver() {
+  }
 
-StabilizedQPSolver::StabilizedQPSolver() {
-}
+  StabilizedQpSolverInternal* StabilizedQpSolver::operator->() {
+    return static_cast<StabilizedQpSolverInternal*>(Function::operator->());
+  }
 
-StabilizedQPSolverInternal* StabilizedQPSolver::operator->() {
-  return static_cast<StabilizedQPSolverInternal*>(Function::operator->());
-}
+  const StabilizedQpSolverInternal* StabilizedQpSolver::operator->() const {
+    return static_cast<const StabilizedQpSolverInternal*>(Function::operator->());
+  }
 
-const StabilizedQPSolverInternal* StabilizedQPSolver::operator->() const {
-    return static_cast<const StabilizedQPSolverInternal*>(Function::operator->());
-}
+  bool StabilizedQpSolver::checkNode() const {
+    return dynamic_cast<const StabilizedQpSolverInternal*>(get())!=0;
+  }
 
-bool StabilizedQPSolver::checkNode() const {
-  return dynamic_cast<const StabilizedQPSolverInternal*>(get())!=0;
-}
+  void StabilizedQpSolver::setLPOptions() {
+    (*this)->setLPOptions();
+  }
 
-void StabilizedQPSolver::setLPOptions() {
-  (*this)->setLPOptions();
-}
+  void StabilizedQpSolver::generateNativeCode(const std::string &filename) const {
+    std::ofstream file;
+    file.open(filename.c_str());
+    (*this)->generateNativeCode(file);
+  }
 
-void StabilizedQPSolver::generateNativeCode(const std::string &filename) const {
-  std::ofstream file;
-  file.open(filename.c_str());
-  (*this)->generateNativeCode(file);
-}
+  StabilizedQpSolver::StabilizedQpSolver(const std::string& name, const QPStructure& st) {
+    assignNode(StabilizedQpSolverInternal::getPlugin(name).creator(st));
+  }
+
+  void StabilizedQpSolver::loadPlugin(const std::string& name) {
+    StabilizedQpSolverInternal::loadPlugin(name);
+  }
+
+  std::string StabilizedQpSolver::doc(const std::string& name) {
+    return StabilizedQpSolverInternal::getPlugin(name).doc;
+  }
 
 } // namespace casadi
-
-
-
-

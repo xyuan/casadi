@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef SLICOT_TOOLS_HPP
-#define SLICOT_TOOLS_HPP
+#ifndef CASADI_SLICOT_TOOLS_HPP
+#define CASADI_SLICOT_TOOLS_HPP
 
 #include "../../core/matrix/matrix.hpp"
 #include <casadi/interfaces/slicot/casadi_slicot_interface_export.h>
@@ -43,11 +43,14 @@ void slicot_mb03wd(char job, char compz, int n, int p, int ilo, int ihi, int ilo
 
 void slicot_periodic_schur(int n, int K, const std::vector< double > & a,
                            std::vector< double > & t, std::vector< double > & z,
-                           std::vector<double> &eig_real, std::vector<double> &eig_imag);
+                           std::vector<double> &eig_real, std::vector<double> &eig_imag,
+                           double num_zero=0);
 
-void slicot_periodic_schur(int n, int K, const std::vector< double > & a, std::vector< double > & t,
+CASADI_SLICOT_INTERFACE_EXPORT void slicot_periodic_schur(
+                           int n, int K, const std::vector< double > & a, std::vector< double > & t,
                            std::vector< double > & z, std::vector<double> &dwork,
-                           std::vector<double> &eig_real, std::vector<double> &eig_imag);
+                           std::vector<double> &eig_real, std::vector<double> &eig_imag,
+                           double num_zero=0);
 #endif // SWIG
 /// \endcond
 
@@ -73,8 +76,9 @@ CASADI_SLICOT_INTERFACE_EXPORT void slicot_periodic_schur(
     std::vector< Matrix<double> > & SWIG_OUTPUT(T),
     std::vector< Matrix<double> > & SWIG_OUTPUT(Z),
     std::vector<double> &SWIG_OUTPUT(eig_real),
-    std::vector<double> &SWIG_OUTPUT(eig_imag));
+    std::vector<double> &SWIG_OUTPUT(eig_imag),
+    double num_zero=0);
 
 } // namespace casadi
 
-#endif // SLICOT_TOOLS_HPP
+#endif // CASADI_SLICOT_TOOLS_HPP

@@ -24,7 +24,7 @@ macro(casadi_library name)
   if(NOT "${name}" STREQUAL "casadi_core")
     target_link_libraries(${name} casadi_core)
   endif()
-  set(CASADI_MODULES ${CASADI_MODULES} ${name} PARENT_SCOPE)
+ 
   install(TARGETS ${name}
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
@@ -39,14 +39,14 @@ macro(casadi_library name)
   set(LINT_TARGETS ${LINT_TARGETS} "lint_${name}" PARENT_SCOPE)
   add_spell_check_target(${name} "${ARGN}")
   set(SPELL_TARGETS ${SPELL_TARGETS} "spell_${name}" PARENT_SCOPE)
+
+  set_property(GLOBAL APPEND PROPERTY CASADI_MODULES ${name})
 endmacro()
 
 add_subdirectory(core)  # needed by all except external_packages
 add_subdirectory(interfaces)             # needs external_packages
-add_subdirectory(nonlinear_programming)  # needs interfaces
-add_subdirectory(convex_programming)     # needs interfaces
-add_subdirectory(integration)
-add_subdirectory(optimal_control)        # needs integration, external_packages
+add_subdirectory(solvers)                # needs interfaces
+add_subdirectory(optimal_control)        # needs external_packages
 add_subdirectory(control)
 
 # add a dummy custom target which does nothing but
@@ -59,8 +59,12 @@ add_custom_target(spell
   DEPENDS ${SPELL_TARGETS}
   VERBATIM)
 
+get_property(CASADI_MODULES GLOBAL PROPERTY CASADI_MODULES)
+get_property(CASADI_SWIG_MODULES GLOBAL PROPERTY CASADI_SWIG_MODULES)
 
 set(CASADI_MODULES ${CASADI_MODULES} PARENT_SCOPE)
+set(CASADI_SWIG_MODULES ${CASADI_SWIG_MODULES} PARENT_SCOPE)
+
 foreach(name ${CASADI_MODULES})
   set(PC_NAME "${name}")
   #set(PC_CXX_FLAGS "{CXX_FLAGS}")
@@ -122,3 +126,5 @@ foreach(name ${CASADI_MODULES})
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
   )
 endforeach()
+
+install(FILES casadi.hpp DESTINATION include/casadi)

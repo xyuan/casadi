@@ -51,7 +51,8 @@ def addExtra(metadata):
   f = SXFunction(nlpIn(x=x),nlpOut(f=x**2))
   f.init()
   try:
-    i = IpoptSolver(f)
+    NlpSolver.loadPlugin("ipopt")
+    i = NlpSolver("ipopt", f)
     extra(metadata,i,"IpoptInternal")
   except Exception as e:
     print e 
@@ -60,7 +61,8 @@ def addExtra(metadata):
   f = SXFunction(nlpIn(x=x),nlpOut(f=x**2))
   f.init()
   try:
-    i = WorhpSolver(f)
+    NlpSolver.loadPlugin("worhp")
+    i = NlpSolver("worhp", f)
     extra(metadata,i,"WorhpInternal")
   except Exception as e:
     print e
@@ -69,13 +71,14 @@ def addExtra(metadata):
   f = SXFunction(nlpIn(x=x),nlpOut(f=x**2))
   f.init()
   try:
-    i = SnoptSolver(f)
+    NlpSolver.loadPlugin("snopt")
+    i = NlpSolver("snopt", f)
     extra(metadata,i,"SnoptInternal")
   except Exception as e:
     print e
  
   try:
-    i = QPOasesSolver(qpStruct(h=Sparsity.dense(3,3),a=Sparsity.dense(1,3)))
+    i = QpSolver("qpoases", qpStruct(h=Sparsity.dense(3,3),a=Sparsity.dense(1,3)))
     extra(metadata,i,"QPOasesInternal")
   except Exception as e:
     print e

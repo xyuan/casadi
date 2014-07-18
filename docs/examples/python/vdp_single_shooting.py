@@ -39,7 +39,7 @@ xdot = vertcat( [(1 - x[1]*x[1])*x[0] - x[1] + u, \
 dae = SXFunction(daeIn(x=x,p=u),daeOut(ode=xdot))
 
 # Create an integrator
-integrator = CVodesIntegrator(dae)
+integrator = Integrator("cvodes", dae)
 integrator.setOption("abstol",1e-8) # tolerance
 integrator.setOption("reltol",1e-8) # tolerance
 integrator.setOption("tf",tf/nk) # final time
@@ -63,7 +63,7 @@ g = X[:2]
 
 # Allocate an NLP solver
 nlp = MXFunction(nlpIn(x=U),nlpOut(f=f,g=g))
-solver = IpoptSolver(nlp)
+solver = NlpSolver("ipopt", nlp)
 solver.init()
 
 # Set bounds and initial guess

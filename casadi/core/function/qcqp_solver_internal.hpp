@@ -20,25 +20,30 @@
  *
  */
 
-#ifndef QCQP_SOLVER_INTERNAL_HPP
-#define QCQP_SOLVER_INTERNAL_HPP
+#ifndef CASADI_QCQP_SOLVER_INTERNAL_HPP
+#define CASADI_QCQP_SOLVER_INTERNAL_HPP
 
 #include "qcqp_solver.hpp"
 #include "function_internal.hpp"
-
+#include "plugin_interface.hpp"
 
 /// \cond INTERNAL
 namespace casadi {
 
 /// Internal class
-class CASADI_CORE_EXPORT QCQPSolverInternal : public FunctionInternal {
+  class CASADI_CORE_EXPORT
+  QcqpSolverInternal : public FunctionInternal,
+                       public PluginInterface<QcqpSolverInternal> {
+
   public:
 
     // Constructor
-    QCQPSolverInternal(const std::vector<Sparsity> &st);
+    QcqpSolverInternal(const std::vector<Sparsity> &st);
+
+
 
     // Destructor
-    virtual ~QCQPSolverInternal() = 0;
+    virtual ~QcqpSolverInternal() = 0;
 
     // Initialize
     virtual void init();
@@ -54,6 +59,15 @@ class CASADI_CORE_EXPORT QCQPSolverInternal : public FunctionInternal {
 
     /// \brief Check if the numerical values of the supplied bounds make sense
     virtual void checkInputs() const;
+
+    // Creator function for internal class
+    typedef QcqpSolverInternal* (*Creator)(const QCQPStructure& st);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
 
   protected:
 
@@ -74,5 +88,5 @@ class CASADI_CORE_EXPORT QCQPSolverInternal : public FunctionInternal {
 } // namespace casadi
 
 /// \endcond
-#endif //QCQP_SOLVER_INTERNAL_HPP
+#endif // CASADI_QCQP_SOLVER_INTERNAL_HPP
 

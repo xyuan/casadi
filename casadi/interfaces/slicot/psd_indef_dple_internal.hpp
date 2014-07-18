@@ -20,29 +20,35 @@
  *
  */
 
-#ifndef PSD_INDEF_DPLE_INTERNAL_HPP
-#define PSD_INDEF_DPLE_INTERNAL_HPP
+#ifndef CASADI_PSD_INDEF_DPLE_INTERNAL_HPP
+#define CASADI_PSD_INDEF_DPLE_INTERNAL_HPP
 
-#include "psd_indef_dple_solver.hpp"
 #include "../../control/dple_internal.hpp"
+#include <casadi/interfaces/slicot/casadi_dplesolver_slicot_export.h>
 
 /// \cond INTERNAL
 namespace casadi {
 
-  /** \brief Internal storage for DpleSolver related data
+  /** \brief An efficient solver for Discrete Periodic Lyapunov Equations using SLICOT
+   *
+   * @copydoc DPLE_doc
+   
+       Uses Periodic Schur Decomposition ('psd') and does not assume positive definiteness.
+       Based on Periodic Lyapunov equations: some applications and new algorithms.
+       Int. J. Control, vol. 67, pp. 69-87, 1997.
 
-      @copydoc DPLE_doc
-     \author Joris Gillis
+       \author Joris Gillis
       \date 2014
+
   */
-  class CASADI_SLICOT_INTERFACE_EXPORT PsdIndefDpleInternal : public DpleInternal {
+  class CASADI_DPLESOLVER_SLICOT_EXPORT PsdIndefDpleInternal : public DpleInternal {
   public:
     /** \brief  Constructor
      *  \param[in] A  List of sparsities of A_i
      *  \param[in] V  List of sparsities of V_i
      */
     PsdIndefDpleInternal(const std::vector< Sparsity > & A, const std::vector< Sparsity > &V,
-                         int nwfd=0, int nadj=0);
+                         int nrhs=1, bool transp=false);
 
     /** \brief  Destructor */
     virtual ~PsdIndefDpleInternal();
@@ -54,9 +60,14 @@ namespace casadi {
     virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /** \brief  Create a new solver */
-    virtual PsdIndefDpleInternal* create(const std::vector< Sparsity > & A,
-                                         const std::vector< Sparsity > &V) const
+    virtual PsdIndefDpleInternal* create(const std::vector< Sparsity >& A,
+                                         const std::vector< Sparsity >& V) const
     { return new PsdIndefDpleInternal(A, V); }
+
+    /** \brief  Create a new DPLE Solver */
+    static DpleInternal* creator(const std::vector< Sparsity >& A,
+                                 const std::vector< Sparsity >& V)
+    { return new PsdIndefDpleInternal(A, V);}
 
     /** \brief  Print solver statistics */
     virtual void printStats(std::ostream &stream) const {}
@@ -84,9 +95,6 @@ namespace casadi {
 
     /// Schur form multiplier data
     std::vector<double> X_;
-
-    /// Schur form multiplier data
-    std::vector<double> dX_;
 
     // Schur form multiplier data
     std::vector<double> Xbar_;
@@ -122,9 +130,12 @@ namespace casadi {
     /// Work vector for periodic Schur form
     std::vector< double > dwork_;
 
+    /// Numerical zero, used in periodic Schur form
+    double psd_num_zero_;
+
   };
 
 } // namespace casadi
 
 /// \endcond
-#endif // PSD_INDEF_DPLE_INTERNAL_HPP
+#endif // CASADI_PSD_INDEF_DPLE_INTERNAL_HPP

@@ -20,13 +20,13 @@
  *
  */
 
-#ifndef HOMOTOPY_NLP_SOLVER_HPP
-#define HOMOTOPY_NLP_SOLVER_HPP
+#ifndef CASADI_HOMOTOPY_NLP_SOLVER_HPP
+#define CASADI_HOMOTOPY_NLP_SOLVER_HPP
 
 #include "function.hpp"
 
 
-/** \defgroup HomotopyNLPSolver_doc
+/** \defgroup HomotopyNlpSolver_doc
 
   Solves the following parametric nonlinear program (NLP):
   \verbatim
@@ -65,16 +65,16 @@ namespace casadi {
 
   /** \brief Base class for Homotopy NLP Solvers
 
-      @copydoc HomotopyNLPSolver_doc
+      @copydoc HomotopyNlpSolver_doc
 
       \author Joris Gillis
       \date 2014
   */
-  class CASADI_CORE_EXPORT HomotopyNLPSolver : public Function {
+  class CASADI_CORE_EXPORT HomotopyNlpSolver : public Function {
   public:
 
     /// Default constructor
-    HomotopyNLPSolver();
+    HomotopyNlpSolver();
 
     /// Access functions of the node
     HomotopyNLPInternal* operator->();
@@ -83,9 +83,14 @@ namespace casadi {
     /// Check if the node is pointing to the right type of object
     virtual bool checkNode() const;
 
+    /// Load a plugin dynamically
+    static void loadPlugin(const std::string& name);
+
+    /// Get solver specific documentation
+    static std::string doc(const std::string& name);
   };
 
 } // namespace casadi
 
-#endif // HOMOTOPY_NLP_SOLVER_HPP
+#endif // CASADI_HOMOTOPY_NLP_SOLVER_HPP
 

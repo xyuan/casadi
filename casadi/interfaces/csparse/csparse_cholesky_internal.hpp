@@ -20,30 +20,56 @@
  *
  */
 
-#ifndef CSPARSE_CHOLESKY_INTERNAL_HPP
-#define CSPARSE_CHOLESKY_INTERNAL_HPP
+#ifndef CASADI_CSPARSE_CHOLESKY_INTERNAL_HPP
+#define CASADI_CSPARSE_CHOLESKY_INTERNAL_HPP
 
 /// \cond INTERNAL
-
 extern "C" {
 #include "external_packages/CSparse/Include/cs.h"
 }
-
-#include "csparse_cholesky.hpp"
 #include "casadi/core/function/linear_solver_internal.hpp"
+#include <casadi/interfaces/csparse/casadi_linearsolver_csparsecholesky_export.h>
 
 namespace casadi {
 
-  /**
-     @copydoc LinearSolver_doc
-  */
-  class CASADI_CSPARSE_INTERFACE_EXPORT CSparseCholeskyInternal : public LinearSolverInternal {
+  /** \brief  LinearSolver with CSparseCholesky Interface
+   *
+   @copydoc LinearSolver_doc
+   *
+   * CSparseCholesky is an casadi::Function mapping from 2 inputs
+   * [ A (matrix), b (vector)] to one output [x (vector)].
+   *
+   * \verbatim
+   *  A = LL'
+   *    Ax = b
+   *    LL'x = b
+   *    L'x = L^-1 b
+   * \endverbatim
+   *
+   * The usual procedure to use CSparseCholesky is: \n
+   *  -# init()
+   *  -# set the first input (A)
+   *  -# prepare()
+   *  -# set the second input (b)
+   *  -# solve()
+   *  -# Repeat steps 4 and 5 to work with other b vectors.
+   *
+   * The method evaluate() combines the prepare() and solve()
+   * step and is therefore more expensive if A is invariant.
+   *
+   */
+  class CASADI_LINEARSOLVER_CSPARSECHOLESKY_EXPORT
+  CSparseCholeskyInternal : public LinearSolverInternal {
   public:
     // Create a linear solver given a sparsity pattern and a number of right hand sides
     CSparseCholeskyInternal(const Sparsity& sp, int nrhs);
 
     // Copy constructor
     CSparseCholeskyInternal(const CSparseCholeskyInternal& linsol);
+
+    /** \brief  Create a new LinearSolver */
+    static LinearSolverInternal* creator(const Sparsity& sp, int nrhs)
+    { return new CSparseCholeskyInternal(sp, nrhs);}
 
     // Destructor
     virtual ~CSparseCholeskyInternal();
@@ -58,13 +84,13 @@ namespace casadi {
     virtual void solve(double* x, int nrhs, bool transpose);
 
     // Solve the system of equations <tt>Lx = b</tt>
-    void solveL(double* x, int nrhs, bool transpose);
+    virtual void solveL(double* x, int nrhs, bool transpose);
 
     /// Obtain a symbolic Cholesky factorization
-    Sparsity getFactorizationSparsity(bool transpose=false) const;
+    virtual Sparsity getFactorizationSparsity(bool transpose) const;
 
     /// Obtain a numeric Cholesky factorization
-    DMatrix getFactorization(bool transpose=false) const;
+    virtual DMatrix getFactorization(bool transpose) const;
 
     // Clone
     virtual CSparseCholeskyInternal* clone() const;
@@ -80,11 +106,9 @@ namespace casadi {
 
     // Temporary
     std::vector<double> temp_;
-
-
   };
 
 } // namespace casadi
-/// \endcond
-#endif //CSPARSE_CHOLESKY_INTERNAL_HPP
 
+/// \endcond
+#endif // CASADI_CSPARSE_CHOLESKY_INTERNAL_HPP

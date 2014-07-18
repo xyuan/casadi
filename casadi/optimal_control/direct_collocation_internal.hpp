@@ -20,15 +20,14 @@
  *
  */
 
-#ifndef DIRECT_COLLOCATION_INTERNAL_HPP
-#define DIRECT_COLLOCATION_INTERNAL_HPP
+#ifndef CASADI_DIRECT_COLLOCATION_INTERNAL_HPP
+#define CASADI_DIRECT_COLLOCATION_INTERNAL_HPP
 
 #include "direct_collocation.hpp"
 #include "casadi/core/function/ocp_solver_internal.hpp"
 #include "casadi/core/function/parallelizer.hpp"
 #include "casadi/core/function/mx_function.hpp"
 #include "casadi/core/function/sx_function.hpp"
-#include "casadi/integration/integration_tools.hpp"
 
 /// \cond INTERNAL
 namespace casadi {
@@ -72,7 +71,7 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocationInternal : public OCPSolver
     MXFunction nlp_;
 
     // NLP solver
-    NLPSolver nlp_solver_;
+    NlpSolver nlp_solver_;
 
     // Interpolation order
     int deg_;
@@ -82,4 +81,4 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocationInternal : public OCPSolver
 } // namespace casadi
 /// \endcond
 
-#endif // DIRECT_COLLOCATION_INTERNAL_HPP
+#endif // CASADI_DIRECT_COLLOCATION_INTERNAL_HPP

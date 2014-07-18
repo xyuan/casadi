@@ -30,6 +30,10 @@ namespace casadi {
   Integrator::Integrator() {
   }
 
+  Integrator::Integrator(const std::string& name, const Function& f, const Function& g) {
+    assignNode(IntegratorInternal::getPlugin(name).creator(f, g));
+  }
+
   Integrator  Integrator::clone() const {
     Integrator ret;
     if (!isNull()) ret.assignNode((*this)->clone());
@@ -75,6 +79,18 @@ namespace casadi {
   std::pair<Function, Function> Integrator::getAugmented(int nfwd, int nadj) {
     IntegratorInternal::AugOffset offset;
     return (*this)->getAugmented(nfwd, nadj, offset);
+  }
+
+  void Integrator::loadPlugin(const std::string& name) {
+    IntegratorInternal::loadPlugin(name);
+  }
+
+  std::string Integrator::doc(const std::string& name) {
+    return IntegratorInternal::getPlugin(name).doc;
+  }
+
+  void Integrator::setStopTime(double tf) {
+    (*this)->setStopTime(tf);
   }
 
 } // namespace casadi

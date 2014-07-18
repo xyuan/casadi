@@ -20,10 +20,10 @@
  *
  */
 
-#ifndef KNITRO_INTERNAL_HPP
-#define KNITRO_INTERNAL_HPP
+#ifndef CASADI_KNITRO_INTERNAL_HPP
+#define CASADI_KNITRO_INTERNAL_HPP
 
-#include "knitro_solver.hpp"
+#include <casadi/interfaces/knitro/casadi_nlpsolver_knitro_export.h>
 #include <knitro.h>
 #include "casadi/core/function/nlp_solver_internal.hpp"
 
@@ -31,14 +31,18 @@
 namespace casadi {
 
   /**
-     @copydoc NLPSolver_doc
+     @copydoc NlpSolver_doc
   */
-  class CASADI_KNITRO_INTERFACE_EXPORT KnitroInternal : public NLPSolverInternal {
+  class CASADI_NLPSOLVER_KNITRO_EXPORT KnitroInternal : public NlpSolverInternal {
 
   public:
     explicit KnitroInternal(const Function& nlp);
     virtual ~KnitroInternal();
     virtual KnitroInternal* clone() const { return new KnitroInternal(*this);}
+
+    /** \brief  Create a new NLP Solver */
+    static NlpSolverInternal* creator(const Function& nlp)
+    { return new KnitroInternal(nlp);}
 
     virtual void init();
     virtual void evaluate();
@@ -71,4 +75,4 @@ namespace casadi {
 } // namespace casadi
 
 /// \endcond
-#endif //KNITRO_INTERNAL_HPP
+#endif // CASADI_KNITRO_INTERNAL_HPP

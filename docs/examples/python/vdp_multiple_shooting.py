@@ -44,12 +44,12 @@ if coll:
   integrator.setOption("number_of_finite_elements",5)
   integrator.setOption("interpolation_order",5)
   integrator.setOption("collocation_scheme","legendre")
-  integrator.setOption("implicit_solver",KinsolSolver)
+  integrator.setOption("implicit_solver","kinsol")
   integrator.setOption("implicit_solver_options",\
     {'linear_solver' : CSparse})
   integrator.setOption("expand_f",True)
 else:
-  integrator = CVodesIntegrator(dae)
+  integrator = Integrator("cvodes", dae)
   integrator.setOption("abstol",1e-8) # tolerance
   integrator.setOption("reltol",1e-8) # tolerance
   integrator.setOption("steps_per_checkpoint",1000)
@@ -114,7 +114,7 @@ g = vertcat(g)
 
 # Create NLP solver instance
 nlp = MXFunction(nlpIn(x=V),nlpOut(f=f,g=g))
-solver = IpoptSolver(nlp)
+solver = NlpSolver("ipopt", nlp)
 
 #solver.setOption("verbose",True)
 solver.init()

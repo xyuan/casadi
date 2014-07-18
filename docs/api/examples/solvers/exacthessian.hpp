@@ -1,12 +1,12 @@
 /** 
-* This example looks at a use of an exact hessian for the IpoptSolver class
+* This example looks at a use of an exact hessian for the NlpSolver class
 *
 *
 * \pythonexample{solvers/exacthessian}
 *
 * \sa
 * \code
-* casadi::IpoptSolver();
+* casadi::NlpSolver();
 * \endcode
 *
 */

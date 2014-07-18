@@ -30,7 +30,22 @@
 using namespace std;
 namespace casadi {
 
-  KnitroInternal::KnitroInternal(const Function& nlp) : NLPSolverInternal(nlp) {
+  extern "C"
+  int CASADI_NLPSOLVER_KNITRO_EXPORT
+  casadi_register_nlpsolver_knitro(NlpSolverInternal::Plugin* plugin) {
+    plugin->creator = KnitroInternal::creator;
+    plugin->name = "knitro";
+    plugin->doc = "KNITRO docs not available";
+    plugin->version = 20;
+    return 0;
+  }
+
+  extern "C"
+  void CASADI_NLPSOLVER_KNITRO_EXPORT casadi_load_nlpsolver_knitro() {
+    NlpSolverInternal::registerPlugin(casadi_register_nlpsolver_knitro);
+  }
+
+  KnitroInternal::KnitroInternal(const Function& nlp) : NlpSolverInternal(nlp) {
     casadi_warning("KnitroInternal: the KNITRO interface is still experimental, "
                    "more tests are needed");
 
@@ -69,7 +84,7 @@ namespace casadi {
     addOption("HessOpt", OT_INTEGER, 1, "Hessian calculation method");
     addOption("Feasible", OT_BOOLEAN, 0, "Allow infeasible iterations");
     addOption("HonorBnds", OT_BOOLEAN, 0, "Enforce bounds");
-    addOption("LPSolver", OT_BOOLEAN, 0, "Use LPSolver");
+    addOption("LpSolver", OT_BOOLEAN, 0, "Use LpSolver");
     addOption("Multistart", OT_BOOLEAN, 0, "Use multistart");
     //addOption("MsMaxSolves", OT_INTEGER, 1, "Maximum multistart points");
     addOption("MaxCgIt", OT_INTEGER, 0, "Maximum conjugate gradient iterations");
@@ -113,7 +128,7 @@ namespace casadi {
 
   void KnitroInternal::init() {
     // Call the init method of the base class
-    NLPSolverInternal::init();
+    NlpSolverInternal::init();
 
     //if (hasSetOption("Alg")) int_param_["alg"] = getOption("Alg");
     if (hasSetOption("BarRule")) int_param_["barrule"] = getOption("BarRule");
@@ -122,7 +137,7 @@ namespace casadi {
     if (hasSetOption("HessOpt")) int_param_["hessopt"] = getOption("HessOpt");
     if (hasSetOption("Feasible")) int_param_["feasible"] = getOption("Feasible");
     if (hasSetOption("HonorBnds")) int_param_["honorbnds"] = getOption("HonorBnds");
-    if (hasSetOption("LPSolver")) int_param_["lpsolver"] = getOption("LPSolver");
+    if (hasSetOption("LpSolver")) int_param_["lpsolver"] = getOption("LpSolver");
     if (hasSetOption("Multistart")) int_param_["multistart"] = getOption("Multistart");
     //if (hasSetOption("MsMaxSolves")) int_param_["msmaxsolves"] = getOption("MsMaxSolves");
     if (hasSetOption("MaxCgIt")) int_param_["maxcgit"] = getOption("MaxCgIt");

@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef MATRIX_HPP
-#define MATRIX_HPP
+#ifndef CASADI_MATRIX_HPP
+#define CASADI_MATRIX_HPP
 
 #include <vector>
 #include <typeinfo>
@@ -245,7 +245,7 @@ namespace casadi {
       try {
         if (k<0) k+=size();
         return data().at(k);
-      } catch(std::out_of_range& ex) {
+      } catch(std::out_of_range& /* unnamed */) {
         std::stringstream ss;
         ss << "Out of range error in Matrix<>::at: " << k << " not in range [0, " << size() << ")";
         throw CasadiException(ss.str());
@@ -257,7 +257,7 @@ namespace casadi {
       try {
         if (k<0) k+=size();
         return data().at(k);
-      } catch(std::out_of_range& ex) {
+      } catch(std::out_of_range& /* unnamed */) {
         std::stringstream ss;
         ss << "Out of range error in Matrix<>::at: " << k << " not in range [0, " << size() << ")";
         throw CasadiException(ss.str());
@@ -934,4 +934,4 @@ namespace casadi {
 #include "matrix_impl.hpp"
 #endif
 
-#endif // MATRIX_HPP
+#endif // CASADI_MATRIX_HPP

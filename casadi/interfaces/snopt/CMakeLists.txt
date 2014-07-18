@@ -3,14 +3,10 @@ cmake_minimum_required(VERSION 2.6)
 include_directories(../)
 include_directories(${SNOPT_INCLUDE_DIR})
 
-set(SNOPT_INTERFACE_SRCS
+casadi_library(casadi_nlpsolver_snopt
   snopt_internal.hpp
   snopt_internal.cpp
-  snopt_solver.hpp
-  snopt_solver.cpp
   wsnopt.hpp)
-
-casadi_library(casadi_snopt_interface ${SNOPT_INTERFACE_SRCS})
 
 if(WITH_SNOPT_FORCE_DUMMY)
   if(ENABLE_STATIC)
@@ -19,9 +15,9 @@ if(WITH_SNOPT_FORCE_DUMMY)
   if(ENABLE_SHARED)
   add_library(snopt7 SHARED empty_lib.cpp)
   endif()
-  target_link_libraries(casadi_snopt_interface ${CMAKE_DL_LIBS} snopt7)
+  target_link_libraries(casadi_nlpsolver_snopt ${CMAKE_DL_LIBS} snopt7)
 else()
-  target_link_libraries(casadi_snopt_interface ${CMAKE_DL_LIBS} ${SNOPT_LIBRARIES})
+  target_link_libraries(casadi_nlpsolver_snopt ${CMAKE_DL_LIBS} ${SNOPT_LIBRARIES})
 endif()
 
 install(DIRECTORY ./

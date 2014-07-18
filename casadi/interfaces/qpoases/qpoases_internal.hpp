@@ -20,22 +20,23 @@
  *
  */
 
-#ifndef QPOASES_INTERNAL_HPP
-#define QPOASES_INTERNAL_HPP
+#ifndef CASADI_QPOASES_INTERNAL_HPP
+#define CASADI_QPOASES_INTERNAL_HPP
 
 #include "casadi/core/function/qp_solver_internal.hpp"
-#include "qpoases_solver.hpp"
-
+#include <casadi/interfaces/qpoases/casadi_qpsolver_qpoases_export.h>
 #include <qpOASES.hpp>
 
 /// \cond INTERNAL
 namespace casadi {
 
-  /** \brief Internal class for QPOasesSolver
+  /** \brief Interface to QPOases Solver for quadratic programming
+   * 
+   * \author Joris Gillis, Joel Andersson
+   * \date 2011
    *
-      @copydoc QPSolver_doc
    * */
-class CASADI_QPOASES_INTERFACE_EXPORT QPOasesInternal : public QPSolverInternal {
+class CASADI_QPSOLVER_QPOASES_EXPORT QPOasesInternal : public QpSolverInternal {
   friend class QPOasesSolver;
 public:
   /** \brief  Constructor */
@@ -43,6 +44,10 @@ public:
 
   /** \brief  Clone */
   virtual QPOasesInternal* clone() const;
+
+  /** \brief  Create a new QP Solver */
+  static QpSolverInternal* creator(const QPStructure& st)
+  { return new QPOasesInternal(st);}
 
   /** \brief  Create a new Solver */
   explicit QPOasesInternal(const std::vector<Sparsity>& st);
@@ -98,4 +103,4 @@ public:
 } // namespace casadi
 
 /// \endcond
-#endif //QPOASES_INTERNAL_HPP
+#endif // CASADI_QPOASES_INTERNAL_HPP

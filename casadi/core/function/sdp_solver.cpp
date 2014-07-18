@@ -25,28 +25,35 @@
 using namespace std;
 namespace casadi {
 
+  SdpSolver::SdpSolver() {
+  }
 
-SDPSolver::SDPSolver() {
-}
+  SdpSolverInternal* SdpSolver::operator->() {
+    return static_cast<SdpSolverInternal*>(Function::operator->());
+  }
 
-SDPSolverInternal* SDPSolver::operator->() {
-  return static_cast<SDPSolverInternal*>(Function::operator->());
-}
+  const SdpSolverInternal* SdpSolver::operator->() const {
+    return static_cast<const SdpSolverInternal*>(Function::operator->());
+  }
 
-const SDPSolverInternal* SDPSolver::operator->() const {
-    return static_cast<const SDPSolverInternal*>(Function::operator->());
-}
+  bool SdpSolver::checkNode() const {
+    return dynamic_cast<const SdpSolverInternal*>(get())!=0;
+  }
 
-bool SDPSolver::checkNode() const {
-  return dynamic_cast<const SDPSolverInternal*>(get())!=0;
-}
+  void SdpSolver::setSOCPOptions() {
+    (*this)->setSOCPOptions();
+  }
 
-void SDPSolver::setSOCPOptions() {
-  (*this)->setSOCPOptions();
-}
+  SdpSolver::SdpSolver(const std::string& name, const SDPStructure& st) {
+    assignNode(SdpSolverInternal::getPlugin(name).creator(st));
+  }
+
+  void SdpSolver::loadPlugin(const std::string& name) {
+    SdpSolverInternal::loadPlugin(name);
+  }
+
+  std::string SdpSolver::doc(const std::string& name) {
+    return SdpSolverInternal::getPlugin(name).doc;
+  }
 
 } // namespace casadi
-
-
-
-

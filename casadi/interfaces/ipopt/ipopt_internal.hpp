@@ -20,25 +20,29 @@
  *
  */
 
-#ifndef IPOPT_INTERNAL_HPP
-#define IPOPT_INTERNAL_HPP
+#ifndef CASADI_IPOPT_INTERNAL_HPP
+#define CASADI_IPOPT_INTERNAL_HPP
 
-#include "ipopt_solver.hpp"
+#include <casadi/interfaces/ipopt/casadi_nlpsolver_ipopt_export.h>
 #include "casadi/core/function/nlp_solver_internal.hpp"
 
 /// \cond INTERNAL
 namespace casadi {
 
 /**
-@copydoc NLPSolver_doc
+@copydoc NlpSolver_doc
 */
-class CASADI_IPOPT_INTERFACE_EXPORT IpoptInternal : public NLPSolverInternal {
+class CASADI_NLPSOLVER_IPOPT_EXPORT IpoptInternal : public NlpSolverInternal {
 friend class IpoptUserClass;
 
 public:
   explicit IpoptInternal(const Function& nlp);
   virtual ~IpoptInternal();
   virtual IpoptInternal* clone() const { return new IpoptInternal(*this);}
+
+  /** \brief  Create a new NLP Solver */
+  static NlpSolverInternal* creator(const Function& nlp)
+  { return new IpoptInternal(nlp);}
 
   // Free Ipopt related memory
   void freeIpopt();
@@ -49,7 +53,7 @@ public:
   virtual void setQPOptions();
 
   // Get reduced Hessian
-  DMatrix getReducedHessian();
+  virtual DMatrix getReducedHessian();
 
   /// Exact Hessian?
   bool exact_hessian_;
@@ -142,4 +146,4 @@ public:
 } // namespace casadi
 /// \endcond
 
-#endif //IPOPT_INTERNAL_HPP
+#endif // CASADI_IPOPT_INTERNAL_HPP

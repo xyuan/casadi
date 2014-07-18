@@ -40,7 +40,22 @@
 
 namespace casadi {
 
-  SnoptInternal::SnoptInternal(const Function& nlp) : NLPSolverInternal(nlp) {
+  extern "C"
+  int CASADI_NLPSOLVER_SNOPT_EXPORT
+  casadi_register_nlpsolver_snopt(NlpSolverInternal::Plugin* plugin) {
+    plugin->creator = SnoptInternal::creator;
+    plugin->name = "snopt";
+    plugin->doc = "SNOPT docs not available";
+    plugin->version = 20;
+    return 0;
+  }
+
+  extern "C"
+  void CASADI_NLPSOLVER_SNOPT_EXPORT casadi_load_nlpsolver_snopt() {
+    NlpSolverInternal::registerPlugin(casadi_register_nlpsolver_snopt);
+  }
+
+  SnoptInternal::SnoptInternal(const Function& nlp) : NlpSolverInternal(nlp) {
     addOption("detect_linear", OT_BOOLEAN, true,
               "Make an effort to treat linear constraints and linear variables specially.");
 
@@ -84,7 +99,7 @@ namespace casadi {
     detect_linear_ = getOption("detect_linear");
 
     // Call the init method of the base class
-    NLPSolverInternal::init();
+    NlpSolverInternal::init();
 
     // Get/generate required functions
     jacF();
@@ -657,7 +672,7 @@ namespace casadi {
     stats_["n_eval_grad_f"] = n_eval_grad_f_;
     stats_["n_eval_jac_g"] = n_eval_jac_g_;
     stats_["n_callback_fun"] = n_callback_fun_;
-    stats_["iter_count"] = n_iter_;
+    stats_["iter_count"] = n_iter_-1;
 
     // Reset the counters
     t_eval_grad_f_ = t_eval_jac_g_ = t_callback_fun_ = t_mainloop_ = 0;

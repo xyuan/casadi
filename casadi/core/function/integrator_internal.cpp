@@ -954,6 +954,15 @@ namespace casadi {
     return ret;
   }
 
+  std::map<std::string, IntegratorInternal::Plugin> IntegratorInternal::solvers_;
+
+  const std::string IntegratorInternal::infix_ = "integrator";
+
+  void IntegratorInternal::setStopTime(double tf) {
+    casadi_error("IntegratorInternal::setStopTime not defined for class "
+                 << typeid(*this).name());
+  }
+
 } // namespace casadi
 
 

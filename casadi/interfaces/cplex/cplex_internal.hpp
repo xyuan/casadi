@@ -19,12 +19,12 @@
  *    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-#ifndef CPLEX_INTERNAL_HPP
-#define CPLEX_INTERNAL_HPP
+#ifndef CASADI_CPLEX_INTERNAL_HPP
+#define CASADI_CPLEX_INTERNAL_HPP
 
-#include "ilcplex/cplex.h"
 #include "casadi/core/function/qp_solver_internal.hpp"
-#include "cplex_solver.hpp"
+#include <casadi/interfaces/cplex/casadi_qpsolver_cplex_export.h>
+#include "ilcplex/cplex.h"
 
 #include <string>
 
@@ -32,17 +32,22 @@
 
 namespace casadi {
 
-  /** Internal class for CplexSolver
-      @copydoc QPSolver_doc
+  /** \brief Interface to Cplex solver for sparse Quadratic Programs
+      @copydoc QpSolver_doc
+      \author Attila Kozma, Joel Andersson
+      \date 2012
   */
-  class CASADI_CPLEX_INTERFACE_EXPORT CplexInternal : public QPSolverInternal {
-    friend class CplexSolver;
+  class CASADI_QPSOLVER_CPLEX_EXPORT CplexInternal : public QpSolverInternal {
   public:
     /** \brief Default constructor */
     explicit CplexInternal();
 
     /// Clone
     virtual CplexInternal* clone() const;
+
+    /** \brief  Create a new QP Solver */
+    static QpSolverInternal* creator(const QPStructure& st)
+    { return new CplexInternal(st);}
 
     /// Constructor using sparsity patterns
     explicit CplexInternal(const std::vector<Sparsity>& st);
@@ -113,4 +118,4 @@ namespace casadi {
   };
 } // end namespace casadi
 /// \endcond
-#endif //CPLEX_INTERNAL_HPP
+#endif // CASADI_CPLEX_INTERNAL_HPP

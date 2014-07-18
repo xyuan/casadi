@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef GENERIC_TYPE_HPP
-#define GENERIC_TYPE_HPP
+#ifndef CASADI_GENERIC_TYPE_HPP
+#define CASADI_GENERIC_TYPE_HPP
 
 #include "shared_object.hpp"
 #include "casadi_types.hpp"
@@ -41,17 +41,6 @@ namespace casadi {
     OT_REALVECTOR,
     OT_STRINGVECTOR,
     OT_DICTIONARY,
-    OT_NLPSOLVER,
-    OT_LPSOLVER,
-    OT_LINEARSOLVER,
-    OT_INTEGRATOR,
-    OT_QPSOLVER,
-    OT_STABILIZEDQPSOLVER,
-    OT_SOCPSOLVER,
-    OT_QCQPSOLVER,
-    OT_SDPSOLVER,
-    OT_SDQPSOLVER,
-    OT_IMPLICITFUNCTION,
     OT_DERIVATIVEGENERATOR,
     OT_FUNCTION,
     OT_CALLBACK,
@@ -95,17 +84,6 @@ namespace casadi {
     GenericType(const Dictionary& dict);
 
     /// Creator functions
-    GenericType(NLPSolverCreator ptr);
-    GenericType(linearSolverCreator ptr);
-    GenericType(LPSolverCreator ptr);
-    GenericType(integratorCreator ptr);
-    GenericType(QPSolverCreator ptr);
-    GenericType(StabilizedQPSolverCreator ptr);
-    GenericType(SOCPSolverCreator ptr);
-    GenericType(SDPSolverCreator ptr);
-    GenericType(SDQPSolverCreator ptr);
-    GenericType(QCQPSolverCreator ptr);
-    GenericType(implicitFunctionCreator ptr);
     GenericType(const DerivativeGenerator& c);
     GenericType(const Callback& c);
 
@@ -126,17 +104,6 @@ namespace casadi {
     operator std::vector<double>& () { return toDoubleVector();}
     operator std::map<std::string, GenericType>& ();
 
-    operator NLPSolverCreator() const;
-    operator linearSolverCreator() const;
-    operator LPSolverCreator() const;
-    operator integratorCreator() const;
-    operator QPSolverCreator() const;
-    operator StabilizedQPSolverCreator() const;
-    operator SDPSolverCreator() const;
-    operator SDQPSolverCreator() const;
-    operator SOCPSolverCreator() const;
-    operator QCQPSolverCreator() const;
-    operator implicitFunctionCreator() const;
     operator const DerivativeGenerator& () const;
     operator const Callback& () const;
     #endif // SWIG
@@ -251,4 +218,4 @@ namespace casadi {
 } // namespace casadi
 
 
-#endif // GENERIC_TYPE_HPP
+#endif // CASADI_GENERIC_TYPE_HPP

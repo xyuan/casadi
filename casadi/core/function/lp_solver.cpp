@@ -25,24 +25,31 @@
 using namespace std;
 namespace casadi {
 
+  LpSolver::LpSolver() {
+  }
 
-LPSolver::LPSolver() {
-}
+  LpSolverInternal* LpSolver::operator->() {
+    return static_cast<LpSolverInternal*>(Function::operator->());
+  }
 
-LPSolverInternal* LPSolver::operator->() {
-  return static_cast<LPSolverInternal*>(Function::operator->());
-}
+  const LpSolverInternal* LpSolver::operator->() const {
+    return static_cast<const LpSolverInternal*>(Function::operator->());
+  }
 
-const LPSolverInternal* LPSolver::operator->() const {
-    return static_cast<const LPSolverInternal*>(Function::operator->());
-}
+  bool LpSolver::checkNode() const {
+    return dynamic_cast<const LpSolverInternal*>(get())!=0;
+  }
 
-bool LPSolver::checkNode() const {
-  return dynamic_cast<const LPSolverInternal*>(get())!=0;
-}
+  LpSolver::LpSolver(const std::string& name, const LPStructure& st) {
+    assignNode(LpSolverInternal::getPlugin(name).creator(st));
+  }
+
+  void LpSolver::loadPlugin(const std::string& name) {
+    LpSolverInternal::loadPlugin(name);
+  }
+
+  std::string LpSolver::doc(const std::string& name) {
+    return LpSolverInternal::getPlugin(name).doc;
+  }
 
 } // namespace casadi
-
-
-
-

@@ -2281,7 +2281,7 @@ class MXtests(casadiTestCase):
     self.checkarray(f.getOutput(3),A)
     self.checkarray(f.getOutput(4),A)
       
-  @requires("CSparse")
+  @requiresPlugin(LinearSolver,"csparse")
   def test_bizarre_bug(self):
 
     A = [[-26.9091,00,00,1,00,00,00,00,00,00,00,00,00,00,00],
@@ -2311,9 +2311,9 @@ class MXtests(casadiTestCase):
 
     Ast = As.T
 
-    r= MXFunction([As,Bs],[solve(Ast,Bs,CSparse)])
+    r= MXFunction([As,Bs],[solve(Ast,Bs,"csparse")])
     r.init()
-    R= MXFunction([As,Bs],[solve(dense(Ast),Bs,CSparse)])
+    R= MXFunction([As,Bs],[solve(dense(Ast),Bs,"csparse")])
     R.init()
 
     for i in [r,R]:

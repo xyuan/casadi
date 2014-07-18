@@ -35,11 +35,11 @@ DirectMultipleShootingInternal::DirectMultipleShootingInternal(const Function& f
                                                                const Function& rfcn) :
     OCPSolverInternal(ffcn, mfcn, cfcn, rfcn) {
   addOption("parallelization", OT_STRING, GenericType(), "Passed on to casadi::Parallelizer");
-  addOption("nlp_solver",               OT_NLPSOLVER,  GenericType(),
-            "An NLPSolver creator function");
+  addOption("nlp_solver",               OT_STRING,  GenericType(),
+            "An NlpSolver creator function");
   addOption("nlp_solver_options",       OT_DICTIONARY, GenericType(),
             "Options to be passed to the NLP Solver");
-  addOption("integrator",               OT_INTEGRATOR, GenericType(),
+  addOption("integrator",               OT_STRING, GenericType(),
             "An integrator creator function");
   addOption("integrator_options",       OT_DICTIONARY, GenericType(),
             "Options to be passed to the integrator");
@@ -53,8 +53,8 @@ void DirectMultipleShootingInternal::init() {
   OCPSolverInternal::init();
 
   // Create an integrator instance
-  integratorCreator integrator_creator = getOption("integrator");
-  integrator_ = integrator_creator(ffcn_, Function());
+  std::string integrator_name = getOption("integrator");
+  integrator_ = Integrator(integrator_name, ffcn_, Function());
   if (hasSetOption("integrator_options")) {
     integrator_.setOption(getOption("integrator_options"));
   }
@@ -178,10 +178,10 @@ void DirectMultipleShootingInternal::init() {
   nlp_.init();
 
   // Get the NLP creator function
-  NLPSolverCreator nlp_solver_creator = getOption("nlp_solver");
+  std::string nlp_solver_name = getOption("nlp_solver");
 
   // Allocate an NLP solver
-  nlp_solver_ = nlp_solver_creator(nlp_);
+  nlp_solver_ = NlpSolver(nlp_solver_name, nlp_);
 
   // Pass user options
   if (hasSetOption("nlp_solver_options")) {

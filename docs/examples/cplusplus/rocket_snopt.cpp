@@ -23,9 +23,7 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
-#include <casadi/core/casadi.hpp>
-#include <casadi/interfaces/snopt/snopt_solver.hpp>
-#include <casadi/core/std_vector_tools.hpp>
+#include <casadi/casadi.hpp>
 
 using namespace casadi;
 using namespace std;
@@ -80,7 +78,7 @@ int main(){
   SXFunction nlp(nlpIn("x",u),nlpOut("f",f,"g",g));
 
   // Allocate an NLP solver
-  SnoptSolver solver(nlp);
+  NlpSolver solver("snopt", nlp);
 
   // initialize the solver
   solver.init();

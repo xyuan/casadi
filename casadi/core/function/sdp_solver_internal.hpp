@@ -20,25 +20,28 @@
  *
  */
 
-#ifndef SDP_SOLVER_INTERNAL_HPP
-#define SDP_SOLVER_INTERNAL_HPP
+#ifndef CASADI_SDP_SOLVER_INTERNAL_HPP
+#define CASADI_SDP_SOLVER_INTERNAL_HPP
 
 #include "sdp_solver.hpp"
 #include "function_internal.hpp"
+#include "plugin_interface.hpp"
 
 
 /// \cond INTERNAL
 namespace casadi {
 
-/// Internal class
-class CASADI_CORE_EXPORT SDPSolverInternal : public FunctionInternal {
+  /// Internal class
+  class CASADI_CORE_EXPORT
+  SdpSolverInternal : public FunctionInternal,
+                      public PluginInterface<SdpSolverInternal> {
   public:
 
     // Constructor
-    SDPSolverInternal(const std::vector<Sparsity>& st);
+    SdpSolverInternal(const std::vector<Sparsity>& st);
 
     // Destructor
-    virtual ~SDPSolverInternal() = 0;
+    virtual ~SdpSolverInternal() = 0;
 
     // Initialize
     virtual void init();
@@ -57,6 +60,15 @@ class CASADI_CORE_EXPORT SDPSolverInternal : public FunctionInternal {
 
     /// Print out problem statement for debugging
     void printProblem(std::ostream &stream=std::cout) const;
+
+    // Creator function for internal class
+    typedef SdpSolverInternal* (*Creator)(const SDPStructure& st);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
 
   protected:
 
@@ -104,11 +116,12 @@ class CASADI_CORE_EXPORT SDPSolverInternal : public FunctionInternal {
 
     /// Indicates whether problem is printed before solving
     bool print_problem_;
+
 };
 
 
 } // namespace casadi
 /// \endcond
 
-#endif //SDP_SOLVER_INTERNAL_HPP
+#endif // CASADI_SDP_SOLVER_INTERNAL_HPP
 

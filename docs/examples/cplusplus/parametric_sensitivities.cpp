@@ -24,9 +24,7 @@
 #include <fstream>
 #include <ctime>
 #include <iomanip>
-#include <casadi/core/casadi.hpp>
-#include <casadi/interfaces/ipopt/ipopt_solver.hpp>
-#include <casadi/core/std_vector_tools.hpp>
+#include <casadi/casadi.hpp>
 
 using namespace casadi;
 using namespace std;
@@ -94,7 +92,7 @@ int main(){
     
   // Create NLP solver
   SXFunction nlp(nlpIn("x",x),nlpOut("f",f,"g",g));
-  IpoptSolver solver(nlp);
+  NlpSolver solver("ipopt", nlp);
   
   // Mark the parameters amongst the constraints (see sIPOPT documentation)
   Dictionary con_integer_md;

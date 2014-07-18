@@ -20,22 +20,28 @@
  *
  */
 
-#ifndef SIMPLE_INDEF_DPLE_INTERNAL_HPP
-#define SIMPLE_INDEF_DPLE_INTERNAL_HPP
+#ifndef CASADI_SIMPLE_INDEF_DPLE_INTERNAL_HPP
+#define CASADI_SIMPLE_INDEF_DPLE_INTERNAL_HPP
 
-#include "simple_indef_dple_solver.hpp"
 #include "dple_internal.hpp"
+#include <casadi/control/casadi_dplesolver_simple_export.h>
 
 /// \cond INTERNAL
 namespace casadi {
 
-  /** \brief Internal storage for DpleSolver related data
+  /** \brief Solving the Discrete Periodic Lyapunov Equations with regular Linear Solvers
 
-      @copydoc DPLE_doc
-     \author Joris Gillis
+       @copydoc DPLE_doc
+
+       Uses Periodic Schur Decomposition (simple) and does not assume positive definiteness.
+       Based on Periodic Lyapunov equations: some applications and new algorithms.
+       Int. J. Control, vol. 67, pp. 69-87, 1997.
+
+       \author Joris Gillis
       \date 2014
+
   */
-  class CASADI_CONTROL_EXPORT SimpleIndefDpleInternal : public DpleInternal {
+  class CASADI_DPLESOLVER_SIMPLE_EXPORT SimpleIndefDpleInternal : public DpleInternal {
   public:
     /** \brief  Constructor
      *  \param[in] A  List of sparsities of A_i
@@ -56,6 +62,11 @@ namespace casadi {
     virtual SimpleIndefDpleInternal* create(const std::vector< Sparsity > & A,
                                             const std::vector< Sparsity > &V) const {
         return new SimpleIndefDpleInternal(A, V);}
+
+    /** \brief  Create a new DPLE Solver */
+    static DpleInternal* creator(const std::vector< Sparsity >& A,
+                                 const std::vector< Sparsity >& V)
+    { return new SimpleIndefDpleInternal(A, V);}
 
     /** \brief  Print solver statistics */
     virtual void printStats(std::ostream &stream) const {}
@@ -82,4 +93,4 @@ namespace casadi {
 
 } // namespace casadi
 /// \endcond
-#endif // SIMPLE_INDEF_DPLE_INTERNAL_HPP
+#endif // CASADI_SIMPLE_INDEF_DPLE_INTERNAL_HPP

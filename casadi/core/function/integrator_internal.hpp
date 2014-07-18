@@ -20,11 +20,12 @@
  *
  */
 
-#ifndef INTEGRATOR_INTERNAL_HPP
-#define INTEGRATOR_INTERNAL_HPP
+#ifndef CASADI_INTEGRATOR_INTERNAL_HPP
+#define CASADI_INTEGRATOR_INTERNAL_HPP
 
 #include "integrator.hpp"
 #include "function_internal.hpp"
+#include "plugin_interface.hpp"
 
 /// \cond INTERNAL
 
@@ -36,7 +37,9 @@ namespace casadi {
       \author Joel Andersson
       \date 2010
   */
-  class CASADI_CORE_EXPORT IntegratorInternal : public FunctionInternal {
+  class CASADI_CORE_EXPORT
+  IntegratorInternal : public FunctionInternal,
+                       public PluginInterface<IntegratorInternal> {
   public:
     /** \brief  Constructor */
     IntegratorInternal(const Function& f, const Function& g);
@@ -88,6 +91,9 @@ namespace casadi {
 
     /** \brief Calculate the jacobian of output \a oind with respect to input \a iind */
     virtual Function getJacobian(int iind, int oind, bool compact, bool symmetric);
+
+    /** \brief  Set stop time for the integration */
+    virtual void setStopTime(double tf);
 
     // Helper structure
     struct AugOffset {
@@ -153,9 +159,17 @@ namespace casadi {
     /// Options
     bool print_stats_;
 
+    // Creator function for internal class
+    typedef IntegratorInternal* (*Creator)(const Function& f, const Function& g);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
   };
 
 } // namespace casadi
 /// \endcond
 
-#endif // INTEGRATOR_INTERNAL_HPP
+#endif // CASADI_INTEGRATOR_INTERNAL_HPP

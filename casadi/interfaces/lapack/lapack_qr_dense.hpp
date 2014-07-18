@@ -20,18 +20,26 @@
  *
  */
 
-#ifndef LAPACK_QR_DENSE_HPP
-#define LAPACK_QR_DENSE_HPP
+#ifndef CASADI_LAPACK_QR_DENSE_HPP
+#define CASADI_LAPACK_QR_DENSE_HPP
 
 #include "casadi/core/function/linear_solver_internal.hpp"
-#include <casadi/interfaces/lapack/casadi_lapack_interface_export.h>
+#include <casadi/interfaces/lapack/casadi_linearsolver_lapackqr_export.h>
 
 namespace casadi {
 
-  /** \brief  Forward declaration of internal class
-      @copydoc LinearSolver_doc
-  */
-  class LapackQRDenseInternal;
+  /// QR-factorize dense matrix (lapack)
+  extern "C" void dgeqrf_(int *m, int *n, double *a, int *lda, double *tau,
+                          double *work, int *lwork, int *info);
+
+  /// Multiply right hand side with Q-transpose (lapack)
+  extern "C" void dormqr_(char *side, char *trans, int *n, int *m, int *k, double *a,
+                          int *lda, double *tau, double *c, int *ldc,
+                          double *work, int *lwork, int *info);
+
+  /// Solve upper triangular system (lapack)
+  extern "C" void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
+                         double *alpha, double *a, int *lda, double *b, int *ldb);
 
   /** \brief  QR LinearSolver with Lapack Interface
    *
@@ -55,54 +63,17 @@ namespace casadi {
    * therefore more expensive if A is invariant.
    *
    */
-  class CASADI_LAPACK_INTERFACE_EXPORT LapackQRDense : public LinearSolver {
-  public:
-
-    /// Default (empty) constructor
-    LapackQRDense();
-
-    /// Create a linear solver given a sparsity pattern
-    explicit LapackQRDense(const Sparsity& sparsity, int nrhs=1);
-
-    /// Access functions of the node
-    LapackQRDenseInternal* operator->();
-    const LapackQRDenseInternal* operator->() const;
-
-    /// Static creator function
-#ifdef SWIG
-    %callback("%s_cb");
-#endif
-    static LinearSolver creator(const Sparsity& sp, int nrhs) { return LapackQRDense(sp, nrhs);}
-#ifdef SWIG
-    %nocallback;
-#endif
-
-  };
-
-/// \cond INTERNAL
-#ifndef SWIG
-
-  /// QR-factorize dense matrix (lapack)
-  extern "C" void dgeqrf_(int *m, int *n, double *a, int *lda, double *tau,
-                          double *work, int *lwork, int *info);
-
-  /// Multiply right hand side with Q-transpose (lapack)
-  extern "C" void dormqr_(char *side, char *trans, int *n, int *m, int *k, double *a,
-                          int *lda, double *tau, double *c, int *ldc,
-                          double *work, int *lwork, int *info);
-
-  /// Solve upper triangular system (lapack)
-  extern "C" void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
-                         double *alpha, double *a, int *lda, double *b, int *ldb);
-
-  /// Internal class
-  class CASADI_LAPACK_INTERFACE_EXPORT LapackQRDenseInternal : public LinearSolverInternal {
+  class CASADI_LINEARSOLVER_LAPACKQR_EXPORT LapackQRDenseInternal : public LinearSolverInternal {
   public:
     // Create a linear solver given a sparsity pattern and a number of right hand sides
     LapackQRDenseInternal(const Sparsity& sparsity, int nrhs);
 
     // Clone
     virtual LapackQRDenseInternal* clone() const;
+
+    /** \brief  Create a new LinearSolver */
+    static LinearSolverInternal* creator(const Sparsity& sp, int nrhs)
+    { return new LapackQRDenseInternal(sp, nrhs);}
 
     // Destructor
     virtual ~LapackQRDenseInternal();
@@ -132,12 +103,6 @@ namespace casadi {
 
   };
 
-#endif // SWIG
-/// \endcond
-
 } // namespace casadi
 
-
-
-#endif //LAPACK_QR_DENSE_HPP
-
+#endif // CASADI_LAPACK_QR_DENSE_HPP

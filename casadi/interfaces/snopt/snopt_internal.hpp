@@ -20,20 +20,20 @@
  *
  */
 
-#ifndef SNOPT_INTERNAL_HPP
-#define SNOPT_INTERNAL_HPP
+#ifndef CASADI_SNOPT_INTERNAL_HPP
+#define CASADI_SNOPT_INTERNAL_HPP
 
 #include "casadi/core/function/nlp_solver_internal.hpp"
-#include "casadi/interfaces/snopt/casadi_snopt_interface_export.h"
+#include "casadi/interfaces/snopt/casadi_nlpsolver_snopt_export.h"
 #include "wsnopt.hpp"
 
 /// \cond INTERNAL
 namespace casadi {
 
   /**
-     @copydoc NLPSolver_doc
+     @copydoc NlpSolver_doc
   */
-  class CASADI_SNOPT_INTERFACE_EXPORT SnoptInternal : public NLPSolverInternal {
+  class CASADI_NLPSOLVER_SNOPT_EXPORT SnoptInternal : public NlpSolverInternal {
 
   public:
     // Constructor
@@ -44,6 +44,10 @@ namespace casadi {
 
     // Clone function
     virtual SnoptInternal* clone() const;
+
+    /** \brief  Create a new NLP Solver */
+    static NlpSolverInternal* creator(const Function& nlp)
+    { return new SnoptInternal(nlp);}
 
     // Reset solver
     void reset();
@@ -58,7 +62,7 @@ namespace casadi {
     virtual void setQPOptions();
 
     /// Read options from snopt parameter xml
-    void setOptionsFromFile(const std::string & file);
+    virtual void setOptionsFromFile(const std::string & file);
 
     /// Exact Hessian?
     bool exact_hessian_;
@@ -192,4 +196,4 @@ namespace casadi {
 } // namespace casadi
 
 /// \endcond
-#endif //SNOPT_INTERNAL_HPP
+#endif // CASADI_SNOPT_INTERNAL_HPP

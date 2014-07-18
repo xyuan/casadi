@@ -21,22 +21,29 @@
  */
 
 #include <iostream>
-#include <casadi/core/casadi.hpp>
-#include <casadi/nonlinear_programming/scpgen.hpp>
-#include <casadi/nonlinear_programming/nlp_qp_solver.hpp>
-#include <casadi/interfaces/ipopt/ipopt_solver.hpp>
-#include "casadi/interfaces/sundials/cvodes_integrator.hpp"
-#include "casadi/interfaces/sundials/idas_integrator.hpp"
-#include "casadi/integration/rk_integrator.hpp"
+#include <casadi/casadi.hpp>
 
 using namespace casadi;
 using namespace std;
+
+// Declare solvers to be loaded manually
+extern "C" void casadi_load_integrator_cvodes();
+extern "C" void casadi_load_integrator_idas();
+extern "C" void casadi_load_integrator_rk();
+extern "C" void casadi_load_nlpsolver_ipopt();
+extern "C" void casadi_load_nlpsolver_scpgen();
 
 bool sundials_integrator = true;
 bool explicit_integrator = false;
 bool lifted_newton = false;
 
 int main(){
+  // Load integrators manually
+  casadi_load_integrator_cvodes();
+  casadi_load_integrator_idas();
+  casadi_load_integrator_rk();
+  casadi_load_nlpsolver_ipopt();
+  casadi_load_nlpsolver_scpgen();
   
   // Time length
   double T = 10.0;
@@ -91,13 +98,13 @@ int main(){
   if(sundials_integrator){
     if(explicit_integrator){
       // Explicit integrator (CVODES)
-      integrator = CVodesIntegrator(daefcn);
+      integrator = Integrator("cvodes", daefcn);
       // integrator.setOption("exact_jacobian",true);
       // integrator.setOption("linear_multistep_method","bdf"); // adams or bdf
       // integrator.setOption("nonlinear_solver_iteration","newton"); // newton or functional
     } else {
       // Implicit integrator (IDAS)
-      integrator = IdasIntegrator(daefcn);
+      integrator = Integrator("idas", daefcn);
       integrator.setOption("calc_ic",false);
     }
     integrator.setOption("fsens_err_con",true);
@@ -109,7 +116,7 @@ int main(){
     integrator.setOption("steps_per_checkpoint",100); // BUG: Too low number causes segfaults
   } else {
     // An explicit Euler integrator
-    integrator = RKIntegrator(daefcn);
+    integrator = Integrator("rk", daefcn);
     integrator.setOption("expand_f",true);
     integrator.setOption("interpolation_order",1);
     integrator.setOption("number_of_finite_elements",1000);
@@ -149,9 +156,9 @@ int main(){
   MXFunction nlp(nlpIn("x",U),nlpOut("f",F,"g",G));
 
   // Allocate an NLP solver
-  NLPSolver solver;
+  NlpSolver solver;
   if(lifted_newton){
-    solver = SCPgen(nlp);
+    solver = NlpSolver("scpgen", nlp);
 
     solver.setOption("verbose",true);
     solver.setOption("regularize",false);
@@ -159,9 +166,9 @@ int main(){
     solver.setOption("max_iter",100);
     
     // Use IPOPT as QP solver
-    solver.setOption("qp_solver",NLPQPSolver::creator);
+    solver.setOption("qp_solver","nlp");
     Dictionary qp_solver_options;
-    qp_solver_options["nlp_solver"] = IpoptSolver::creator;
+    qp_solver_options["nlp_solver"] = "ipopt";
     Dictionary ipopt_options;
     ipopt_options["tol"] = 1e-12;
     ipopt_options["print_level"] = 0;
@@ -169,7 +176,7 @@ int main(){
     qp_solver_options["nlp_solver_options"] = ipopt_options;
     solver.setOption("qp_solver_options",qp_solver_options);
   } else {
-    solver = IpoptSolver(nlp);
+    solver = NlpSolver("ipopt", nlp);
     
     // Set options
     solver.setOption("tol",1e-10);

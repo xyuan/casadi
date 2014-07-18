@@ -29,19 +29,19 @@
 using namespace std;
 namespace casadi {
 
-  LapackLUDense::LapackLUDense() {
+  extern "C"
+  int CASADI_LINEARSOLVER_LAPACKLU_EXPORT
+  casadi_register_linearsolver_lapacklu(LinearSolverInternal::Plugin* plugin) {
+    plugin->creator = LapackLUDenseInternal::creator;
+    plugin->name = "lapacklu";
+    plugin->doc = "LapackLU docs not available";
+    plugin->version = 20;
+    return 0;
   }
 
-  LapackLUDense::LapackLUDense(const Sparsity& sparsity, int nrhs) {
-    assignNode(new LapackLUDenseInternal(sparsity, nrhs));
-  }
-
-  LapackLUDenseInternal* LapackLUDense::operator->() {
-    return static_cast<LapackLUDenseInternal*>(Function::operator->());
-  }
-
-  const LapackLUDenseInternal* LapackLUDense::operator->() const {
-    return static_cast<const LapackLUDenseInternal*>(Function::operator->());
+  extern "C"
+  void CASADI_LINEARSOLVER_LAPACKLU_EXPORT casadi_load_linearsolver_lapacklu() {
+    LinearSolverInternal::registerPlugin(casadi_register_linearsolver_lapacklu);
   }
 
   LapackLUDenseInternal::LapackLUDenseInternal(const Sparsity& sparsity, int nrhs)

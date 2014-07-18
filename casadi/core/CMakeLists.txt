@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 
+# Make the shared library prefix and suffix available in C++
+add_definitions(-DSHARED_LIBRARY_PREFIX="${CMAKE_SHARED_LIBRARY_PREFIX}")
+add_definitions(-DSHARED_LIBRARY_SUFFIX="${CMAKE_SHARED_LIBRARY_SUFFIX}")
+
 add_subdirectory(runtime)
 
 set(CASADI_SRCS
@@ -83,13 +87,13 @@ set(CASADI_SRCS
   function/io_interface.hpp                                   # Input/output interface for Function and FunctionInternal
   function/io_scheme.hpp           function/io_scheme.cpp           function/io_scheme_internal.hpp           function/io_scheme_internal.cpp
   function/function.hpp                  function/function.cpp                  function/function_internal.hpp                  function/function_internal.cpp
+  function/plugin_interface.hpp                                   # Plugin interface for Function
   function/x_function_internal.hpp                            # Base class for SXFunction and MXFunction
   function/sx_function.hpp         function/sx_function.cpp         function/sx_function_internal.hpp         function/sx_function_internal.cpp
   function/mx_function.hpp         function/mx_function.cpp         function/mx_function_internal.hpp         function/mx_function_internal.cpp
   function/custom_function.hpp     function/custom_function.cpp     function/custom_function_internal.hpp     function/custom_function_internal.cpp
   function/external_function.hpp   function/external_function.cpp   function/external_function_internal.hpp   function/external_function_internal.cpp
   function/linear_solver.hpp       function/linear_solver.cpp       function/linear_solver_internal.hpp       function/linear_solver_internal.cpp
-  function/symbolic_qr.hpp         function/symbolic_qr.cpp         function/symbolic_qr_internal.hpp         function/symbolic_qr_internal.cpp
   function/implicit_function.hpp   function/implicit_function.cpp   function/implicit_function_internal.hpp   function/implicit_function_internal.cpp
   function/integrator.hpp          function/integrator.cpp          function/integrator_internal.hpp          function/integrator_internal.cpp
   function/nlp_solver.hpp          function/nlp_solver.cpp          function/nlp_solver_internal.hpp          function/nlp_solver_internal.cpp
@@ -108,8 +112,12 @@ set(CASADI_SRCS
   function/code_generator.hpp      function/code_generator.cpp
   function/nullspace.hpp           function/nullspace.cpp           function/nullspace_internal.hpp           function/nullspace_internal.cpp
 
+  # MISC useful stuff
+  misc/integration_tools.hpp       misc/integration_tools.cpp
+  misc/symbolic_nlp.hpp            misc/symbolic_nlp.cpp
+
   # User include class with the most essential includes
-  casadi.hpp
+  core.hpp
 
   function/schemes_metadata.hpp function/schemes_metadata.cpp function/schemes_helpers.hpp
 
@@ -118,6 +126,7 @@ set(CASADI_SRCS
 set_source_files_properties( ${RUNTIME_EMBEDDED_SRC} PROPERTIES GENERATED TRUE )
 
 casadi_library(casadi_core ${CASADI_SRCS} ${RUNTIME_EMBEDDED_SRC})
+set_property(GLOBAL APPEND PROPERTY CASADI_SWIG_MODULES casadi_core)
 
 add_dependencies(casadi_core casadi_runtime_embedded)
 

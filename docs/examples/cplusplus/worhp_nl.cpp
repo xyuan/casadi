@@ -19,10 +19,9 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 *
 */
-#include <casadi/core/casadi.hpp>
-#include <casadi/interfaces/worhp/worhp_solver.hpp>
-#include <casadi/nonlinear_programming/symbolic_nlp.hpp>
- 
+#include <casadi/casadi.hpp>
+#include <casadi/core/misc/symbolic_nlp.hpp>
+
 /**
 * This example demonstrates how NL-files, which can be generated
 * by AMPl or Pyomo, can be imported in CasADi and solved using
@@ -48,7 +47,7 @@ int main(int argc, char **argv){
   SXFunction nlp(nlpIn("x",nl.x),nlpOut("f",nl.f,"g",nl.g));
  
   // Allocate NLP solver
-  WorhpSolver nlp_solver(nlp);
+  NlpSolver nlp_solver("worhp", nlp);
 
   // Set options
   // nlp_solver.setOption("verbose",true);

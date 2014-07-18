@@ -41,7 +41,22 @@ using namespace std;
 
 namespace casadi {
 
-  IpoptInternal::IpoptInternal(const Function& nlp) : NLPSolverInternal(nlp) {
+  extern "C"
+  int CASADI_NLPSOLVER_IPOPT_EXPORT
+  casadi_register_nlpsolver_ipopt(NlpSolverInternal::Plugin* plugin) {
+    plugin->creator = IpoptInternal::creator;
+    plugin->name = "ipopt";
+    plugin->doc = "IPOPT docs not available";
+    plugin->version = 20;
+    return 0;
+  }
+
+  extern "C"
+  void CASADI_NLPSOLVER_IPOPT_EXPORT casadi_load_nlpsolver_ipopt() {
+    NlpSolverInternal::registerPlugin(casadi_register_nlpsolver_ipopt);
+  }
+
+  IpoptInternal::IpoptInternal(const Function& nlp) : NlpSolverInternal(nlp) {
     addOption("pass_nonlinear_variables", OT_BOOLEAN, false);
     addOption("print_time",               OT_BOOLEAN, true,
               "print information about execution time");
@@ -167,7 +182,7 @@ namespace casadi {
     freeIpopt();
 
     // Call the init method of the base class
-    NLPSolverInternal::init();
+    NlpSolverInternal::init();
 
     // Read user options
     exact_hessian_ = !hasSetOption("hessian_approximation") ||
@@ -564,6 +579,7 @@ namespace casadi {
       log("eval_h ok");
       return true;
     } catch(exception& ex) {
+      if (eval_errors_fatal_) throw ex;
       cerr << "eval_h failed: " << ex.what() << endl;
       return false;
     }
@@ -621,6 +637,7 @@ namespace casadi {
       log("eval_jac_g ok");
       return true;
     } catch(exception& ex) {
+      if (eval_errors_fatal_) throw ex;
       cerr << "eval_jac_g failed: " << ex.what() << endl;
       return false;
     }
@@ -659,6 +676,7 @@ namespace casadi {
       log("eval_f ok");
       return true;
     } catch(exception& ex) {
+      if (eval_errors_fatal_) throw ex;
       cerr << "eval_f failed: " << ex.what() << endl;
       return false;
     }
@@ -697,6 +715,7 @@ namespace casadi {
       log("eval_g ok");
       return true;
     } catch(exception& ex) {
+      if (eval_errors_fatal_) throw ex;
       cerr << "eval_g failed: " << ex.what() << endl;
       return false;
     }
@@ -733,6 +752,7 @@ namespace casadi {
       log("eval_grad_f ok");
       return true;
     } catch(exception& ex) {
+      if (eval_errors_fatal_) throw ex;
       cerr << "eval_grad_f failed: " << ex.what() << endl;
       return false;
     }

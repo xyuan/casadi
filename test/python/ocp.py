@@ -27,7 +27,7 @@ from types import *
 from helpers import *
 
 class OCPtests(casadiTestCase):
-  @requires("IpoptSolver")
+  @requiresPlugin(NlpSolver,"ipopt")
   def testdiscrete(self):
     self.message("Linear-quadratic problem, discrete, using IPOPT")
     # inspired by www.cs.umsl.edu/~janikow/publications/1992/GAforOpt/text.pdf
@@ -52,7 +52,7 @@ class OCPtests(casadiTestCase):
     
     nlp = SXFunction(nlpIn(x=V),nlpOut(f=cost,g=vertcat([X[0]-x0,X[1:,0]-(a*X[:N,0]+b*U)])))
     
-    solver = IpoptSolver(nlp)
+    solver = NlpSolver("ipopt", nlp)
     solver.setOption("tol",1e-5)
     solver.setOption("hessian_approximation", "limited-memory")
     solver.setOption("max_iter",100)
@@ -71,7 +71,7 @@ class OCPtests(casadiTestCase):
     exact_sol=K * x0**2
     self.assertAlmostEqual(ocp_sol,exact_sol,10,"Linear-quadratic problem solution using IPOPT")
 
-  @requires("IpoptSolver")
+  @requiresPlugin(NlpSolver,"ipopt")
   def test_singleshooting(self):
     self.message("Single shooting")
     p0 = 0.2
@@ -87,7 +87,7 @@ class OCPtests(casadiTestCase):
     f=SXFunction(daeIn(x=q,p=p,t=t),daeOut(ode=vertcat([q[1],p[0]+q[1]**2 ])))
     f.init()
     
-    integrator = CVodesIntegrator(f)
+    integrator = Integrator("cvodes", f)
     integrator.setOption("reltol",1e-15)
     integrator.setOption("abstol",1e-15)
     integrator.setOption("verbose",False)
@@ -111,7 +111,7 @@ class OCPtests(casadiTestCase):
     f.init()
     nlp = MXFunction(nlpIn(x=var),nlpOut(f=-f.call([var,parc])[0]))
     nlp.init()
-    solver = IpoptSolver(nlp)
+    solver = NlpSolver("ipopt", nlp)
     solver.setOption("tol",1e-12)
     solver.setOption("hessian_approximation", "limited-memory")
     solver.setOption("max_iter",10)
@@ -130,7 +130,7 @@ class OCPtests(casadiTestCase):
     self.assertAlmostEqual(fmax(-solver.getOutput("lam_x"),0)[0],0,8,"Constraint is supposed to be unactive")
     self.assertAlmostEqual(fmax(-solver.getOutput("lam_x"),0)[1],0,8,"Constraint is supposed to be unactive")
 
-  @requires("IpoptSolver")
+  @requiresPlugin(NlpSolver,"ipopt")
   def test_singleshooting2(self):
     self.message("Single shooting 2")
     p0 = 0.2
@@ -146,7 +146,7 @@ class OCPtests(casadiTestCase):
     f=SXFunction(daeIn(x=q,p=p,t=t),daeOut(ode=vertcat([q[1],p[0]+q[1]**2 ])))
     f.init()
     
-    integrator = CVodesIntegrator(f)
+    integrator = Integrator("cvodes", f)
     integrator.setOption("reltol",1e-15)
     integrator.setOption("abstol",1e-15)
     integrator.setOption("verbose",False)
@@ -170,7 +170,7 @@ class OCPtests(casadiTestCase):
     nlp = MXFunction(nlpIn(x=var),nlpOut(f=-f.call([var,parc])[0],g=var[0]-var[1]))
     nlp.init()
     
-    solver = IpoptSolver(nlp)
+    solver = NlpSolver("ipopt", nlp)
     solver.setOption("tol",1e-12)
     solver.setOption("hessian_approximation", "limited-memory")
     solver.setOption("max_iter",10)
@@ -251,7 +251,7 @@ class OCPtests(casadiTestCase):
     
     mystates = []
 
-  @requires("IpoptSolver")
+  @requiresPlugin(NlpSolver,"ipopt")
   def testMSclass_prim(self):
     self.message("CasADi multiple shooting class")
     
@@ -269,10 +269,10 @@ class OCPtests(casadiTestCase):
     daeres = SXFunction(daeIn(t=t, x=x0, p=p),daeOut(ode=xf))
     mayer = SXFunction([x0],[7*x0[0]])
     ms = DirectMultipleShooting(daeres,mayer)
-    ms.setOption("integrator",CVodesIntegrator)
+    ms.setOption("integrator", "cvodes")
     ms.setOption("number_of_grid_points",ns)
     ms.setOption("final_time",tf)
-    ms.setOption("nlp_solver",IpoptSolver)
+    ms.setOption("nlp_solver", "ipopt")
     ms.init()
     
     for i in [OCP_LBX,OCP_UBX,OCP_X_INIT]:
@@ -306,11 +306,11 @@ class OCPtests(casadiTestCase):
     cfcn.init()
     
     ms = DirectMultipleShooting(daeres,mayer,cfcn)
-    ms.setOption("integrator",CVodesIntegrator)
+    ms.setOption("integrator", "cvodes")
     ms.setOption("number_of_grid_points",ns)
     ms.setOption("number_of_parameters",np)
     ms.setOption("final_time",tf)
-    ms.setOption("nlp_solver",IpoptSolver)
+    ms.setOption("nlp_solver", "ipopt")
     ms.init()
     
     for i in [OCP_LBX,OCP_UBX,OCP_X_INIT]:
@@ -325,7 +325,7 @@ class OCPtests(casadiTestCase):
     for i in [OCP_LBH,OCP_UBH]:
       self.checkarray(ms.input(i).shape,(nh,ns+1),"shape")
 
-  @requires("IpoptSolver")
+  @requiresPlugin(NlpSolver,"ipopt")
   def testMSclassSimple(self):
     self.message("CasADi multiple shooting class: simple example")
     """
@@ -363,11 +363,11 @@ class OCPtests(casadiTestCase):
     mayer.init()
     
     ms = DirectMultipleShooting(f,mayer)
-    ms.setOption("integrator",CVodesIntegrator)
+    ms.setOption("integrator", "cvodes")
     ms.setOption("integrator_options",integrator_options)
     ms.setOption("number_of_grid_points",N)
     ms.setOption("final_time",te)
-    ms.setOption("nlp_solver",IpoptSolver)
+    ms.setOption("nlp_solver", "ipopt")
     nlp_solver_options = {}
     nlp_solver_options["tol"] = 1e-10
     nlp_solver_options["hessian_approximation"] = "limited-memory"
@@ -437,13 +437,13 @@ class OCPtests(casadiTestCase):
     mayer.init()
     
     ms = DirectMultipleShooting(f,mayer)
-    ms.setOption("integrator",CVodesIntegrator)
+    ms.setOption("integrator", "cvodes")
     ms.setOption("integrator_options",integrator_options)
     ms.setOption("number_of_grid_points",N);
     ms.setOption("number_of_parameters",1);
     ms.setOption("final_time",te);
 
-    ms.setOption("nlp_solver",IpoptSolver)
+    ms.setOption("nlp_solver", "ipopt")
     nlp_solver_options = {}
     nlp_solver_options["tol"] = 1e-10
     nlp_solver_options["hessian_approximation"] = "limited-memory"

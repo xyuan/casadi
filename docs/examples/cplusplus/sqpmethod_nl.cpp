@@ -19,11 +19,10 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 *
 */
-#include <casadi/core/casadi.hpp>
-#include <casadi/interfaces/ipopt/ipopt_solver.hpp>
-#include <casadi/nonlinear_programming/sqp_method.hpp>
-#include <casadi/nonlinear_programming/nlp_qp_solver.hpp>
-#include <casadi/nonlinear_programming/symbolic_nlp.hpp>
+#include <casadi/casadi.hpp>
+#include <casadi/core/misc/symbolic_nlp.hpp>
+
+extern "C" void casadi_load_nlpsolver_sqpmethod();
  
 /**
  * This example demonstrates how NL-files, which can be generated
@@ -38,6 +37,7 @@
 using namespace casadi;
  
 int main(int argc, char **argv){
+  casadi_load_nlpsolver_sqpmethod();
 
   // Get the problem
   std::string problem = (argc==2) ? argv[1] : "../docs/examples/nl_files/hs107.nl";
@@ -50,7 +50,7 @@ int main(int argc, char **argv){
   SXFunction nlp(nlpIn("x",nl.x),nlpOut("f",nl.f,"g",nl.g));
  
   // Allocate NLP solver
-  SQPMethod nlp_solver(nlp);
+  NlpSolver nlp_solver("sqpmethod", nlp);
 
   // Set options
   // nlp_solver.setOption("max_iter",10);
@@ -60,9 +60,9 @@ int main(int argc, char **argv){
   // nlp_solver.setOption("derivative_test","second-order");
 
   // Specify QP solver
-  nlp_solver.setOption("qp_solver",NLPQPSolver::creator);
+  nlp_solver.setOption("qp_solver","nlp");
   Dictionary qp_solver_options;
-  qp_solver_options["nlp_solver"] = IpoptSolver::creator; 
+  qp_solver_options["nlp_solver"] = "ipopt"; 
   Dictionary nlp_solver_options;
   nlp_solver_options["print_level"] = 0;
   nlp_solver_options["print_time"] = 0;

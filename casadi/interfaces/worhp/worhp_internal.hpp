@@ -20,14 +20,11 @@
  *
  */
 
-#ifndef WORHP_INTERNAL_HPP
-#define WORHP_INTERNAL_HPP
+#ifndef CASADI_WORHP_INTERNAL_HPP
+#define CASADI_WORHP_INTERNAL_HPP
 
 #include "casadi/core/function/nlp_solver_internal.hpp"
-#include "worhp_solver.hpp"
-
-
-
+#include <casadi/interfaces/worhp/casadi_nlpsolver_worhp_export.h>
 
 // GCC_VERSION is defined in 'worhp.h'
 #ifdef GCC_VERSION
@@ -46,9 +43,9 @@
 namespace casadi {
 
   /**
-     @copydoc NLPSolver_doc
+     @copydoc NlpSolver_doc
   */
-  class CASADI_WORHP_INTERFACE_EXPORT WorhpInternal : public NLPSolverInternal {
+  class CASADI_NLPSOLVER_WORHP_EXPORT WorhpInternal : public NlpSolverInternal {
 
   public:
     // Constructor
@@ -59,6 +56,10 @@ namespace casadi {
 
     // Clone function
     virtual WorhpInternal* clone() const;
+
+    /** \brief  Create a new NLP Solver */
+    static NlpSolverInternal* creator(const Function& nlp)
+    { return new WorhpInternal(nlp);}
 
     // Reset solver
     void reset();
@@ -73,7 +74,7 @@ namespace casadi {
     virtual void setQPOptions();
 
     /// Read options from worhp parameter xml
-    void setOptionsFromFile(const std::string & file);
+    virtual void setOptionsFromFile(const std::string & file);
 
     /// Exact Hessian?
     bool exact_hessian_;
@@ -126,4 +127,4 @@ namespace casadi {
 } // namespace casadi
 
 /// \endcond
-#endif //WORHP_INTERNAL_HPP
+#endif // CASADI_WORHP_INTERNAL_HPP

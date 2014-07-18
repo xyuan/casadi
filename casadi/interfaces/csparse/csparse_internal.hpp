@@ -20,24 +20,38 @@
  *
  */
 
-#ifndef CSPARSE_INTERNAL_HPP
-#define CSPARSE_INTERNAL_HPP
+#ifndef CASADI_CSPARSE_INTERNAL_HPP
+#define CASADI_CSPARSE_INTERNAL_HPP
 
 /// \cond INTERNAL
-
 extern "C" {
 #include "external_packages/CSparse/Include/cs.h"
 }
-
-#include "csparse.hpp"
 #include "casadi/core/function/linear_solver_internal.hpp"
+#include <casadi/interfaces/csparse/casadi_linearsolver_csparse_export.h>
 
 namespace casadi {
 
-  /**
-     @copydoc LinearSolver_doc
-  */
-  class CASADI_CSPARSE_INTERFACE_EXPORT CSparseInternal : public LinearSolverInternal {
+  /** \brief  LinearSolver with CSparse Interface
+   *
+   @copydoc LinearSolver_doc
+   *
+   * CSparse is an casadi::Function mapping from 2 inputs
+   * [ A (matrix), b (vector)] to one output [x (vector)].
+   *
+   * The usual procedure to use CSparse is: \n
+   *  -# init()
+   *  -# set the first input (A)
+   *  -# prepare()
+   *  -# set the second input (b)
+   *  -# solve()
+   *  -# Repeat steps 4 and 5 to work with other b vectors.
+   *
+   * The method evaluate() combines the prepare() and solve()
+   * step and is therefore more expensive if A is invariant.
+   *
+   */
+  class CASADI_LINEARSOLVER_CSPARSE_EXPORT CSparseInternal : public LinearSolverInternal {
   public:
 
     // Create a linear solver given a sparsity pattern and a number of right hand sides
@@ -45,6 +59,10 @@ namespace casadi {
 
     // Copy constructor
     CSparseInternal(const CSparseInternal& linsol);
+
+    /** \brief  Create a new LinearSolver */
+    static LinearSolverInternal* creator(const Sparsity& sp, int nrhs)
+    { return new CSparseInternal(sp, nrhs);}
 
     // Destructor
     virtual ~CSparseInternal();
@@ -83,5 +101,4 @@ namespace casadi {
 
 /// \endcond
 
-#endif //CSPARSE_INTERNAL_HPP
-
+#endif // CASADI_CSPARSE_INTERNAL_HPP

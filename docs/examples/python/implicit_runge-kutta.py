@@ -122,8 +122,8 @@ vfcn.init()
 vfcn_sx = SXFunction(vfcn)
 
 # Create a implicit function instance to solve the system of equations
-ifcn = NewtonImplicitSolver(vfcn_sx)
-ifcn.setOption("linear_solver",CSparse)
+ifcn = ImplicitFunction("newton", vfcn_sx)
+ifcn.setOption("linear_solver","csparse")
 ifcn.init()
 [V] = ifcn.call([MX(),X0,P])
 X = [X0 if r==0 else V[(r-1)*nx:r*nx] for r in range(d+1)]
@@ -148,7 +148,7 @@ irk_integrator.setOption("name","irk_integrator")
 irk_integrator.init()
 
 # Create a convensional integrator for reference
-ref_integrator = CVodesIntegrator(f)
+ref_integrator = Integrator("cvodes", f)
 ref_integrator.setOption("name","ref_integrator")
 ref_integrator.setOption("tf",tf)
 ref_integrator.init()

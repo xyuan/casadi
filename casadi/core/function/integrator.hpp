@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef INTEGRATOR_HPP
-#define INTEGRATOR_HPP
+#ifndef CASADI_INTEGRATOR_HPP
+#define CASADI_INTEGRATOR_HPP
 
 #include "function.hpp"
 #include "linear_solver.hpp"
@@ -177,6 +177,9 @@ namespace casadi {
     /// Default constructor
     Integrator();
 
+    /// Integrator factory
+    Integrator(const std::string& name, const Function& f, const Function& g=Function());
+
     /// Clone
     Integrator clone() const;
 
@@ -209,6 +212,12 @@ namespace casadi {
     /// Check if the node is pointing to the right type of object
     virtual bool checkNode() const;
 
+    /// Load a plugin dynamically
+    static void loadPlugin(const std::string& name);
+
+    /// Get solver specific documentation
+    static std::string doc(const std::string& name);
+
     /** \brief Generate a augmented DAE system with \a nfwd forward sensitivities
      *    and \a nadj adjoint sensitivities
      */
@@ -216,8 +225,11 @@ namespace casadi {
 
     /// Get the DAE
     Function getDAE();
+
+    /// Set a stop time for the forward integration
+    void setStopTime(double tf);
   };
 
 } // namespace casadi
 
-#endif //INTEGRATOR_HPP
+#endif // CASADI_INTEGRATOR_HPP

@@ -20,13 +20,7 @@
  *
  */
 
-#include <casadi/core/casadi.hpp>
-
-#include <casadi/interfaces/ipopt/ipopt_solver.hpp>
-#include <casadi/interfaces/sundials/idas_integrator.hpp>
-#include <casadi/interfaces/sundials/cvodes_integrator.hpp>
-#include <casadi/interfaces/sundials/kinsol_solver.hpp>
-#include <casadi/interfaces/csparse/csparse.hpp>
+#include <casadi/casadi.hpp>
 
 #include <casadi/optimal_control/symbolic_ocp.hpp>
 #include <casadi/optimal_control/direct_multiple_shooting.hpp>
@@ -93,7 +87,7 @@ int main(){
   // Create a multiple shooting discretization
   DirectMultipleShooting ocp_solver;
   ocp_solver = DirectMultipleShooting(dae,mterm);
-  ocp_solver.setOption("integrator",IdasIntegrator::creator);
+  ocp_solver.setOption("integrator", "idas");
   ocp_solver.setOption("integrator_options",integrator_options);
   ocp_solver.setOption("number_of_grid_points",num_nodes);
   ocp_solver.setOption("final_time",ocp.tf);
@@ -102,7 +96,7 @@ int main(){
 //  ocp_solver.setOption("parallelization","serial");
 
   // NLP solver
-  ocp_solver.setOption("nlp_solver",IpoptSolver::creator);
+  ocp_solver.setOption("nlp_solver", "ipopt");
   Dictionary nlp_solver_dict;
   nlp_solver_dict["tol"] = 1e-5;
   nlp_solver_dict["hessian_approximation"] = "limited-memory"; // For BFGS

@@ -50,7 +50,7 @@ f_q = x[1]**2 + x[1]**2 + u**2
 f = SXFunction([x,z,u,t],[f_x,f_z,f_q])
 
 # Create an integrator
-I = IdasIntegrator(f)
+I = Integrator("idas", f)
 I.setOption("tf",0.5) # interval length
 I.init()
 
@@ -69,7 +69,7 @@ for k in range(20):
 nlp = MXFunction(nlpIn(x=U),nlpOut(f=J,g=X))
 
 # Allocate an NLP solver
-solver = IpoptSolver(nlp)
+solver = NlpSolver("ipopt", nlp)
 solver.init()
 
 # Pass bounds, initial guess and solve NLP

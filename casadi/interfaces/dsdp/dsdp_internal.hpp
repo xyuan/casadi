@@ -20,23 +20,28 @@
  *
  */
 
-#ifndef DSDP_INTERNAL_HPP
-#define DSDP_INTERNAL_HPP
+#ifndef CASADI_DSDP_INTERNAL_HPP
+#define CASADI_DSDP_INTERNAL_HPP
 
 #include "casadi/core/function/sdp_solver_internal.hpp"
-#include "dsdp_solver.hpp"
-
+#include <casadi/interfaces/dsdp/casadi_sdpsolver_dsdp_export.h>
 #include <dsdp5.h>
 
 /// \cond INTERNAL
 namespace casadi {
+  /** \brief Interface to the SDP solver DSDP      
+      Warning: The solver DSDP is not good at handling linear equalities.
+      There are several options if you notice difficulties:
+      * play around with the parameter "_penalty"
+      * leave a gap manually
+      * switch to another SDP Solver
 
-  /** \brief Internal class for DSDPSolver
+   \author Joris Gillis
+   \date 2013
    *
-   @copydoc SDPSolver_doc
+   @copydoc SdpSolver_doc
    * */
-  class CASADI_DSDP_INTERFACE_EXPORT DSDPInternal : public SDPSolverInternal {
-    friend class DSDPSolver;
+  class CASADI_SDPSOLVER_DSDP_EXPORT DSDPInternal : public SdpSolverInternal {
   public:
 
     /** \brief Constructor */
@@ -44,6 +49,10 @@ namespace casadi {
 
     /** \brief Clone */
     virtual DSDPInternal* clone() const;
+
+    /** \brief  Create a new SDP Solver */
+    static SdpSolverInternal* creator(const SDPStructure& st)
+    { return new DSDPInternal(st);}
 
     /** \brief Destructor */
     virtual ~DSDPInternal();
@@ -81,4 +90,4 @@ namespace casadi {
 } // namespace casadi
 /// \endcond
 
-#endif //DSDP_INTERNAL_HPP
+#endif // CASADI_DSDP_INTERNAL_HPP

@@ -20,17 +20,19 @@
  *
  */
 
-#include <casadi/core/casadi.hpp>
-#include <casadi/integration/rk_integrator.hpp>
-#include <casadi/integration/collocation_integrator.hpp>
-#include <casadi/integration/old_collocation_integrator.hpp>
-#include <casadi/interfaces/sundials/cvodes_integrator.hpp>
-#include <casadi/interfaces/sundials/idas_integrator.hpp>
-#include <casadi/interfaces/sundials/kinsol_solver.hpp>
-#include <casadi/interfaces/csparse/csparse.hpp>
+#include <casadi/casadi.hpp>
 
 #include <iostream>
 #include <iomanip>
+
+// Declare integrators to be loaded manually
+extern "C" void casadi_load_integrator_cvodes();
+extern "C" void casadi_load_integrator_idas();
+extern "C" void casadi_load_integrator_rk();
+extern "C" void casadi_load_integrator_collocation();
+extern "C" void casadi_load_integrator_oldcollocation();
+extern "C" void casadi_load_implicitfunction_kinsol();
+extern "C" void casadi_load_linearsolver_csparse();
 
 using namespace std;
 using namespace casadi;
@@ -115,6 +117,16 @@ void simpleDAE(Function& ffcn, double& tf, vector<double>& x0, double& u0){
 
 
 int main(){
+
+  // Load integrators manually
+  casadi_load_integrator_cvodes();
+  casadi_load_integrator_idas();
+  casadi_load_integrator_rk();
+  casadi_load_integrator_collocation();
+  casadi_load_integrator_oldcollocation();
+  casadi_load_implicitfunction_kinsol();
+  casadi_load_linearsolver_csparse();
+
   // For all problems
   enum Problems{ODE,DAE,NUM_PROBLEMS};
   for(int problem=0; problem<NUM_PROBLEMS; ++problem){
@@ -144,43 +156,43 @@ int main(){
       switch(integrator){
       case CVODES:
         if(problem==DAE) continue; // Skip if DAE
-        cout << endl << "== CVodesIntegrator == " << endl;
-        I = CVodesIntegrator(ffcn);
+        cout << endl << "== cvodes == " << endl;
+        I = Integrator("cvodes", ffcn);
         break;
       case IDAS:
-        cout << endl << "== IdasIntegrator == " << endl;
-        I = IdasIntegrator(ffcn);
+        cout << endl << "== idas == " << endl;
+        I = Integrator("idas", ffcn);
         break;
       case RK:
         if(problem==DAE) continue; // Skip if DAE
         cout << endl << "== RKIntegrator == " << endl;
-        I = RKIntegrator(ffcn);
+        I = Integrator("rk", ffcn);
         break;
       case COLLOCATION:        
         cout << endl << "== CollocationIntegrator == " << endl;
-        I = CollocationIntegrator(ffcn);
+        I = Integrator("collocation", ffcn);
 
         // Set collocation integrator specific options
-        I.setOption("implicit_solver",KinsolSolver::creator);
+        I.setOption("implicit_solver","kinsol");
         I.setOption("collocation_scheme","legendre");
 
         {
           Dictionary kinsol_options;
-          kinsol_options["linear_solver"] = CSparse::creator;
+          kinsol_options["linear_solver"] = "csparse";
           I.setOption("implicit_solver_options",kinsol_options);
         }
         break;
       case OLD_COLLOCATION:        
         cout << endl << "== OldCollocationIntegrator == " << endl;
-        I = OldCollocationIntegrator(ffcn);
+        I = Integrator("oldcollocation", ffcn);
 
         // Set collocation integrator specific options
         I.setOption("expand_f",true);
         I.setOption("collocation_scheme","legendre");
-        I.setOption("implicit_solver",KinsolSolver::creator);
+        I.setOption("implicit_solver", "kinsol");
         {
           Dictionary kinsol_options;
-          kinsol_options["linear_solver"] = CSparse::creator;
+          kinsol_options["linear_solver"] = "csparse";
           I.setOption("implicit_solver_options",kinsol_options);
         }
         break;

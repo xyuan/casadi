@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef IMPLICIT_FUNCTION_HPP
-#define IMPLICIT_FUNCTION_HPP
+#ifndef CASADI_IMPLICIT_FUNCTION_HPP
+#define CASADI_IMPLICIT_FUNCTION_HPP
 
 #include "function.hpp"
 #include "linear_solver.hpp"
@@ -64,6 +64,18 @@ namespace casadi {
   class CASADI_CORE_EXPORT ImplicitFunction : public Function {
   public:
 
+    /** \brief  Default constructor */
+    ImplicitFunction();
+
+    /** \brief  Create an implicit function solver
+     *
+     * \param f Function mapping from (n+1) inputs to 1 output
+     *
+     */
+    ImplicitFunction(const std::string& name, const Function& f,
+                     const Function& jac=Function(),
+                     const LinearSolver& linsol=LinearSolver());
+
     /// Access functions of the node
     ImplicitFunctionInternal* operator->();
 
@@ -72,6 +84,12 @@ namespace casadi {
 
     /// Check if the node is pointing to the right type of object
     virtual bool checkNode() const;
+
+    /// Load a plugin dynamically
+    static void loadPlugin(const std::string& name);
+
+    /// Get solver specific documentation
+    static std::string doc(const std::string& name);
 
     /// Access F
     Function& getF();
@@ -85,5 +103,5 @@ namespace casadi {
 
 } // namespace casadi
 
-#endif //IMPLICIT_FUNCTION_HPP
+#endif // CASADI_IMPLICIT_FUNCTION_HPP
 

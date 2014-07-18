@@ -20,12 +20,12 @@
  *
  */
 
-#ifndef DIRECT_COLLOCATION_HPP
-#define DIRECT_COLLOCATION_HPP
+#ifndef CASADI_DIRECT_COLLOCATION_HPP
+#define CASADI_DIRECT_COLLOCATION_HPP
 
 #include "casadi/core/function/ocp_solver.hpp"
 #include "casadi/core/function/nlp_solver.hpp"
-#include "casadi/integration/integration_tools.hpp"
+#include "casadi/core/misc/integration_tools.hpp"
 
 #include <casadi/optimal_control/casadi_optimal_control_export.h>
 
@@ -64,8 +64,8 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocation : public OCPSolver {
     /// Set the optimal solution
     void setOptimalSolution(const std::vector<double> &V_opt);
 
-    /// Access the underlying NLPSolver object
-    NLPSolver getNLPSolver() const;
+    /// Access the underlying NlpSolver object
+    NlpSolver getNlpSolver() const;
 
     /// Prints out a human readable report about possible constraint violations, after solving
     void reportConstraints(std::ostream &stream=std::cout);
@@ -77,4 +77,4 @@ class CASADI_OPTIMAL_CONTROL_EXPORT DirectCollocation : public OCPSolver {
 
 } // namespace casadi
 
-#endif // DIRECT_COLLOCATION_HPP
+#endif // CASADI_DIRECT_COLLOCATION_HPP

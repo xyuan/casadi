@@ -51,3 +51,11 @@
 %}
 %include "casadi/core/casadi_options.hpp"
 %include "casadi/core/casadi_meta.hpp"
+
+// Misc
+%{
+#include "casadi/core/misc/integration_tools.hpp"
+#include "casadi/core/misc/symbolic_nlp.hpp"
+%}
+%include "casadi/core/misc/integration_tools.hpp"
+%include "casadi/core/misc/symbolic_nlp.hpp"

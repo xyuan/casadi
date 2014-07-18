@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef DPLE_SOLVER_HPP
-#define DPLE_SOLVER_HPP
+#ifndef CASADI_DPLE_SOLVER_HPP
+#define CASADI_DPLE_SOLVER_HPP
 
 #include "../core/function/function.hpp"
 
@@ -83,6 +83,11 @@ namespace casadi {
     /// Clone
     DpleSolver clone() const;
 
+    /// DpleSolver solver factory
+    DpleSolver(const std::string& name,
+               const std::vector< Sparsity > & A,
+               const std::vector< Sparsity > & V);
+
     /// Print solver statistics
     void printStats(std::ostream &stream=std::cout) const;
 
@@ -95,9 +100,13 @@ namespace casadi {
     /// Check if the node is pointing to the right type of object
     virtual bool checkNode() const;
 
+    /// Load a plugin dynamically
+    static void loadPlugin(const std::string& name);
 
+    /// Get solver specific documentation
+    static std::string doc(const std::string& name);
   };
 
 } // namespace casadi
 
-#endif // DPLE_SOLVER_HPP
+#endif // CASADI_DPLE_SOLVER_HPP

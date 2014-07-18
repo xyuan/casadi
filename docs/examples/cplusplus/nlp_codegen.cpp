@@ -24,9 +24,9 @@
 #include <fstream>
 #include <ctime>
 #include <iomanip>
-#include <casadi/core/casadi.hpp>
-#include <casadi/interfaces/ipopt/ipopt_solver.hpp>
-#include <casadi/core/std_vector_tools.hpp>
+#include <casadi/casadi.hpp>
+
+extern "C" void casadi_load_nlpsolver_ipopt();
 
 using namespace casadi;
 using namespace std;
@@ -60,7 +60,8 @@ Function generateCodeAndCompile(Function fcn, const std::string& name, bool expa
 }
 
 int main(){
-    
+  casadi_load_nlpsolver_ipopt();
+
   /** Test problem 
    * 
    *    min x0^2 + x1^2
@@ -103,7 +104,7 @@ int main(){
   hess_lag = generateCodeAndCompile(hess_lag,"hess_lag", expand);
 
   // Create an NLP solver passing derivative information
-  IpoptSolver solver(nlp);
+  NlpSolver solver("ipopt", nlp);
   solver.setOption("grad_f",grad_f);
   solver.setOption("jac_g",jac_g);
   solver.setOption("hess_lag",hess_lag);

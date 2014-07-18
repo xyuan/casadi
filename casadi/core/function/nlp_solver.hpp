@@ -20,13 +20,13 @@
  *
  */
 
-#ifndef NLP_SOLVER_HPP
-#define NLP_SOLVER_HPP
+#ifndef CASADI_NLP_SOLVER_HPP
+#define CASADI_NLP_SOLVER_HPP
 
 #include "function.hpp"
 
 
-/** \defgroup NLPSolver_doc
+/** \defgroup NlpSolver_doc
 
   Solves the following parametric nonlinear program (NLP):
   \verbatim
@@ -143,7 +143,7 @@ namespace casadi {
   };
 
   /// Input arguments of an NLP Solver [nlpSolverIn]
-  enum NLPSolverInput {
+  enum NlpSolverInput {
     /// Decision variables, initial guess (nx x 1)  [x0]
     NLP_SOLVER_X0,
     /// Value of fixed parameters (np x 1) [p]
@@ -164,7 +164,7 @@ namespace casadi {
   };
 
   /// Output arguments of an NLP Solver [nlpSolverOut]
-  enum NLPSolverOutput {
+  enum NlpSolverOutput {
     /// Decision variables at the optimal solution (nx x 1) [x]
     NLP_SOLVER_X,
     /// Cost function value at the optimal solution (1 x 1) [f]
@@ -180,27 +180,36 @@ namespace casadi {
     NLP_SOLVER_NUM_OUT
   };
 
-  class NLPSolverInternal;
+  class NlpSolverInternal;
 
-  /** \brief NLPSolver
+  /** \brief NlpSolver
 
-      @copydoc NLPSolver_doc
+      @copydoc NlpSolver_doc
 
       \author Joel Andersson
       \date 2010
   */
-  class CASADI_CORE_EXPORT NLPSolver : public Function {
+  class CASADI_CORE_EXPORT NlpSolver : public Function {
   public:
 
     /// Default constructor
-    NLPSolver();
+    NlpSolver();
+
+    /// NLP solver factory
+    NlpSolver(const std::string& name, const Function& nlp);
 
     /// Access functions of the node
-    NLPSolverInternal* operator->();
-    const NLPSolverInternal* operator->() const;
+    NlpSolverInternal* operator->();
+    const NlpSolverInternal* operator->() const;
 
     /// Check if the node is pointing to the right type of object
     virtual bool checkNode() const;
+
+    /// Load a plugin dynamically
+    static void loadPlugin(const std::string& name);
+
+    /// Get solver specific documentation
+    static std::string doc(const std::string& name);
 
     /// Prints out a human readable report about possible constraint violations, after solving
     void reportConstraints(std::ostream &stream=std::cout);
@@ -212,8 +221,8 @@ namespace casadi {
     void setQPOptions();
 
     /** \brief Access the NLP
-    *  \copydoc scheme_NLPSolverInput
-    *  \copydoc scheme_NLPSolverOutput
+    *  \copydoc scheme_NlpSolverInput
+    *  \copydoc scheme_NlpSolverOutput
     */
     Function nlp();
 
@@ -237,9 +246,16 @@ namespace casadi {
 
     /// Join F and G in old signature style to a common NLP function
     static Function joinFG(Function F, Function G);
+
+    /** \brief Get the reduced Hessian.
+     * Requires a patched sIPOPT installation, see CasADi documentation. */
+    DMatrix getReducedHessian();
+
+    /// Read options from parameter xml
+    void setOptionsFromFile(const std::string & file);
   };
 
 } // namespace casadi
 
-#endif // NLP_SOLVER_HPP
+#endif // CASADI_NLP_SOLVER_HPP
 

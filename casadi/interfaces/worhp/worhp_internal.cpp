@@ -32,7 +32,22 @@ using namespace std;
 
 namespace casadi {
 
-  WorhpInternal::WorhpInternal(const Function& nlp) : NLPSolverInternal(nlp) {
+  extern "C"
+  int CASADI_NLPSOLVER_WORHP_EXPORT
+  casadi_register_nlpsolver_worhp(NlpSolverInternal::Plugin* plugin) {
+    plugin->creator = WorhpInternal::creator;
+    plugin->name = "worhp";
+    plugin->doc = "WORHP docs not available";
+    plugin->version = 20;
+    return 0;
+  }
+
+  extern "C"
+  void CASADI_NLPSOLVER_WORHP_EXPORT casadi_load_nlpsolver_worhp() {
+    NlpSolverInternal::registerPlugin(casadi_register_nlpsolver_worhp);
+  }
+
+  WorhpInternal::WorhpInternal(const Function& nlp) : NlpSolverInternal(nlp) {
 
     // Monitors
     addOption("monitor",            OT_STRINGVECTOR,  GenericType(),  "Monitor functions",
@@ -185,7 +200,7 @@ namespace casadi {
   void WorhpInternal::init() {
 
     // Call the init method of the base class
-    NLPSolverInternal::init();
+    NlpSolverInternal::init();
 
     if (hasSetOption("Ares")) {
       std::vector<int> ares = getOption("Ares");
@@ -458,14 +473,14 @@ namespace casadi {
 
     for (int i=0;i<nx_;++i) {
       casadi_assert_message(lbx.at(i)!=ubx.at(i),
-      "WorhpSolver::evaluate: Worhp cannot handle the case when LBX == UBX."
+      "WorhpInternal::evaluate: Worhp cannot handle the case when LBX == UBX."
       "You have that case at non-zero " << i << " , which has value " << ubx.at(i) << "."
       "Reformulate your problem by using a parameter for the corresponding variable.");
     }
 
     for (int i=0;i<lbg.size();++i) {
       casadi_assert_message(!(lbg.at(i)==-inf && ubg.at(i) == inf),
-      "WorhpSolver::evaluate: Worhp cannot handle the case when both LBG and UBG are infinite."
+      "WorhpInternal::evaluate: Worhp cannot handle the case when both LBG and UBG are infinite."
       "You have that case at non-zero " << i << "."
       "Reformulate your problem eliminating the corresponding constraint.");
     }

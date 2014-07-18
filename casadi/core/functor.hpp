@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef FUNCTOR_HPP
-#define FUNCTOR_HPP
+#ifndef CASADI_FUNCTOR_HPP
+#define CASADI_FUNCTOR_HPP
 
 #include "casadi_types.hpp"
 
@@ -102,7 +102,7 @@ namespace casadi {
   *
   * In C++, supply a CallbackCPtr function pointer
   * When the callback function returns a non-zero integer, the host is signalled of a problem.
-  * E.g. an NLPSolver may halt iterations if the Callback is something else than 0
+  * E.g. an NlpSolver may halt iterations if the Callback is something else than 0
   *
   * In python, supply a callable, annotated with pycallback decorator
   * \code
@@ -129,4 +129,4 @@ namespace casadi {
 } // namespace casadi
 
 
-#endif // FUNCTOR_HPP
+#endif // CASADI_FUNCTOR_HPP

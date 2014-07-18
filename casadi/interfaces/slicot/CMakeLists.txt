@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(SLICOT_INTERFACE_SRCS
+casadi_library(casadi_slicot_interface
   slicot_tools.hpp
-  slicot_tools.cpp
-  psd_indef_dple_solver.hpp
-  psd_indef_dple_solver.cpp
+  slicot_tools.cpp)
+target_link_libraries(casadi_slicot_interface casadi_control ${SLICOT_LIBRARIES})
+set_property(GLOBAL APPEND PROPERTY CASADI_SWIG_MODULES casadi_slicot_interface)
+
+casadi_library(casadi_dplesolver_slicot
   psd_indef_dple_internal.hpp
   psd_indef_dple_internal.cpp)
-
-casadi_library(casadi_slicot_interface ${SLICOT_INTERFACE_SRCS})
-target_link_libraries(casadi_slicot_interface casadi_control ${SLICOT_LIBRARIES})
+target_link_libraries(casadi_dplesolver_slicot casadi_slicot_interface casadi_control ${SLICOT_LIBRARIES})
 
 install(DIRECTORY ./
   DESTINATION include/casadi/interfaces/slicot

@@ -26,19 +26,19 @@
 using namespace std;
 namespace casadi {
 
-  LapackQRDense::LapackQRDense() {
+  extern "C"
+  int CASADI_LINEARSOLVER_LAPACKQR_EXPORT
+  casadi_register_linearsolver_lapackqr(LinearSolverInternal::Plugin* plugin) {
+    plugin->creator = LapackQRDenseInternal::creator;
+    plugin->name = "lapackqr";
+    plugin->doc = "LapackQR docs not available";
+    plugin->version = 20;
+    return 0;
   }
 
-  LapackQRDense::LapackQRDense(const Sparsity& sparsity, int nrhs) {
-    assignNode(new LapackQRDenseInternal(sparsity, nrhs));
-  }
-
-  LapackQRDenseInternal* LapackQRDense::operator->() {
-    return static_cast<LapackQRDenseInternal*>(Function::operator->());
-  }
-
-  const LapackQRDenseInternal* LapackQRDense::operator->() const {
-    return static_cast<const LapackQRDenseInternal*>(Function::operator->());
+  extern "C"
+  void CASADI_LINEARSOLVER_LAPACKQR_EXPORT casadi_load_linearsolver_lapackqr() {
+    LinearSolverInternal::registerPlugin(casadi_register_linearsolver_lapackqr);
   }
 
   LapackQRDenseInternal::LapackQRDenseInternal(const Sparsity& sparsity, int nrhs) :

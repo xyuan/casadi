@@ -20,19 +20,10 @@
  *
  */
 
-#include <casadi/core/casadi.hpp>
+#include <casadi/casadi.hpp>
                                    
 // Solvers
-#include <casadi/integration/old_collocation_integrator.hpp>
-#include <casadi/nonlinear_programming/newton_implicit_solver.hpp>
 #include <casadi/optimal_control/direct_multiple_shooting.hpp>
-
-// 3rd party interfaces
-#include <casadi/interfaces/ipopt/ipopt_solver.hpp>
-#include <casadi/interfaces/sundials/cvodes_integrator.hpp>
-#include <casadi/interfaces/sundials/idas_integrator.hpp>
-#include <casadi/interfaces/sundials/kinsol_solver.hpp>
-#include <casadi/interfaces/csparse/csparse.hpp>
 
 bool use_old_collocation_integrator = false;
 
@@ -70,10 +61,9 @@ int main(){
   
   Dictionary integrator_options;
   if(use_old_collocation_integrator){
-    // integrator_options["implicit_solver"] = KinsolSolver::creator;    
-    integrator_options["implicit_solver"] = NewtonImplicitSolver::creator;
+    integrator_options["implicit_solver"] = "newton";
     Dictionary implicit_solver_options;
-    implicit_solver_options["linear_solver"] = CSparse::creator;
+    implicit_solver_options["linear_solver"] = "csparse";
     integrator_options["implicit_solver_options"] = implicit_solver_options;
   } else {
     integrator_options["abstol"]=1e-8; //abs. tolerance
@@ -98,10 +88,9 @@ int main(){
   // Create a multiple shooting discretization
   DirectMultipleShooting ms(res,mterm);
   if(use_old_collocation_integrator){
-    ms.setOption("integrator",OldCollocationIntegrator::creator);
+    ms.setOption("integrator", "oldcollocation");
   } else {
-    ms.setOption("integrator",CVodesIntegrator::creator);
-    //ms.setOption("integrator",IdasIntegrator::creator);
+    ms.setOption("integrator", "cvodes");
   }
   ms.setOption("integrator_options",integrator_options);
   ms.setOption("number_of_grid_points",ns);
@@ -109,7 +98,7 @@ int main(){
   ms.setOption("parallelization","openmp");
   
   // NLP solver
-  ms.setOption("nlp_solver",IpoptSolver::creator);
+  ms.setOption("nlp_solver", "ipopt");
   Dictionary nlp_solver_dict;
   nlp_solver_dict["tol"] = 1e-5;
   nlp_solver_dict["hessian_approximation"] = "limited-memory";

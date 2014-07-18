@@ -20,10 +20,10 @@
  *
  */
 
-#ifndef SUNDIALS_INTERNAL_HPP
-#define SUNDIALS_INTERNAL_HPP
+#ifndef CASADI_SUNDIALS_INTERNAL_HPP
+#define CASADI_SUNDIALS_INTERNAL_HPP
 
-#include "sundials_integrator.hpp"
+#include <casadi/interfaces/sundials/casadi_integrator_cvodes_export.h>
 #include "casadi/core/function/integrator_internal.hpp"
 
 #include <nvector/nvector_serial.h>
@@ -34,7 +34,7 @@
 /// \cond INTERNAL
 namespace casadi {
 
-class CASADI_SUNDIALS_INTERFACE_EXPORT SundialsInternal : public IntegratorInternal {
+class CASADI_INTEGRATOR_CVODES_EXPORT SundialsInternal : public IntegratorInternal {
 public:
   /** \brief  Constructor */
   SundialsInternal(const Function& f, const Function& g);
@@ -112,4 +112,4 @@ public:
 } // namespace casadi
 
 /// \endcond
-#endif // SUNDIALS_INTERNAL_HPP
+#endif // CASADI_SUNDIALS_INTERNAL_HPP

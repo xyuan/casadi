@@ -20,11 +20,12 @@
  *
  */
 
-#ifndef NLP_SOLVER_INTERNAL_HPP
-#define NLP_SOLVER_INTERNAL_HPP
+#ifndef CASADI_NLP_SOLVER_INTERNAL_HPP
+#define CASADI_NLP_SOLVER_INTERNAL_HPP
 
 #include "nlp_solver.hpp"
 #include "function_internal.hpp"
+#include "plugin_interface.hpp"
 
 
 /// \cond INTERNAL
@@ -32,18 +33,20 @@ namespace casadi {
 
 /** \brief NLP solver storage class
 
-  @copydoc NLPSolver_doc
+  @copydoc NlpSolver_doc
   \author Joel Andersson
   \date 2010-2013
 */
-  class CASADI_CORE_EXPORT NLPSolverInternal : public FunctionInternal {
+  class CASADI_CORE_EXPORT
+  NlpSolverInternal : public FunctionInternal,
+                      public PluginInterface<NlpSolverInternal> {
 
   public:
     /// Constructor
-    NLPSolverInternal(const Function& nlp);
+    NlpSolverInternal(const Function& nlp);
 
     /// Destructor
-    virtual ~NLPSolverInternal() = 0;
+    virtual ~NlpSolverInternal() = 0;
 
     /// Initialize
     virtual void init();
@@ -111,6 +114,9 @@ namespace casadi {
     /// Execute the callback function only after this amount of iterations
     int callback_step_;
 
+    // Evaluation errors are fatal
+    bool eval_errors_fatal_;
+
     /// The NLP
     Function nlp_;
 
@@ -135,8 +141,22 @@ namespace casadi {
     /// A reference to this object to be passed to the user functions
     Function ref_;
 
+    // Creator function for internal class
+    typedef NlpSolverInternal* (*Creator)(const Function& nlp);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
+
+    // Get reduced Hessian
+    virtual DMatrix getReducedHessian();
+
+    /// Read options from parameter xml
+    virtual void setOptionsFromFile(const std::string & file);
   };
 
 } // namespace casadi
 /// \endcond
-#endif //NLP_SOLVER_INTERNAL_HPP
+#endif // CASADI_NLP_SOLVER_INTERNAL_HPP

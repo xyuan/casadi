@@ -20,25 +20,28 @@
  *
  */
 
-#ifndef SDQP_SOLVER_INTERNAL_HPP
-#define SDQP_SOLVER_INTERNAL_HPP
+#ifndef CASADI_SDQP_SOLVER_INTERNAL_HPP
+#define CASADI_SDQP_SOLVER_INTERNAL_HPP
 
 #include "sdqp_solver.hpp"
 #include "function_internal.hpp"
+#include "plugin_interface.hpp"
 
 /// \cond INTERNAL
 
 namespace casadi {
 
-/// Internal class
-class CASADI_CORE_EXPORT SDQPSolverInternal : public FunctionInternal {
+  /// Internal class
+  class CASADI_CORE_EXPORT
+  SdqpSolverInternal : public FunctionInternal,
+                       public PluginInterface<SdqpSolverInternal> {
   public:
 
     // Constructor
-    SDQPSolverInternal(const std::vector<Sparsity>& st);
+    SdqpSolverInternal(const std::vector<Sparsity>& st);
 
     // Destructor
-    virtual ~SDQPSolverInternal() = 0;
+    virtual ~SdqpSolverInternal() = 0;
 
     // Initialize
     virtual void init();
@@ -54,6 +57,15 @@ class CASADI_CORE_EXPORT SDQPSolverInternal : public FunctionInternal {
 
     /// Print out problem statement for debugging
     void printProblem(std::ostream &stream=std::cout) const;
+
+    // Creator function for internal class
+    typedef SdqpSolverInternal* (*Creator)(const SDQPStructure& st);
+
+    /// Collection of solvers
+    static std::map<std::string, Plugin> solvers_;
+
+    /// Infix
+    static const std::string infix_;
 
   protected:
 
@@ -78,5 +90,5 @@ class CASADI_CORE_EXPORT SDQPSolverInternal : public FunctionInternal {
 } // namespace casadi
 
 /// \endcond
-#endif //SDQP_SOLVER_INTERNAL_HPP
+#endif // CASADI_SDQP_SOLVER_INTERNAL_HPP
 

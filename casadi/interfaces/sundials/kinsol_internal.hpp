@@ -20,10 +20,10 @@
  *
  */
 
-#ifndef KINSOL_INTERNAL_HPP
-#define KINSOL_INTERNAL_HPP
+#ifndef CASADI_KINSOL_INTERNAL_HPP
+#define CASADI_KINSOL_INTERNAL_HPP
 
-#include "kinsol_solver.hpp"
+#include <casadi/interfaces/sundials/casadi_implicitfunction_kinsol_export.h>
 #include "casadi/core/function/implicit_function_internal.hpp"
 #include <nvector/nvector_serial.h>   /* serial N_Vector types, fcts., and macros */
 #include <sundials/sundials_dense.h>  /* definitions DlsMat DENSE_ELEM */
@@ -42,8 +42,7 @@ namespace casadi {
 
   typedef std::pair< std::string, std::string> Message;
 
-  class CASADI_SUNDIALS_INTERFACE_EXPORT KinsolInternal : public ImplicitFunctionInternal {
-    friend class KinsolSolver;
+  class CASADI_IMPLICITFUNCTION_KINSOL_EXPORT KinsolInternal : public ImplicitFunctionInternal {
   public:
     /** \brief  Constructor */
     explicit KinsolInternal(const Function& f, const Function& jac, const LinearSolver& linsol);
@@ -57,6 +56,11 @@ namespace casadi {
     /** \brief  Create a new ImplicitFunctionInternal */
     virtual ImplicitFunctionInternal* create(const Function& f, const Function& jac,
                                              const LinearSolver& linsol) const
+    { return new KinsolInternal(f, jac, linsol);}
+
+    /** \brief  Create a new ImplicitFunction */
+    static ImplicitFunctionInternal* creator(const Function& f, const Function& jac,
+                                             const LinearSolver& linsol)
     { return new KinsolInternal(f, jac, linsol);}
 
     /** \brief  Initialize stage */
@@ -138,5 +142,5 @@ namespace casadi {
 } // namespace casadi
 
 /// \endcond
-#endif //KINSOL_INTERNAL_HPP
+#endif // CASADI_KINSOL_INTERNAL_HPP
 

@@ -77,9 +77,28 @@ namespace casadi {
     (*this)->spSolve(X, B, transpose);
   }
 
+  LinearSolver::LinearSolver(const std::string& name, const Sparsity& sp, int nrhs) {
+    assignNode(LinearSolverInternal::getPlugin(name).creator(sp, nrhs));
+  }
+
+  void LinearSolver::loadPlugin(const std::string& name) {
+    LinearSolverInternal::loadPlugin(name);
+  }
+
+  std::string LinearSolver::doc(const std::string& name) {
+    return LinearSolverInternal::getPlugin(name).doc;
+  }
+
+  Sparsity LinearSolver::getFactorizationSparsity(bool transpose) const {
+    return (*this)->getFactorizationSparsity(transpose);
+  }
+
+  DMatrix LinearSolver::getFactorization(bool transpose) const {
+    return (*this)->getFactorization(transpose);
+  }
+
+  void LinearSolver::solveL(double* x, int nrhs, bool transpose) {
+    return (*this)->solveL(x, nrhs, transpose);
+  }
 
 } // namespace casadi
-
-
-
-
