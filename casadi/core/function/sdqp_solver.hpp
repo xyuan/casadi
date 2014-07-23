@@ -94,6 +94,9 @@ namespace casadi {
 
       @copydoc SdqpSolver_doc
 
+      \generalsection{SdqpSolver}
+      \pluginssection{SdqpSolver}
+      
       \author Joel Andersson
       \date 2010
   */
@@ -104,8 +107,8 @@ namespace casadi {
     SdqpSolver();
 
     /** \brief Constructor
-     *  \param st Problem structure
-     *  \copydoc scheme_SDQPStruct
+     *  \param name \pluginargument{SdqpSolver}
+     *  \param st \structargument{SDQP}
      */
     SdqpSolver(const std::string& name, const SDQPStructure& st);
 

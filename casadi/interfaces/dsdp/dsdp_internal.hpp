@@ -27,19 +27,27 @@
 #include <casadi/interfaces/dsdp/casadi_sdpsolver_dsdp_export.h>
 #include <dsdp5.h>
 
-/// \cond INTERNAL
-namespace casadi {
-  /** \brief Interface to the SDP solver DSDP      
+/** \defgroup plugin_SdpSolver_dsdp
+      Interface to the SDP solver DSDP      
       Warning: The solver DSDP is not good at handling linear equalities.
       There are several options if you notice difficulties:
       * play around with the parameter "_penalty"
       * leave a gap manually
       * switch to another SDP Solver
+*/
+
+/** \pluginsection{SdpSolver,dsdp} */
+
+/// \cond INTERNAL
+namespace casadi {
+  /** \brief \pluginbrief{SdpSolver,dsdp}
+
 
    \author Joris Gillis
    \date 2013
    *
    @copydoc SdpSolver_doc
+   @copydoc plugin_SdpSolver_dsdp
    * */
   class CASADI_SDPSOLVER_DSDP_EXPORT DSDPInternal : public SdpSolverInternal {
   public:
@@ -85,6 +93,10 @@ namespace casadi {
 
     /// Mapping to get <tt>[A LBA]'</tt>
     Function mappingA_;
+
+    /// A documentation string
+    static const std::string meta_doc;
+
   };
 
 } // namespace casadi

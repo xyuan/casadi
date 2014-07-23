@@ -166,6 +166,9 @@ namespace casadi {
 
       @copydoc SdpSolver_doc
 
+      \generalsection{SdpSolver}
+      \pluginssection{SdpSolver}
+      
       \author Joel Andersson
       \date 2010
   */
@@ -176,8 +179,8 @@ namespace casadi {
     SdpSolver();
 
     /** \brief Constructor
-     *  \param st Problem structure
-     *  \copydoc scheme_SDPStruct
+     *  \param name \pluginargument{SdpSolver}
+     *  \param st \structargument{SDP}
      */
     SdpSolver(const std::string& name, const SDPStructure& st);
 

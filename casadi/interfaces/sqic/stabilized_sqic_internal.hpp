@@ -26,9 +26,20 @@
 #include "casadi/core/function/stabilized_qp_solver_internal.hpp"
 #include <casadi/interfaces/sqic/casadi_stabilizedqpsolver_sqic_export.h>
 
+/** \defgroup plugin_StabilizedQpSolver_sqic
+ Interface to SQIC
+*/
+
+/** \pluginsection{StabilizedQpSolver,sqic} */
+
 /// \cond INTERNAL
 namespace casadi {
 
+  /** \brief \pluginbrief{StabilizedQpSolver,sqic}
+  *
+  *  @copydoc StabilizedQpSolver_doc
+  *  @copydoc plugin_StabilizedQpSolver_sqic
+  */
   class CASADI_STABILIZEDQPSOLVER_SQIC_EXPORT StabilizedSQICInternal
     : public StabilizedQpSolverInternal {
   public:
@@ -64,6 +75,10 @@ namespace casadi {
 
     /// Error message map
     static std::map<int, std::string> flagmap;
+
+    /// A documentation string
+    static const std::string meta_doc;
+
   protected:
 
     /// Flag: is already initialized

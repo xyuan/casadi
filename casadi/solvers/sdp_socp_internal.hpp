@@ -28,12 +28,20 @@
 
 #include <casadi/solvers/casadi_socpsolver_sdp_export.h>
 
+/** \defgroup plugin_SocpSolver_sdp
+   Solve SOCPs using an SdpSolver
+*/
+
+
+/** \pluginsection{SocpSolver,sdp} */
+
 /// \cond INTERNAL
 namespace casadi {
 
-  /** \brief SOCP Solver for quadratic programming
+  /** \brief \pluginbrief{SocpSolver,sdp}
 
       @copydoc SocpSolver_doc
+      @copydoc plugin_SocpSolver_sdp
 
       \author Joris Gillis
       \date 2013
@@ -59,6 +67,9 @@ namespace casadi {
     virtual void init();
 
     virtual void evaluate();
+
+    /// A documentation string
+    static const std::string meta_doc;
 
   protected:
     SdpSolver sdpsolver_;

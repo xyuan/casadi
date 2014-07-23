@@ -95,7 +95,10 @@ namespace casadi {
 
 
       @copydoc LpSolver_doc
-
+      
+      \generalsection{LpSolver}
+      \pluginssection{LpSolver}
+      
       \author Joris Gillis
       \date 2013
   */
@@ -106,8 +109,8 @@ namespace casadi {
     LpSolver();
 
     /** \brief Constructor
-     *  \param st Problem structure
-     *  \copydoc scheme_LPStruct
+     *  \param name \pluginargument{LpSolver}
+     *  \param st \structargument{LP}
      */
     LpSolver(const std::string& name, const LPStructure& st);
 

@@ -28,12 +28,22 @@
 
 #include <string>
 
+/** \defgroup plugin_QpSolver_cplex
+     
+      Interface to Cplex solver for sparse Quadratic Programs
+*/
+
+/** \pluginsection{QpSolver,cplex} */
+
 /// \cond INTERNAL
 
 namespace casadi {
 
-  /** \brief Interface to Cplex solver for sparse Quadratic Programs
+  /** \brief \pluginbrief{QpSolver,cplex}
+
       @copydoc QpSolver_doc
+      @copydoc plugin_QpSolver_cplex
+      
       \author Attila Kozma, Joel Andersson
       \date 2012
   */
@@ -114,6 +124,9 @@ namespace casadi {
     /// CPLEX environment
     CPXENVptr env_;
     CPXLPptr lp_;
+
+    /// A documentation string
+    static const std::string meta_doc;
 
   };
 } // end namespace casadi

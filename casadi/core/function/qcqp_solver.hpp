@@ -118,6 +118,9 @@ namespace casadi {
 
       @copydoc QcqpSolver_doc
 
+      \generalsection{QcqpSolver}
+      \pluginssection{QcqpSolver}
+      
       \author Joris Gillis
       \date 2013
   */
@@ -128,8 +131,8 @@ namespace casadi {
     QcqpSolver();
 
     /** \brief Constructor
-     *  \param st Problem structure
-     *  \copydoc scheme_QCQPStruct
+     *  \param name \pluginargument{QcqpSolver} 
+     *  \param st \structargument{QCQP}
      */
     QcqpSolver(const std::string& name, const QCQPStructure& st);
 

@@ -90,6 +90,9 @@ namespace casadi {
 
       @copydoc StabilizedQpSolver_doc
 
+      \generalsection{StabilizedQpSolver}
+      \pluginssection{StabilizedQpSolver}
+
       \author Joel Andersson
       \date 2010
   */
@@ -100,6 +103,7 @@ namespace casadi {
     StabilizedQpSolver();
 
     /** \brief Constructor
+     *  \param name \pluginargument{StabilizedQpSolver}
      *  \param st Problem structure
      *  \copydoc scheme_QPStruct
      */

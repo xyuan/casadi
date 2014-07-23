@@ -108,6 +108,9 @@ namespace casadi {
 
       @copydoc QpSolver_doc
 
+      \generalsection{QpSolver}
+      \pluginssection{QpSolver}
+      
       \author Joel Andersson
       \date 2010
   */
@@ -118,8 +121,8 @@ namespace casadi {
     QpSolver();
 
     /** \brief Constructor
-     *  \param st Problem structure
-     *  \copydoc scheme_QPStruct
+     *  \param name \pluginargument{QpSolver}
+     *  \param st \structargument{QP}
      */
     QpSolver(const std::string& name, const QPStructure& st);
 

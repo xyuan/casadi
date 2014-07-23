@@ -27,11 +27,18 @@
 #include <knitro.h>
 #include "casadi/core/function/nlp_solver_internal.hpp"
 
+/** \defgroup plugin_NlpSolver_knitro
+  KNITRO interface
+*/
+
+/** \pluginsection{NlpSolver,knitro} */
+
 /// \cond INTERNAL
 namespace casadi {
 
-  /**
+  /** \brief \pluginbrief{NlpSolver,knitro}
      @copydoc NlpSolver_doc
+     @copydoc plugin_NlpSolver_knitro
   */
   class CASADI_NLPSOLVER_KNITRO_EXPORT KnitroInternal : public NlpSolverInternal {
 
@@ -70,6 +77,10 @@ namespace casadi {
 
     // KNITRO string parameter
     std::map<std::string, std::string> string_param_;
+
+    /// A documentation string
+    static const std::string meta_doc;
+
   };
 
 } // namespace casadi

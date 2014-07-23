@@ -30,15 +30,22 @@
 
 #include <deque>
 
+/** \defgroup plugin_NlpSolver_scpgen
+   A structure-exploiting sequential quadratic programming
+     (to be come sequential convex programming) method for nonlinear programming.
+*/
+
+/** \pluginsection{NlpSolver,scpgen} */
 
 /// \cond INTERNAL
 
 namespace casadi {
 
-  /**
-     \brief A structure-exploiting sequential quadratic programming
-     (to be come sequential convex programming) method for nonlinear programming.
-
+  /**  \brief \pluginbrief{NlpSolver,scpgen}
+     
+     @copy_doc NLPSolver_doc
+     @copy_doc plugin_NlpSolver_scpgen
+     
      \author Joel Andersson, Attila Kozma and Joris Gillis
      \date 2013
   */
@@ -229,6 +236,10 @@ namespace casadi {
 
     // Hessian times a step
     std::vector<double> qpH_times_du_;
+
+    /// A documentation string
+    static const std::string meta_doc;
+
   };
 
 } // namespace casadi

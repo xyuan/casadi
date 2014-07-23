@@ -110,6 +110,9 @@ namespace casadi {
 
       @copydoc SocpSolver_doc
 
+      \generalsection{SocpSolver}
+      \pluginssection{SocpSolver}
+      
       \author Joris Gillis
       \date 2013
   */
@@ -120,8 +123,8 @@ namespace casadi {
     SocpSolver();
 
     /** \brief Constructor
-     *  \param st Problem structure
-     *  \copydoc scheme_SOCPStruct
+     *  \param name \pluginargument{SocpSolver}
+     *  \param st \structargument{SOCP}
      */
     SocpSolver(const std::string& name, const SOCPStructure& st);
 

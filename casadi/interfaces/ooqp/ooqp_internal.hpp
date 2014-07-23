@@ -26,16 +26,23 @@
 #include "casadi/core/function/qp_solver_internal.hpp"
 #include <casadi/interfaces/ooqp/casadi_qpsolver_ooqp_export.h>
 
+/** \defgroup plugin_QpSolver_ooqp
+ Interface to the OOQP Solver for quadratic programming
+  The current implementation assumes that OOQP is configured with the MA27 sparse linear solver.
+
+  NOTE: when doing multiple calls to evaluate(), check if you need to reInit();
+*/
+
+/** \pluginsection{QpSolver,ooqp} */
+
 /// \cond INTERNAL
 namespace casadi {
 
-  /** \brief Interface to the OOQP Solver for quadratic programming:
-
+  /** \brief \pluginbrief{QpSolver,ooqp}
+  
       @copydoc QpSolver_doc
+      @copydoc plugin_QpSolver_ooqp
 
-      The current implementation assumes that OOQP is configured with the MA27 sparse linear solver.
-
-      NOTE: when doing multiple calls to evaluate(), check if you need to reInit();
   */
   class CASADI_QPSOLVER_OOQP_EXPORT OOQPInternal : public QpSolverInternal {
   public:
@@ -96,6 +103,10 @@ namespace casadi {
 
     // Tolerances
     double mutol_, artol_;
+
+    /// A documentation string
+    static const std::string meta_doc;
+
   };
 
 } // namespace casadi

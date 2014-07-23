@@ -29,9 +29,19 @@
 
 #include <casadi/solvers/casadi_nlpsolver_sqpmethod_export.h>
 
+/** \defgroup plugin_NlpSolver_sqpmethod
+ A textbook SQPMethod
+*/
+
+/** \pluginsection{NlpSolver,sqpmethod} */
+
 /// \cond INTERNAL
 namespace casadi {
 
+  /** \brief  \pluginbrief{NlpSolver,sqpmethod}
+  *  @copydoc NLPSolver_doc
+  *  @copydoc plugin_NlpSolver_sqpmethod
+  */
   class CASADI_NLPSOLVER_SQPMETHOD_EXPORT SQPInternal : public NlpSolverInternal {
   public:
     explicit SQPInternal(const Function& nlp);
@@ -187,6 +197,9 @@ namespace casadi {
     int n_eval_g_; // number of calls to eval_g
     int n_eval_jac_g_; // number of calls to eval_jac_g
     int n_eval_h_; // number of calls to eval_h
+
+    /// A documentation string
+    static const std::string meta_doc;
 
   };
 
