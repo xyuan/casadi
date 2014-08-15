@@ -247,10 +247,26 @@ namespace casadi {
     (*this)->setDerivative(fcn, nfwd, nadj);
   }
 
-  void Function::generateCode(const string& filename) {
+  void Function::generateCode(const string& filename, bool generate_main) {
+    // Detect a C++ ending
+    vector<string> cpp_endings;
+    cpp_endings.push_back(".cpp");
+    cpp_endings.push_back(".cxx");
+    cpp_endings.push_back(".cc");
+    cpp_endings.push_back(".cp");
+    cpp_endings.push_back(".c++");
+    for (vector<string>::const_iterator it=cpp_endings.begin(); it!=cpp_endings.end(); ++it) {
+      if (filename.size()>it->size() &&
+         filename.compare(filename.size()-it->size(), it->size(), *it)==0) {
+        casadi_warning("Function::generateCode: Detected C++ file ending "
+                       "(generated code is C, not C++)");
+      }
+    }
+
+    // Create a file
     std::ofstream cfile;
     cfile.open(filename.c_str());
-    generateCode(cfile);
+    generateCode(cfile, generate_main);
     cfile.close();
   }
 
@@ -260,8 +276,8 @@ namespace casadi {
     return cfile.str();
   }
 
-  void Function::generateCode(std::ostream &stream) {
-    (*this)->generateCode(stream);
+  void Function::generateCode(std::ostream &stream, bool generate_main) {
+    (*this)->generateCode(stream, generate_main);
   }
 
   const IOScheme& Function::inputScheme() const {

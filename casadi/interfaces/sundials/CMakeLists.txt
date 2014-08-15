@@ -9,23 +9,23 @@ endif()
 
 # CVODES
 casadi_plugin(Integrator cvodes
-  sundials_internal.hpp  sundials_internal.cpp
-  cvodes_internal.hpp    cvodes_internal.cpp
-  cvodes_internal_meta.cpp
+  sundials_interface.hpp  sundials_interface.cpp
+  cvodes_interface.hpp    cvodes_interface.cpp
+  cvodes_interface_meta.cpp
   )
 casadi_plugin_link_libraries(Integrator cvodes ${SUNDIALS_LIBRARIES})
 
 # IDAS
 casadi_plugin(Integrator idas
-  idas_internal.hpp      idas_internal.cpp
-  idas_internal_meta.cpp
+  idas_interface.hpp      idas_interface.cpp
+  idas_interface_meta.cpp
   )
 casadi_plugin_link_libraries(Integrator idas casadi_integrator_cvodes)
 
 # KINSOL
 casadi_plugin(ImplicitFunction kinsol 
-   kinsol_internal.hpp    kinsol_internal.cpp
-   kinsol_internal_meta.cpp
+   kinsol_interface.hpp    kinsol_interface.cpp
+   kinsol_interface_meta.cpp
    )
 casadi_plugin_link_libraries(ImplicitFunction kinsol  ${SUNDIALS_LIBRARIES})
 

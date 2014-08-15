@@ -62,7 +62,6 @@ endmacro()
 add_subdirectory(core)  # needed by all except external_packages
 add_subdirectory(interfaces)             # needs external_packages
 add_subdirectory(solvers)                # needs interfaces
-add_subdirectory(optimal_control)        # needs external_packages
 add_subdirectory(control)
 
 # add a dummy custom target which does nothing but
@@ -95,6 +94,7 @@ foreach(name ${CASADI_MODULES})
   function(obtain_interface_link_libraries TARGET OUTPUT)
     set(LIBLIST)
     get_target_property(TEMP_INTERFACE_LINK_LIBRARIES ${TARGET} "INTERFACE_LINK_LIBRARIES")
+    if(TEMP_INTERFACE_LINK_LIBRARIES)
     foreach(LIB ${TEMP_INTERFACE_LINK_LIBRARIES})
       list(APPEND LIBLIST ${LIB})
       #if(TARGET ${LIB})
@@ -104,6 +104,7 @@ foreach(name ${CASADI_MODULES})
       #  endif()
       #endif()
     endforeach()
+    endif()
     set(${OUTPUT} ${LIBLIST} PARENT_SCOPE)
   endfunction()
   
