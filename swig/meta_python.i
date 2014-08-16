@@ -228,8 +228,7 @@ int meta< int >::as(PyObject * p, int &m) {
     Py_DECREF(mm);
     return result;
   } else if (meta< casadi::Matrix<int> >::isa(p)) {
-    casadi::Matrix<int> *temp = 0;
-    meta< casadi::Matrix<int> >::get_ptr(p,temp);
+    casadi::Matrix<int> *temp = meta< casadi::Matrix<int> >::get_ptr(p);
     if (temp->numel()==1 && temp->size()==1) {
       m = temp->data()[0];
       return true;
@@ -347,16 +346,14 @@ int meta< double >::as(PyObject * p, double &m) {
     Py_DECREF(mm);
     return result;
   } else if (meta< casadi::Matrix<double> >::isa(p)) {
-    casadi::Matrix<double> *temp = 0;
-    meta< casadi::Matrix<double> >::get_ptr(p,temp);
+    casadi::Matrix<double> *temp = meta< casadi::Matrix<double> >::get_ptr(p);
     if (temp->numel()==1 && temp->size()==1) {
       m = temp->data()[0];
       return true;
     }
     return false;
   } else if (meta< casadi::Matrix<int> >::isa(p)) {
-    casadi::Matrix<int> *temp = 0;
-    meta< casadi::Matrix<int> >::get_ptr(p,temp);
+    casadi::Matrix<int> *temp = meta< casadi::Matrix<int> >::get_ptr(p);
     if (temp->numel()==1 && temp->size()==1) {
       m = temp->data()[0];
       return true;
@@ -593,8 +590,8 @@ bool meta< casadi::GenericType::Dictionary >::toPython(const casadi::GenericType
 
 
 // Explicit intialization of these two member functions, so we can use them in meta< casadi::SXElement >
-template<> int meta< casadi::Matrix<casadi::SXElement> >::as(GUESTOBJECT,casadi::Matrix<casadi::SXElement> &);
-//template<> bool meta< casadi::Matrix<casadi::SXElement> >::couldbe(GUESTOBJECT);
+template<> int meta< casadi::SX >::as(GUESTOBJECT *p, casadi::SX &);
+//template<> bool meta< casadi::SX >::couldbe(GUESTOBJECT *p);
 
 /// casadi::SX
 template<> char meta< casadi::SXElement >::expected_message[] = "Expecting SXElement or number";
@@ -862,12 +859,12 @@ int meta< casadi::Matrix<double> >::as(PyObject * p,casadi::Matrix<double> &m) {
 meta_vector(casadi::Matrix<double>)
 meta_vector(std::vector< casadi::Matrix<double> >)
 
-/// casadi::Matrix<casadi::SXElement>
-template<> char meta< casadi::Matrix<casadi::SXElement> >::expected_message[] = "Expecting one of: numpy.ndarray(SX/number) , SX, SX, number, sequence(SX/number)";
+/// casadi::SX
+template<> char meta< casadi::SX >::expected_message[] = "Expecting one of: numpy.ndarray(SX/number) , SX, SX, number, sequence(SX/number)";
 
 template <>
-int meta< casadi::Matrix<casadi::SXElement> >::as(PyObject * p,casadi::Matrix<casadi::SXElement> &m) {
-  NATIVERETURN(casadi::Matrix<casadi::SXElement>, m)
+int meta< casadi::SX >::as(PyObject * p,casadi::SX &m) {
+  NATIVERETURN(casadi::SX, m)
   NATIVERETURN(casadi::SXElement, m)
   casadi::DMatrix mt;
   if(meta< casadi::Matrix<double> >::as(p,mt)) {
@@ -903,7 +900,7 @@ int meta< casadi::Matrix<casadi::SXElement> >::as(PyObject * p,casadi::Matrix<ca
     char name[] = "__SX__";
     PyObject *cr = PyObject_CallMethod(p, name,0);
     if (!cr) { return false; }
-    int result = meta< casadi::Matrix<casadi::SXElement> >::as(cr,m);
+    int result = meta< casadi::SX >::as(cr,m);
     Py_DECREF(cr);
     return result;
 	} else {
