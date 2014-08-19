@@ -1,10 +1,11 @@
 module SQICModule
  use snModulePrecision, only : ip, rp
  use SQIC,              only : qpProb
+ use ISO_C_BINDING
  type(qpProb)              :: QP
 
  character(8), allocatable :: Names(:)
- real(rp),     allocatable :: cObj(:)
+ real(C_DOUBLE),     allocatable :: cObj(:)
 
 end module
 
@@ -15,15 +16,15 @@ subroutine wsqic (m, n, nnzA, indA, locA, valA, bl, bu, hEtype, hs, x, pi, rc, &
 
   implicit none
 
-  integer                   :: INFO
-  integer(ip)               :: Errors, iObj, iPrint, iSumm, ncObj, &
+  integer(C_INT32_T)                   :: INFO
+  integer(C_INT32_T)               :: Errors, iObj, iPrint, iSumm, ncObj, &
                                m, n, nInf, nnH, nnzH, nNames, nnzA, nS, iSpecs
 
-  real(rp)                  :: ObjAdd, sInf
+  real(C_DOUBLE)                  :: ObjAdd, sInf
 
 
-  real(rp):: bl(n+m), bu(n+m), x(n+m), valA(nnzA), valH(nnzH) ,pi(m), rc(n+m)
-  integer(ip):: indA(nnzA), locA(n+1), indH(nnzH), locH(n+1), hEtype(n+m), hs(n+m)
+  real(C_DOUBLE):: bl(n+m), bu(n+m), x(n+m), valA(nnzA), valH(nnzH) ,pi(m), rc(n+m)
+  integer(C_INT32_T):: indA(nnzA), locA(n+1), indH(nnzH), locH(n+1), hEtype(n+m), hs(n+m)
 
   character(8)              :: probName
 
@@ -73,10 +74,10 @@ subroutine sqicSolve (Obj)  bind ( C, name="sqicSolve" )
 
   implicit none
 
-  integer                   :: INFO
-  integer(ip)               :: nS, nInf
+  integer(C_INT32_T)                   :: INFO
+  integer(C_INT32_T)               :: nS, nInf
 
-  real(rp)                  :: Obj, sInf
+  real(C_DOUBLE)                  :: Obj, sInf
 
 
   ! Solve the QP.
@@ -91,10 +92,10 @@ subroutine sqicSolveStabilized (Obj,mu,lenpi,piE)  bind ( C, name="sqicSolveStab
 
   implicit none
 
-  integer                   :: INFO
-  integer(ip)               :: nS, nInf, lenpi
+  integer(C_INT32_T)                   :: INFO
+  integer(C_INT32_T)               :: nS, nInf, lenpi
 
-  real(rp)                  :: Obj, sInf, mu, piE(lenpi)
+  real(C_DOUBLE)                  :: Obj, sInf, mu, piE(lenpi)
 
   ! Solve the QP.
   call QP%solveR ( 'Cold', mu, lenpi, piE, INFO, nS, nInf, sInf, Obj )

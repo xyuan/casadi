@@ -93,17 +93,17 @@ namespace casadi {
     /// Storage space for sqic \p x variable
     std::vector<double> x_;
     /// Storage space for sqic \p locA variable
-    std::vector<int> locA_;
+    std::vector<int32_t > locA_;
     /// Storage space for sqic \p indA variable
-    std::vector<int> indA_;
+    std::vector<int32_t > indA_;
     /// Storage space for sqic \p hs variable
-    std::vector<int> hs_;
+    std::vector<int32_t > hs_;
     /// Storage space for sqic \p hEtype variable
-    std::vector<int> hEtype_;
+    std::vector<int32_t > hEtype_;
     /// Storage space for sqic \p indH variable
-    std::vector<int> indH_;
+    std::vector<int32_t > indH_;
     /// Storage space for sqic \p locH variable
-    std::vector<int> locH_;
+    std::vector<int32_t > locH_;
     /// Storage space for sqic \p rc variable
     std::vector<double> rc_;
     /// Storage space for sqic \p rc variable
