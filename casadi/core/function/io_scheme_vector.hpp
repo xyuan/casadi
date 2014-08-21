@@ -33,7 +33,7 @@ namespace casadi {
   A class
 */
   template<typename T>
-  class CASADI_CORE_EXPORT IOSchemeVector : public PrintableObject {
+  class CASADI_CORE_EXPORT IOSchemeVector : public PrintableObject<IOSchemeVector<T> > {
     // Data members (all public)
   public:
     /// Vector of data
@@ -58,14 +58,15 @@ namespace casadi {
     }
     T operator[](const std::string& name) const { return (*this)[this->scheme.index(name)]; }
 #endif // SWIG
+#ifndef SWIGMATLAB
     T __getitem__(int i) const { if (i<0) i+= this->data.size(); return (*this)[i]; }
     T __getitem__(const std::string& name) const { return (*this)[name]; }
     int __len__() const { return this->data.size(); }
+#endif // SWIGMATLAB
     std::vector<T> vector() const { return this->data; }
 
-#ifndef SWIG
     /// Print a description of the object
-    virtual void print(std::ostream &stream=std::cout) const {
+    void print(std::ostream &stream=std::cout, bool trailing_newline=true) const {
       stream << "IOSchemeVector(" ;
       for (int i=0;i<this->data.size();++i) {
         stream << this->scheme.entry(i) << "=" << this->data[i];
@@ -73,13 +74,13 @@ namespace casadi {
       }
 
       stream << ";" << this->scheme.name() <<  ")";
+      if (trailing_newline) stream << std::endl;
     }
 
     /// Print a representation of the object
-    virtual void repr(std::ostream &stream=std::cout) const { print(stream); }
-
-#endif // SWIG
-
+    void repr(std::ostream &stream=std::cout, bool trailing_newline=true) const {
+      print(stream, trailing_newline);
+    }
   };
 
 

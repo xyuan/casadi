@@ -130,8 +130,8 @@ namespace casadi {
     QpSolverInternal* operator->();
     const QpSolverInternal* operator->() const;
 
-    /// Check if the node is pointing to the right type of object
-    virtual bool checkNode() const;
+    /// Check if a particular cast is allowed
+    static bool testCast(const SharedObjectNode* ptr);
 
     /// Load a plugin dynamically
     static void loadPlugin(const std::string& name);
@@ -143,10 +143,10 @@ namespace casadi {
     void setLPOptions();
 
     /** Generate native code in the interfaced language for debugging */
-    virtual void generateNativeCode(const std::string &filename) const;
+    void generateNativeCode(const std::string &filename) const;
 
     /** Generate native code in the interfaced language for debugging */
-    virtual void generateNativeCode(std::ostream &file) const;
+    void generateNativeCode(std::ostream &file) const;
   };
 
 } // namespace casadi

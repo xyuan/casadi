@@ -65,7 +65,7 @@ namespace casadi {
       \date 2012-2014
       \author Joel Andersson
    */
-  struct CASADI_CORE_EXPORT Variable : public PrintableObject {
+  struct CASADI_CORE_EXPORT Variable : public PrintableObject<Variable> {
 
     /// Default constructor
     Variable();
@@ -144,14 +144,16 @@ namespace casadi {
     /// Timed variable (allocate if necessary)
     SXElement atTime(double t, bool allocate=false);
 
-  private:
+    /// Print a description of the object
+    void print(std::ostream &stream=std::cout, bool trailing_newline=true) const;
+
+    /// Print a representation of the object
+    void repr(std::ostream &stream=std::cout, bool trailing_newline=true) const;
+
 #ifndef SWIG
+  private:
     // Timed variables
     std::map<double, SXElement> timed_;
-
-    // Print
-    virtual void repr(std::ostream &stream) const;
-    virtual void print(std::ostream &stream) const;
 #endif // SWIG
 
   };

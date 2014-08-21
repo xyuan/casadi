@@ -37,8 +37,8 @@ namespace casadi {
     return static_cast<const QpSolverInternal*>(Function::operator->());
   }
 
-  bool QpSolver::checkNode() const {
-    return dynamic_cast<const QpSolverInternal*>(get())!=0;
+  bool QpSolver::testCast(const SharedObjectNode* ptr) {
+    return dynamic_cast<const QpSolverInternal*>(ptr)!=0;
   }
 
   void QpSolver::setLPOptions() {
@@ -48,7 +48,6 @@ namespace casadi {
   void QpSolver::generateNativeCode(const std::string &filename) const {
     std::ofstream file;
     file.open(filename.c_str());
-
     (*this)->generateNativeCode(file);
   }
 

@@ -71,8 +71,8 @@ class CASADI_CORE_EXPORT IOScheme : public SharedObject {
     IOSchemeInternal* operator->();
     const IOSchemeInternal* operator->() const;
 
-    /// Check if the node is pointing to the right type of object
-    virtual bool checkNode() const;
+    /// Check if a particular cast is allowed
+    static bool testCast(const SharedObjectNode* ptr);
 
     /// Name of the scheme
     std::string name() const;
@@ -114,11 +114,10 @@ class CASADI_CORE_EXPORT IOScheme : public SharedObject {
 
     #ifndef SWIG
     /// Print a description of the object
-    virtual void print(std::ostream &stream=std::cout) const;
+    void print(std::ostream &stream=std::cout) const;
 
     /// Print a representation of the object
-    virtual void repr(std::ostream &stream=std::cout) const;
-
+    void repr(std::ostream &stream) const;
     #endif // SWIG
 
     #ifndef SWIGPYTHON
@@ -235,6 +234,11 @@ class CASADI_CORE_EXPORT IOScheme : public SharedObject {
     return IOSchemeVector<M>(v, *this);
   }
 
+  template<class M>
+    IOSchemeVector<M> fromVector(const std::vector<M> & arg_m) {
+    casadi_assert(size()==arg_m.size());
+    return IOSchemeVector<M>(arg_m, *this);
+  }
 };
 
 } // namespace casadi

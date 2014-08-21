@@ -34,7 +34,7 @@ class SymbolicNLPInternal;
   \date 2012
   \author Joel Andersson
 */
-class CASADI_CORE_EXPORT SymbolicNLP : public PrintableObject {
+class CASADI_CORE_EXPORT SymbolicNLP : public PrintableObject<SymbolicNLP> {
   public:
 
     /** @name Symbolic representation of the NLP
@@ -68,23 +68,19 @@ class CASADI_CORE_EXPORT SymbolicNLP : public PrintableObject {
     /// Parse an AMPL och PyOmo NL-file
     void parseNL(const std::string& filename, const Dictionary& options = Dictionary());
 
-#ifndef SWIG
     /// Print a description of the object
-    virtual void print(std::ostream &stream=std::cout) const;
+    void print(std::ostream &stream=std::cout, bool trailing_newline=true) const;
 
     /// Print a representation of the object
-    virtual void repr(std::ostream &stream=std::cout) const;
+    void repr(std::ostream &stream=std::cout, bool trailing_newline=true) const;
 
+#ifndef SWIG
   protected:
 
     /// Read an expression from an NL-file (Polish infix format)
     static SXElement readExpressionNL(std::istream &stream, const std::vector<SXElement>& v);
 
 #endif // SWIG
-
-
-
-
 };
 
 } // namespace casadi

@@ -81,7 +81,7 @@ namespace casadi {
       \date 2012
       \author Joel Andersson
   */
-  class CASADI_CORE_EXPORT SymbolicOCP : public PrintableObject {
+  class CASADI_CORE_EXPORT SymbolicOCP : public PrintableObject<SymbolicOCP> {
   public:
 
     /// Default constructor
@@ -416,13 +416,13 @@ namespace casadi {
     /// Timed variable (allocate if necessary)
     SX atTime(const std::string& name, double t, bool allocate=false);
 
-#ifndef SWIG
     ///  Print representation
-    virtual void repr(std::ostream &stream=std::cout) const;
+    void repr(std::ostream &stream=std::cout, bool trailing_newline=true) const;
 
     /// Print description
-    virtual void print(std::ostream &stream=std::cout) const;
+    void print(std::ostream &stream=std::cout, bool trailing_newline=true) const;
 
+#ifndef SWIG
     // Internal methods
   protected:
 

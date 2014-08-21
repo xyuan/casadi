@@ -31,7 +31,7 @@ namespace casadi {
       \author Joel Andersson
       \date 2014
   */
-  class CASADI_CORE_EXPORT Polynomial : public PrintableObject {
+  class CASADI_CORE_EXPORT Polynomial : public PrintableObject<Polynomial> {
   public:
     /// Floating point type
     typedef long double real_t;
@@ -79,13 +79,11 @@ namespace casadi {
     /// Remove excess zeros
     void trim();
 
-#ifndef SWIG
     /// Print a description of the object
-    virtual void print(std::ostream &stream=std::cout) const;
+    void print(std::ostream &stream=std::cout, bool trailing_newline=true) const;
 
     /// Print a representation of the object
-    virtual void repr(std::ostream &stream=std::cout) const;
-#endif // SWIG
+    void repr(std::ostream &stream=std::cout, bool trailing_newline=true) const;
 
     // Add
     Polynomial operator+(const Polynomial& b) const;
