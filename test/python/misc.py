@@ -450,6 +450,20 @@ class Misctests(casadiTestCase):
       assert "You have: QPStructure([int,Sparsity])" in e.message
       assert "QPStructure(a=int)" in e.message
   
+    try:
+      x.reshape(2)
+      self.assertTrue(False)
+    except NotImplementedError as e:
+      print e.message
+      assert "reshape(SX,(int,int) )" in e.message
+
+    try:
+      x.reshape(("a",2))
+      self.assertTrue(False)
+    except NotImplementedError as e:
+      print e.message
+      assert "You have: reshape((str,int))" in e.message
+      
   def test_callkw(self):
       x = SX.sym("x")
 
@@ -498,7 +512,7 @@ class Misctests(casadiTestCase):
     [g,f] = fc.get.g.f
     self.checkarray(f,DMatrix([7]))
     self.checkarray(g,DMatrix([9]))
-
+    
   def test_assertions(self):
     
     x = MX.sym("x") 

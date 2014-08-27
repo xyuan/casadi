@@ -47,24 +47,24 @@ def IOSchemeVector(arg,io_scheme):
 #endif //SWIGPYTHON
 #ifdef SWIGPYTHON
 %pythoncode %{
-def dpleIn(*dummy,**kwargs):
+def cleIn(*dummy,**kwargs):
   """
-  Helper function for 'DPLEInput'
+  Helper function for 'CLEInput'
 
   Two use cases:
-     a) arg = dpleIn(a=my_a, v=my_v)
+     a) arg = cleIn(a=my_a, v=my_v)
           all arguments optional
-     b) a, v = dpleIn(arg,"a", "v")
+     b) a, v = cleIn(arg,"a", "v")
           all arguments after the first optional
-  Input arguments of a \e dple solver
+  Input arguments of a \e cle solver
   
   Keyword arguments::
 
-    a -- A matrices (horzcat when const_dim, blkdiag otherwise) [DPLE_A]
-    v -- V matrices (horzcat when const_dim, blkdiag otherwise) [DPLE_V]
+    a -- A matrix [CLE_A]
+    v -- V matrix [CLE_V]
   """
-  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of dpleIn. Either use keywords or non-keywords ")
-  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_DPLEInput,n)] for n in dummy[1:]]
+  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of cleIn. Either use keywords or non-keywords ")
+  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_CLEInput,n)] for n in dummy[1:]]
   a = []
   if 'a' in kwargs:
     a = kwargs['a']
@@ -73,64 +73,64 @@ def dpleIn(*dummy,**kwargs):
     v = kwargs['v']
   for k in kwargs.keys():
     if not(k in ['a','v']):
-      raise Exception("Keyword error in dpleIn: '%s' is not recognized. Available keywords are: a, v" % k )
-  return IOSchemeVector([a,v], IOScheme(SCHEME_DPLEInput))
+      raise Exception("Keyword error in cleIn: '%s' is not recognized. Available keywords are: a, v" % k )
+  return IOSchemeVector([a,v], IOScheme(SCHEME_CLEInput))
 %}
 #endif //SWIGPYTHON
 #ifndef SWIGPYTHON
 namespace casadi {
-%template(dpleIn) dpleIn<casadi::SX>;
-%template(dpleIn) dpleIn<casadi::MX>;
-%template(dpleIn) dpleIn<casadi::Sparsity>;
-%template(IOSchemeVectorDPLEInputSX) DPLEInputIOSchemeVector<SX>;
-%template(IOSchemeVectorDPLEInputMX) DPLEInputIOSchemeVector<MX>;
-%template(IOSchemeVectorDPLEInputSparsity) DPLEInputIOSchemeVector<Sparsity>;
-%rename(IOSchemeVectorDPLEInput) IOSchemeVectorDPLEInputSX;
-%rename(IOSchemeVectorDPLEInput) IOSchemeVectorDPLEInputMX;
-%rename(IOSchemeVectorDPLEInput) IOSchemeVectorDPLEInputSparsity;
+%template(cleIn) cleIn<casadi::SX>;
+%template(cleIn) cleIn<casadi::MX>;
+%template(cleIn) cleIn<casadi::Sparsity>;
+%template(IOSchemeVectorCLEInputSX) CLEInputIOSchemeVector<SX>;
+%template(IOSchemeVectorCLEInputMX) CLEInputIOSchemeVector<MX>;
+%template(IOSchemeVectorCLEInputSparsity) CLEInputIOSchemeVector<Sparsity>;
+%rename(IOSchemeVectorCLEInput) IOSchemeVectorCLEInputSX;
+%rename(IOSchemeVectorCLEInput) IOSchemeVectorCLEInputMX;
+%rename(IOSchemeVectorCLEInput) IOSchemeVectorCLEInputSparsity;
 }
 #endif //SWIGPYTHON
 namespace casadi {
 }
 #ifdef SWIGPYTHON
 %pythoncode %{
-def dpleOut(*dummy,**kwargs):
+def cleOut(*dummy,**kwargs):
   """
-  Helper function for 'DPLEOutput'
+  Helper function for 'CLEOutput'
 
   Two use cases:
-     a) arg = dpleOut(p=my_p)
+     a) arg = cleOut(p=my_p)
           all arguments optional
-     b) p = dpleOut(arg,"p")
+     b) p = cleOut(arg,"p")
           all arguments after the first optional
-  Output arguments of a \e dple solver
+  Output arguments of a \e cle solver
   
   Keyword arguments::
 
-    p -- Lyapunov matrix (horzcat when const_dim, blkdiag otherwise) (Cholesky of P if pos_def) [DPLE_P]
+    p -- Lyapunov matrix [CLE_P]
   """
-  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of dpleOut. Either use keywords or non-keywords ")
-  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_DPLEOutput,n)] for n in dummy[1:]]
+  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of cleOut. Either use keywords or non-keywords ")
+  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_CLEOutput,n)] for n in dummy[1:]]
   p = []
   if 'p' in kwargs:
     p = kwargs['p']
   for k in kwargs.keys():
     if not(k in ['p']):
-      raise Exception("Keyword error in dpleOut: '%s' is not recognized. Available keywords are: p" % k )
-  return IOSchemeVector([p], IOScheme(SCHEME_DPLEOutput))
+      raise Exception("Keyword error in cleOut: '%s' is not recognized. Available keywords are: p" % k )
+  return IOSchemeVector([p], IOScheme(SCHEME_CLEOutput))
 %}
 #endif //SWIGPYTHON
 #ifndef SWIGPYTHON
 namespace casadi {
-%template(dpleOut) dpleOut<casadi::SX>;
-%template(dpleOut) dpleOut<casadi::MX>;
-%template(dpleOut) dpleOut<casadi::Sparsity>;
-%template(IOSchemeVectorDPLEOutputSX) DPLEOutputIOSchemeVector<SX>;
-%template(IOSchemeVectorDPLEOutputMX) DPLEOutputIOSchemeVector<MX>;
-%template(IOSchemeVectorDPLEOutputSparsity) DPLEOutputIOSchemeVector<Sparsity>;
-%rename(IOSchemeVectorDPLEOutput) IOSchemeVectorDPLEOutputSX;
-%rename(IOSchemeVectorDPLEOutput) IOSchemeVectorDPLEOutputMX;
-%rename(IOSchemeVectorDPLEOutput) IOSchemeVectorDPLEOutputSparsity;
+%template(cleOut) cleOut<casadi::SX>;
+%template(cleOut) cleOut<casadi::MX>;
+%template(cleOut) cleOut<casadi::Sparsity>;
+%template(IOSchemeVectorCLEOutputSX) CLEOutputIOSchemeVector<SX>;
+%template(IOSchemeVectorCLEOutputMX) CLEOutputIOSchemeVector<MX>;
+%template(IOSchemeVectorCLEOutputSparsity) CLEOutputIOSchemeVector<Sparsity>;
+%rename(IOSchemeVectorCLEOutput) IOSchemeVectorCLEOutputSX;
+%rename(IOSchemeVectorCLEOutput) IOSchemeVectorCLEOutputMX;
+%rename(IOSchemeVectorCLEOutput) IOSchemeVectorCLEOutputSparsity;
 }
 #endif //SWIGPYTHON
 namespace casadi {
@@ -257,6 +257,186 @@ namespace casadi {
 %rename(IOSchemeVectorControlSimulatorInput) IOSchemeVectorControlSimulatorInputSX;
 %rename(IOSchemeVectorControlSimulatorInput) IOSchemeVectorControlSimulatorInputMX;
 %rename(IOSchemeVectorControlSimulatorInput) IOSchemeVectorControlSimulatorInputSparsity;
+}
+#endif //SWIGPYTHON
+namespace casadi {
+}
+#ifdef SWIGPYTHON
+%pythoncode %{
+def dleIn(*dummy,**kwargs):
+  """
+  Helper function for 'DLEInput'
+
+  Two use cases:
+     a) arg = dleIn(a=my_a, v=my_v)
+          all arguments optional
+     b) a, v = dleIn(arg,"a", "v")
+          all arguments after the first optional
+  Input arguments of a \e dle solver
+  
+  Keyword arguments::
+
+    a -- A matrix [DLE_A]
+    v -- V matrix [DLE_V]
+  """
+  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of dleIn. Either use keywords or non-keywords ")
+  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_DLEInput,n)] for n in dummy[1:]]
+  a = []
+  if 'a' in kwargs:
+    a = kwargs['a']
+  v = []
+  if 'v' in kwargs:
+    v = kwargs['v']
+  for k in kwargs.keys():
+    if not(k in ['a','v']):
+      raise Exception("Keyword error in dleIn: '%s' is not recognized. Available keywords are: a, v" % k )
+  return IOSchemeVector([a,v], IOScheme(SCHEME_DLEInput))
+%}
+#endif //SWIGPYTHON
+#ifndef SWIGPYTHON
+namespace casadi {
+%template(dleIn) dleIn<casadi::SX>;
+%template(dleIn) dleIn<casadi::MX>;
+%template(dleIn) dleIn<casadi::Sparsity>;
+%template(IOSchemeVectorDLEInputSX) DLEInputIOSchemeVector<SX>;
+%template(IOSchemeVectorDLEInputMX) DLEInputIOSchemeVector<MX>;
+%template(IOSchemeVectorDLEInputSparsity) DLEInputIOSchemeVector<Sparsity>;
+%rename(IOSchemeVectorDLEInput) IOSchemeVectorDLEInputSX;
+%rename(IOSchemeVectorDLEInput) IOSchemeVectorDLEInputMX;
+%rename(IOSchemeVectorDLEInput) IOSchemeVectorDLEInputSparsity;
+}
+#endif //SWIGPYTHON
+namespace casadi {
+}
+#ifdef SWIGPYTHON
+%pythoncode %{
+def dleOut(*dummy,**kwargs):
+  """
+  Helper function for 'DLEOutput'
+
+  Two use cases:
+     a) arg = dleOut(p=my_p)
+          all arguments optional
+     b) p = dleOut(arg,"p")
+          all arguments after the first optional
+  Output arguments of a \e dle solver
+  
+  Keyword arguments::
+
+    p -- Lyapunov matrix [DLE_P]
+  """
+  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of dleOut. Either use keywords or non-keywords ")
+  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_DLEOutput,n)] for n in dummy[1:]]
+  p = []
+  if 'p' in kwargs:
+    p = kwargs['p']
+  for k in kwargs.keys():
+    if not(k in ['p']):
+      raise Exception("Keyword error in dleOut: '%s' is not recognized. Available keywords are: p" % k )
+  return IOSchemeVector([p], IOScheme(SCHEME_DLEOutput))
+%}
+#endif //SWIGPYTHON
+#ifndef SWIGPYTHON
+namespace casadi {
+%template(dleOut) dleOut<casadi::SX>;
+%template(dleOut) dleOut<casadi::MX>;
+%template(dleOut) dleOut<casadi::Sparsity>;
+%template(IOSchemeVectorDLEOutputSX) DLEOutputIOSchemeVector<SX>;
+%template(IOSchemeVectorDLEOutputMX) DLEOutputIOSchemeVector<MX>;
+%template(IOSchemeVectorDLEOutputSparsity) DLEOutputIOSchemeVector<Sparsity>;
+%rename(IOSchemeVectorDLEOutput) IOSchemeVectorDLEOutputSX;
+%rename(IOSchemeVectorDLEOutput) IOSchemeVectorDLEOutputMX;
+%rename(IOSchemeVectorDLEOutput) IOSchemeVectorDLEOutputSparsity;
+}
+#endif //SWIGPYTHON
+namespace casadi {
+}
+#ifdef SWIGPYTHON
+%pythoncode %{
+def dpleIn(*dummy,**kwargs):
+  """
+  Helper function for 'DPLEInput'
+
+  Two use cases:
+     a) arg = dpleIn(a=my_a, v=my_v)
+          all arguments optional
+     b) a, v = dpleIn(arg,"a", "v")
+          all arguments after the first optional
+  Input arguments of a \e dple solver
+  
+  Keyword arguments::
+
+    a -- A matrices (horzcat when const_dim, blkdiag otherwise) [DPLE_A]
+    v -- V matrices (horzcat when const_dim, blkdiag otherwise) [DPLE_V]
+  """
+  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of dpleIn. Either use keywords or non-keywords ")
+  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_DPLEInput,n)] for n in dummy[1:]]
+  a = []
+  if 'a' in kwargs:
+    a = kwargs['a']
+  v = []
+  if 'v' in kwargs:
+    v = kwargs['v']
+  for k in kwargs.keys():
+    if not(k in ['a','v']):
+      raise Exception("Keyword error in dpleIn: '%s' is not recognized. Available keywords are: a, v" % k )
+  return IOSchemeVector([a,v], IOScheme(SCHEME_DPLEInput))
+%}
+#endif //SWIGPYTHON
+#ifndef SWIGPYTHON
+namespace casadi {
+%template(dpleIn) dpleIn<casadi::SX>;
+%template(dpleIn) dpleIn<casadi::MX>;
+%template(dpleIn) dpleIn<casadi::Sparsity>;
+%template(IOSchemeVectorDPLEInputSX) DPLEInputIOSchemeVector<SX>;
+%template(IOSchemeVectorDPLEInputMX) DPLEInputIOSchemeVector<MX>;
+%template(IOSchemeVectorDPLEInputSparsity) DPLEInputIOSchemeVector<Sparsity>;
+%rename(IOSchemeVectorDPLEInput) IOSchemeVectorDPLEInputSX;
+%rename(IOSchemeVectorDPLEInput) IOSchemeVectorDPLEInputMX;
+%rename(IOSchemeVectorDPLEInput) IOSchemeVectorDPLEInputSparsity;
+}
+#endif //SWIGPYTHON
+namespace casadi {
+}
+#ifdef SWIGPYTHON
+%pythoncode %{
+def dpleOut(*dummy,**kwargs):
+  """
+  Helper function for 'DPLEOutput'
+
+  Two use cases:
+     a) arg = dpleOut(p=my_p)
+          all arguments optional
+     b) p = dpleOut(arg,"p")
+          all arguments after the first optional
+  Output arguments of a \e dple solver
+  
+  Keyword arguments::
+
+    p -- Lyapunov matrix (horzcat when const_dim, blkdiag otherwise) (Cholesky of P if pos_def) [DPLE_P]
+  """
+  if (len(dummy)>0 and len(kwargs)>0): raise Exception("Cannot mix two use cases of dpleOut. Either use keywords or non-keywords ")
+  if len(dummy)>0: return [ dummy[0][getSchemeEntryEnum(SCHEME_DPLEOutput,n)] for n in dummy[1:]]
+  p = []
+  if 'p' in kwargs:
+    p = kwargs['p']
+  for k in kwargs.keys():
+    if not(k in ['p']):
+      raise Exception("Keyword error in dpleOut: '%s' is not recognized. Available keywords are: p" % k )
+  return IOSchemeVector([p], IOScheme(SCHEME_DPLEOutput))
+%}
+#endif //SWIGPYTHON
+#ifndef SWIGPYTHON
+namespace casadi {
+%template(dpleOut) dpleOut<casadi::SX>;
+%template(dpleOut) dpleOut<casadi::MX>;
+%template(dpleOut) dpleOut<casadi::Sparsity>;
+%template(IOSchemeVectorDPLEOutputSX) DPLEOutputIOSchemeVector<SX>;
+%template(IOSchemeVectorDPLEOutputMX) DPLEOutputIOSchemeVector<MX>;
+%template(IOSchemeVectorDPLEOutputSparsity) DPLEOutputIOSchemeVector<Sparsity>;
+%rename(IOSchemeVectorDPLEOutput) IOSchemeVectorDPLEOutputSX;
+%rename(IOSchemeVectorDPLEOutput) IOSchemeVectorDPLEOutputMX;
+%rename(IOSchemeVectorDPLEOutput) IOSchemeVectorDPLEOutputSparsity;
 }
 #endif //SWIGPYTHON
 namespace casadi {
