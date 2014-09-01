@@ -20,55 +20,55 @@
  *
  */
 
-#ifndef CASADI_CONDENSING_INDEF_DPLE_INTERNAL_HPP
-#define CASADI_CONDENSING_INDEF_DPLE_INTERNAL_HPP
+#ifndef CASADI_LIFTING_INDEF_DPLE_INTERNAL_HPP
+#define CASADI_LIFTING_INDEF_DPLE_INTERNAL_HPP
 
 #include "../core/function/dple_internal.hpp"
 #include "../core/function/dle_solver.hpp"
-#include <casadi/solvers/casadi_dplesolver_condensing_export.h>
+#include <casadi/solvers/casadi_dplesolver_lifting_export.h>
 
-/** \defgroup plugin_DpleSolver_condensing
+/** \defgroup plugin_DpleSolver_lifting
  Solving the Discrete Periodic Lyapunov Equations by
- condensing the entire period to a single Discrete Lyapunov Equation
+ lifting the entire period to a single Discrete Lyapunov Equation
 
 */
-/** \pluginsection{DpleSolver,condensing} */
+/** \pluginsection{DpleSolver,lifting} */
 
 /// \cond INTERNAL
 namespace casadi {
 
-  /** \brief \pluginbrief{DpleSolver,condensing}
+  /** \brief \pluginbrief{DpleSolver,lifting}
   
    @copydoc DPLE_doc
-   @copydoc plugin_DpleSolver_condensing
+   @copydoc plugin_DpleSolver_lifting
    
        \author Joris Gillis
       \date 2014
 
   */
-  class CASADI_DPLESOLVER_CONDENSING_EXPORT CondensingIndefDpleInternal : public DpleInternal {
+  class CASADI_DPLESOLVER_LIFTING_EXPORT LiftingIndefDpleInternal : public DpleInternal {
   public:
     /** \brief  Constructor
      * \param st \structargument{Dple}
      */
-    CondensingIndefDpleInternal(const DpleStructure& st);
+    LiftingIndefDpleInternal(const DpleStructure & st);
 
     /** \brief  Destructor */
-    virtual ~CondensingIndefDpleInternal();
+    virtual ~LiftingIndefDpleInternal();
 
     /** \brief  Clone */
-    virtual CondensingIndefDpleInternal* clone() const;
+    virtual LiftingIndefDpleInternal* clone() const;
 
     /** \brief  Deep copy data members */
     virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /** \brief  Create a new solver */
-    virtual CondensingIndefDpleInternal* create(const DpleStructure& st) const {
-        return new CondensingIndefDpleInternal(st);}
+    virtual LiftingIndefDpleInternal* create(const DpleStructure & st) const {
+        return new LiftingIndefDpleInternal(st);}
 
     /** \brief  Create a new DPLE Solver */
-    static DpleInternal* creator(const DpleStructure& st)
-    { return new CondensingIndefDpleInternal(st);}
+    static DpleInternal* creator(const DpleStructure & st)
+    { return new LiftingIndefDpleInternal(st);}
 
     /** \brief  Print solver statistics */
     virtual void printStats(std::ostream &stream) const {}
@@ -101,4 +101,4 @@ namespace casadi {
 
 } // namespace casadi
 /// \endcond
-#endif // CASADI_CONDENSING_INDEF_DPLE_INTERNAL_HPP
+#endif // CASADI_LIFTING_INDEF_DPLE_INTERNAL_HPP

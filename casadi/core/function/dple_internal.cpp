@@ -35,11 +35,10 @@ OUTPUTSCHEME(DPLEOutput)
 using namespace std;
 namespace casadi {
 
-  DpleInternal::DpleInternal(const std::vector< Sparsity > & A,
-                             const std::vector< Sparsity > &V,
+  DpleInternal::DpleInternal(const DpleStructure & st,
                              int nrhs,
                              bool transp) :
-      A_(A), V_(V), nrhs_(nrhs), transp_(transp) {
+      st_(st), nrhs_(nrhs), transp_(transp) {
 
     // set default options
     setOption("name", "unnamed_dple_solver"); // name of the function
@@ -70,6 +69,10 @@ namespace casadi {
     error_unstable_ = getOption("error_unstable");
     eps_unstable_ = getOption("eps_unstable");
 
+    A_ = st_[Dple_STRUCT_A];
+    V_ = st_[Dple_STRUCT_V];
+    C_ = st_[Dple_STRUCT_C];
+    
     // Dimension sanity checks
     casadi_assert_message(A_.size()==V_.size(), "A and V arguments must be of same length, but got "
                           << A_.size() << " and " << V_.size() << ".");

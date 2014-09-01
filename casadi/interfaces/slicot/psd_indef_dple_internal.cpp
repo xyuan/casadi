@@ -57,11 +57,10 @@ namespace casadi {
     DpleInternal::registerPlugin(casadi_register_dplesolver_slicot);
   }
 
-  PsdIndefDpleInternal::PsdIndefDpleInternal(const std::vector< Sparsity > & A,
-                                             const std::vector< Sparsity > &V,
+  PsdIndefDpleInternal::PsdIndefDpleInternal(const DpleStructure & st,
                                              int nrhs,
                                              bool transp)
-      : DpleInternal(A, V, nrhs, transp) {
+      : DpleInternal(st, nrhs, transp) {
 
     // set default options
     setOption("name", "unnamed_psd_indef_dple_solver"); // name of the function
@@ -892,7 +891,7 @@ namespace casadi {
     }
 
     // Prepare a solver for forward seeds
-    PsdIndefDpleInternal* node = new PsdIndefDpleInternal(A_, V_, nfwd, transp_);
+    PsdIndefDpleInternal* node = new PsdIndefDpleInternal(st_, nfwd, transp_);
     node->setOption(dictionary());
 
     DpleSolver f;
@@ -900,7 +899,7 @@ namespace casadi {
     f.init();
 
     // Prepare a solver for adjoint seeds
-    PsdIndefDpleInternal* node2 = new PsdIndefDpleInternal(A_, V_, nadj, !transp_);
+    PsdIndefDpleInternal* node2 = new PsdIndefDpleInternal(st_, nadj, !transp_);
     node2->setOption(dictionary());
 
     DpleSolver b;
@@ -1005,7 +1004,7 @@ namespace casadi {
 
   PsdIndefDpleInternal* PsdIndefDpleInternal::clone() const {
     // Return a deep copy
-    PsdIndefDpleInternal* node = new PsdIndefDpleInternal(A_, V_, nrhs_, transp_);
+    PsdIndefDpleInternal* node = new PsdIndefDpleInternal(st_, nrhs_, transp_);
     node->setOption(dictionary());
     return node;
   }

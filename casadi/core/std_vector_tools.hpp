@@ -83,6 +83,13 @@ namespace casadi {
   */
   CASADI_CORE_EXPORT std::vector<int> range(int stop);
 
+  /** Slicing vector
+  *  \param v Vector to slice
+  *  \param i List of indices
+  */
+  template<typename T>
+  std::vector<T> vector_slice(const std::vector<T> &v, const std::vector<int> &i);
+
   /// Print representation
   template<typename T>
   void repr(const std::vector<T> &v, std::ostream &stream=std::cout);
@@ -342,6 +349,19 @@ namespace std {
 } // namespace std
 
 namespace casadi {
+
+  template<typename T>
+  std::vector<T> vector_slice(const std::vector<T> &v, const std::vector<int> &i) {
+    std::vector<T> ret;
+    ret.reserve(i.size());
+    for (int k=0;k<i.size();++k) {
+       int j = i[k];
+       casadi_assert_message(j>=0,"vector_slice: Indices should be larger than zero. You have " << j << " at location " << k << ".");
+       casadi_assert_message(j<v.size(),"vector_slice: Indices should be larger than zero. You have " << j << " at location " << k << ".");
+       ret.push_back(v[j]);
+    }
+    return ret;
+  }
 
   template<typename T>
   void repr(const std::vector<T> &v, std::ostream &stream) {

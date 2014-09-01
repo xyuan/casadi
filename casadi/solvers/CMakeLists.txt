@@ -52,6 +52,11 @@ casadi_plugin(DpleSolver condensing
   condensing_indef_dple_internal.cpp
   condensing_indef_dple_internal_meta.cpp)
   
+casadi_plugin(DpleSolver lifting
+  lifting_indef_dple_internal.hpp
+  lifting_indef_dple_internal.cpp
+  lifting_indef_dple_internal_meta.cpp)  
+
 casadi_plugin(DleSolver simple
   simple_indef_dle_internal.hpp
   simple_indef_dle_internal.cpp

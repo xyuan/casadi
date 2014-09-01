@@ -28,6 +28,8 @@ from helpers import *
 import random
 import time
 
+CasadiOptions.setCatchErrorsSwig(False)
+
 clesolvers = []
 try:
   LinearSolver.loadPlugin("csparse")
@@ -74,11 +76,21 @@ try:
   dplesolvers.append(("condensing",{"dle_solver": "simple","dle_solver_options": {"linear_solver": "csparse"}}))
 except:
   pass
+
+dplesolvers = []
+
+try:
+  LinearSolver.loadPlugin("csparse")
+  DpleSolver.loadPlugin("lifting")
+  dplesolvers.append(("lifting",{"dle_solver": "simple","dle_solver_options": {"linear_solver": "csparse"}}))
+except:
+  pass
   
 print "DpleSolvers", dplesolvers
 print "DleSolvers", dlesolvers
 print "CleSolvers", clesolvers
 
+@run_only(["dple_small"])
 class ControlTests(casadiTestCase):
 
   @memory_heavy()
@@ -94,7 +106,7 @@ class ControlTests(casadiTestCase):
           V_ = mul(v,v.T)
           
           
-          solver = DleSolver(Solver,Sparsity.dense(n,n),Sparsity.dense(n,n))
+          solver = DleSolver(Solver,dleStruct(a=Sparsity.dense(n,n),v=Sparsity.dense(n,n)))
           solver.setOption(options)
           solver.init()
           solver.setInput(A_,DLE_A)
@@ -198,7 +210,7 @@ class ControlTests(casadiTestCase):
           V_ = [mul(v,v.T) for v in [DMatrix(numpy.random.random((n,n))) for i in range(K)]]
           
           
-          solver = DpleSolver(Solver,[Sparsity.dense(n,n) for i in range(K)],[Sparsity.dense(n,n) for i in range(K)])
+          solver = DpleSolver(Solver,dpleStruct(a=[Sparsity.dense(n,n) for i in range(K)],v=[Sparsity.dense(n,n) for i in range(K)]))
           solver.setOption(options)
           solver.init()
           solver.setInput(horzcat(A_),DPLE_A)
@@ -262,7 +274,7 @@ class ControlTests(casadiTestCase):
           V_ = [mul(v,v.T) for v in [DMatrix(numpy.random.random((n,n))) for i in range(K)]]
           
           
-          solver = DpleSolver(Solver,[Sparsity.dense(n,n) for i in range(K)],[Sparsity.dense(n,n) for i in range(K)])
+          solver = DpleSolver(Solver,DpleStruct(a=[Sparsity.dense(n,n) for i in range(K)],v=[Sparsity.dense(n,n) for i in range(K)]))
           solver.setOption(options)
           solver.init()
           solver.setInput(horzcat(A_),DPLE_A)

@@ -61,6 +61,17 @@ namespace casadi {
     /// Number of arguments.
     CLE_NUM_OUT
   };
+  
+  /// Structure specification of a CLE [cleStruct]
+  enum CleStruct {
+    /// The matrix A [a]
+    Cle_STRUCT_A,
+    /// The matrix V [v]
+    Cle_STRUCT_V,
+    /// The matrix C (defaults to unity) [c]
+    Cle_STRUCT_C,
+    Cle_STRUCT_NUM};
+
 
   /// Forward declaration of internal class
   class CleInternal;
@@ -86,12 +97,10 @@ namespace casadi {
 
     /** \brief CleSolver solver factory
     * \param name \pluginargument{CleSolver}
-    * \param[in] A Matrix A
-    * \param[in] V Matrix V
+    * \param st \structargument{Cle}
     */
     CleSolver(const std::string& name,
-               const Sparsity & A,
-               const Sparsity & V);
+               const CleStructure& st);
 
     /// Print solver statistics
     void printStats(std::ostream &stream=std::cout) const;

@@ -35,11 +35,10 @@ OUTPUTSCHEME(DLEOutput)
 using namespace std;
 namespace casadi {
 
-  DleInternal::DleInternal(const Sparsity & A,
-                             const  Sparsity &V,
+  DleInternal::DleInternal(const DleStructure& st,
                              int nrhs,
                              bool transp) :
-      A_(A), V_(V), nrhs_(nrhs), transp_(transp) {
+      st_(st), nrhs_(nrhs), transp_(transp) {
 
     // set default options
     setOption("name", "unnamed_dple_solver"); // name of the function
@@ -67,20 +66,40 @@ namespace casadi {
     pos_def_ = getOption("pos_def");
     error_unstable_ = getOption("error_unstable");
     eps_unstable_ = getOption("eps_unstable");
-
+    
+    A_ = st_[Dle_STRUCT_A];
+    V_ = st_[Dle_STRUCT_V];
+    C_ = st_[Dle_STRUCT_C];
+    
+    with_C_ = true;
+    if (C_.isNull()) {
+      C_ = Sparsity::sparse(0,0);
+      st_[Dle_STRUCT_C] = C_;
+      with_C_ = false;
+    }
+    
+    int n = A_.size1();
 
     casadi_assert_message(V_.isSymmetric(), "V must be symmetric but got "
                           << V_.dimString() << ".");
-
-    casadi_assert_message(A_.size1()==V_.size1(), "First dimension of A ("
-                          << A_.size1() << ") must match dimension of symmetric V ("
-                          << V_.size1() << ")" << ".");
-
-    int n = A_.size1();
-    casadi_assert_message(A_.size1()==n, "You have set const_dim option, but found "
-                           "an A with dimension ( " << A_.dimString()
-                           << " ) deviating from n = " << n << ".");
-
+    
+    casadi_assert_message(A_.size1()==A_.size2(), "A must be square but got "
+                          << A_.dimString() << ".");
+    
+    int m = with_C_? V_.size1(): n;
+    
+    if (with_C_) { 
+      casadi_assert_message(n==C_.size1(), "Number of rows in C ("
+                            << C_.size1() << ") must match dimension of square A ("
+                            << n << ")" << ".");
+      casadi_assert_message(m==C_.size2(), "Number of columns in C ("
+                            << C_.size2() << ") must match dimension of symmetric V ("
+                            << m << ")" << ".");
+    } else {
+      casadi_assert_message(A_.size1()==V_.size1(), "First dimension of A ("
+                            << A_.size1() << ") must match dimension of symmetric V ("
+                            << V_.size1() << ")" << ".");
+    }
     // Allocate inputs
     setNumInputs(1+nrhs_);
 
@@ -90,8 +109,21 @@ namespace casadi {
       input(1+i)  = DMatrix::zeros(V_);
     }
 
-    // Allocate outputs
-    Sparsity P = Sparsity::dense(V_.size1(), V_.size1());
+    // Compute output sparsity by Schmidt iteration with frequency doubling
+    Sparsity C = C_;
+    Sparsity A = A_;
+    Sparsity V = V_;
+    
+    Sparsity P = mul(mul(C,V),C.T());
+    Sparsity Pprev = Sparsity::sparse(n,n);
+    
+    while (Pprev.size()!=P.size()) {
+      Pprev = P;
+      C = horzcat(C,mul(A,C));
+      V = blkdiag(V,V);
+      A = mul(A,A);
+      P = mul(mul(C,V),C.T());
+    }
 
     setNumOutputs(nrhs_);
     for (int i=0;i<nrhs_;++i) {

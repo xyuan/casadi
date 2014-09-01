@@ -293,7 +293,7 @@ autogenpy.write("""%include "casadi/core/function/schemes_metadata.hpp"\n%includ
 
 schemes = []
 
-for h in locate("*.hpp",os.path.join(os.curdir,"..")):
+for h in locate("*.hpp",os.path.join(os.curdir,"../casadi/core")):
   f =  file(h,'r')
   while 1:
     line = f.readline()

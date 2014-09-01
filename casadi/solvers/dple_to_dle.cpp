@@ -53,8 +53,7 @@ namespace casadi {
   }
 
   DpleToDle::DpleToDle(
-      const Sparsity & A,
-      const Sparsity &V) : DleInternal(A, V) {
+         const DleStructure& st) : DleInternal(st) {
 
     // set default options
     setOption("name", "unnamed_dple_to_dle"); // name of the function
@@ -76,7 +75,9 @@ namespace casadi {
 
     // Create an dplesolver instance
     std::string dplesolver_name = getOption("dple_solver");
-    dplesolver_ = DpleSolver(dplesolver_name, std::vector<Sparsity>(1,A_), std::vector<Sparsity>(1,V_));
+    dplesolver_ = DpleSolver(dplesolver_name, dpleStruct("a",
+      std::vector<Sparsity>(1,A_), "v",std::vector<Sparsity>(1,V_))
+    );
 
     if (hasSetOption("dple_solver_options")) {
       dplesolver_.setOption(getOption("dple_solver_options"));
@@ -111,7 +112,7 @@ namespace casadi {
 
   DpleToDle* DpleToDle::clone() const {
     // Return a deep copy
-    DpleToDle* node = new DpleToDle(A_, V_);
+    DpleToDle* node = new DpleToDle(st_);
     node->setOption(dictionary());
     return node;
   }

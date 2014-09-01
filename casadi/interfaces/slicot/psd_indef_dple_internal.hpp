@@ -54,10 +54,9 @@ namespace casadi {
   class CASADI_DPLESOLVER_SLICOT_EXPORT PsdIndefDpleInternal : public DpleInternal {
   public:
     /** \brief  Constructor
-     *  \param[in] A  List of sparsities of A_i
-     *  \param[in] V  List of sparsities of V_i
+     * \param st \structargument{Dple}
      */
-    PsdIndefDpleInternal(const std::vector< Sparsity > & A, const std::vector< Sparsity > &V,
+    PsdIndefDpleInternal(const DpleStructure & st,
                          int nrhs=1, bool transp=false);
 
     /** \brief  Destructor */
@@ -70,14 +69,12 @@ namespace casadi {
     virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
     /** \brief  Create a new solver */
-    virtual PsdIndefDpleInternal* create(const std::vector< Sparsity >& A,
-                                         const std::vector< Sparsity >& V) const
-    { return new PsdIndefDpleInternal(A, V); }
+    virtual PsdIndefDpleInternal* create(const DpleStructure & st) const
+    { return new PsdIndefDpleInternal(st); }
 
     /** \brief  Create a new DPLE Solver */
-    static DpleInternal* creator(const std::vector< Sparsity >& A,
-                                 const std::vector< Sparsity >& V)
-    { return new PsdIndefDpleInternal(A, V);}
+    static DpleInternal* creator(const DpleStructure & st)
+    { return new PsdIndefDpleInternal(st);}
 
     /** \brief  Print solver statistics */
     virtual void printStats(std::ostream &stream) const {}

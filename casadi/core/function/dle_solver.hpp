@@ -32,13 +32,14 @@
 
     \verbatim
     A in R^(n x n)
-    V in S^n
+    V in S^m
+    C in R^(n x m)
     \endverbatim
 
     finds \f$P\f$ that satisfies:
 
     \verbatim
-    P = A P A' + V
+    P = A P A' + C V C'
     \endverbatim
 
 
@@ -51,6 +52,8 @@ namespace casadi {
     DLE_A,
     /// V matrix [v]
     DLE_V,
+    /// V matrix [c]
+    DLE_C,
     DLE_NUM_IN
   };
 
@@ -61,6 +64,17 @@ namespace casadi {
     /// Number of arguments.
     DLE_NUM_OUT
   };
+
+
+  /// Structure specification of a DLE [dleStruct]
+  enum DleStruct {
+    /// The matrix A [a]
+    Dle_STRUCT_A,
+    /// The matrix V [v]
+    Dle_STRUCT_V,
+    /// The matrix C (defaults to unity) [c]
+    Dle_STRUCT_C,
+    Dle_STRUCT_NUM};
 
   /// Forward declaration of internal class
   class DleInternal;
@@ -86,12 +100,9 @@ namespace casadi {
 
     /** \brief DleSolver solver factory
     * \param name \pluginargument{DleSolver}
-    * \param[in] A Matrix A
-    * \param[in] V Matrix V
+    * \param st \structargument{Dle}
     */
-    DleSolver(const std::string& name,
-               const Sparsity & A,
-               const Sparsity & V);
+    DleSolver(const std::string& name, const DleStructure& st);
 
     /// Print solver statistics
     void printStats(std::ostream &stream=std::cout) const;

@@ -53,8 +53,7 @@ namespace casadi {
   }
 
   SimpleIndefCleInternal::SimpleIndefCleInternal(
-      const Sparsity & A,
-      const Sparsity &V) : CleInternal(A, V) {
+      const CleStructure& st) : CleInternal(st) {
 
     // set default options
     setOption("name", "unnamed_simple_indef_cle_solver"); // name of the function
@@ -122,7 +121,7 @@ namespace casadi {
 
   SimpleIndefCleInternal* SimpleIndefCleInternal::clone() const {
     // Return a deep copy
-    SimpleIndefCleInternal* node = new SimpleIndefCleInternal(A_, V_);
+    SimpleIndefCleInternal* node = new SimpleIndefCleInternal(st_);
     node->setOption(dictionary());
     return node;
   }

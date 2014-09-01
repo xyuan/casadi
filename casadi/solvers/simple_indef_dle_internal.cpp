@@ -53,12 +53,14 @@ namespace casadi {
   }
 
   SimpleIndefDleInternal::SimpleIndefDleInternal(
-      const Sparsity & A,
-      const Sparsity &V) : DleInternal(A, V) {
+      const DleStructure& st) : DleInternal(st) {
 
     // set default options
     setOption("name", "unnamed_simple_indef_dle_solver"); // name of the function
 
+    addOption("compressed_solve",         OT_BOOLEAN, true,
+              "When a system with sparse rhs arises, compress to"
+              "a smaller system with dense rhs.");
     addOption("linear_solver",            OT_STRING, GenericType(),
               "User-defined linear solver class. Needed for sensitivities.");
     addOption("linear_solver_options",    OT_DICTIONARY,   GenericType(),
@@ -81,20 +83,29 @@ namespace casadi {
 
     MX As = MX::sym("A", A_);
     MX Vs = MX::sym("V", V_);
+    MX Cs = MX::sym("C", C_);
 
     MX Vss = (Vs+Vs.T())/2;
-    
-    MX A_total = DMatrix::eye(n_*n_) - kron(As,As);
+    if (with_C_) Vss = mul(mul(Cs,Vss),Cs.T());
 
+    MX A_total = DMatrix::eye(n_*n_) - kron(As,As);
+    
     MX Pf = solve(A_total, vec(Vss), getOption("linear_solver"));
-   
+    
     std::vector<MX> v_in;
     v_in.push_back(As);
     v_in.push_back(Vs);
-    f_ = MXFunction(v_in, reshape(Pf,n_,n_));
+    v_in.push_back(Cs);
+    f_ = MXFunction(v_in, reshape(Pf,n_,n_)(output().sparsity()));
+    
     f_.setInputScheme(SCHEME_DLEInput);
     f_.setOutputScheme(SCHEME_DLEOutput);
     f_.init();
+    
+    
+    std::cout << "P" << output().dimString() << std::endl;
+    std::cout << "solve" << f_.output().dimString() << std::endl;
+    
   }
 
 
@@ -121,7 +132,7 @@ namespace casadi {
 
   SimpleIndefDleInternal* SimpleIndefDleInternal::clone() const {
     // Return a deep copy
-    SimpleIndefDleInternal* node = new SimpleIndefDleInternal(A_, V_);
+    SimpleIndefDleInternal* node = new SimpleIndefDleInternal(st_);
     node->setOption(dictionary());
     return node;
   }

@@ -62,6 +62,16 @@ namespace casadi {
     /// Number of arguments.
     DPLE_NUM_OUT
   };
+  
+  /// Structure specification of a DPLE [dpleStruct]
+  enum DpleStruct {
+    /// Vector of sparsities for A_i [a]
+    Dple_STRUCT_A,
+    /// Vector of sparsities for V_i [v]
+    Dple_STRUCT_V,
+    /// Vector of sparsities for A_i (defaults to unity) [c]
+    Dple_STRUCT_C,
+    Dple_STRUCT_NUM};
 
   /// Forward declaration of internal class
   class DpleInternal;
@@ -87,12 +97,10 @@ namespace casadi {
 
     /** \brief DpleSolver solver factory
     * \param name \pluginargument{DpleSolver}
-    * \param[in] A List of sparsities of A_i
-    * \param[in] V List of sparsities of V_i
+    * \param st \structargument{Dple}
     */
     DpleSolver(const std::string& name,
-               const std::vector< Sparsity > & A,
-               const std::vector< Sparsity > & V);
+               const DpleStructure & st);
 
     /// Print solver statistics
     void printStats(std::ostream &stream=std::cout) const;
