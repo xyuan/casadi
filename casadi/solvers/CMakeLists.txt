@@ -1,22 +1,25 @@
 cmake_minimum_required(VERSION 2.6)
 
-# Explicit Runge-Kutta integrator
-casadi_plugin(Integrator rk
+# Base classes for fixed-step integrators
+casadi_library(casadi_integrators
   fixed_step_integrator.hpp
   fixed_step_integrator.cpp
+  implicit_fixed_step_integrator.hpp
+  implicit_fixed_step_integrator.cpp)
+
+# Explicit Runge-Kutta integrator
+casadi_plugin(Integrator rk
   rk_integrator.hpp
   rk_integrator.cpp
   rk_integrator_meta.cpp)
+target_link_libraries(casadi_integrator_rk casadi_integrators)
 
 # Collocation integrator
 casadi_plugin(Integrator collocation
-  implicit_fixed_step_integrator.hpp
-  implicit_fixed_step_integrator.cpp
   collocation_integrator.hpp
   collocation_integrator.cpp
-  collocation_integrator_meta.cpp
-  )
-target_link_libraries(casadi_integrator_collocation casadi_integrator_rk)
+  collocation_integrator_meta.cpp)
+target_link_libraries(casadi_integrator_collocation casadi_integrators)
 
 # Old (all-at-once) collocation integrator
 casadi_plugin(Integrator oldcollocation
@@ -86,11 +89,8 @@ casadi_plugin(LinearSolver symbolicqr
 if(WITH_CSPARSE)
   casadi_plugin(QcqpSolver socp
     qcqp_to_socp.cpp qcqp_to_socp.hpp qcqp_to_socp_meta.cpp)
-  target_link_libraries(casadi_qcqpsolver_socp casadi_linearsolver_csparsecholesky)
   casadi_plugin(SdqpSolver sdp
     sdqp_to_sdp.cpp sdqp_to_sdp.hpp sdqp_to_sdp_meta.cpp)
-  target_link_libraries(casadi_sdqpsolver_sdp
-    casadi_linearsolver_csparsecholesky)
 endif()
 
 install(DIRECTORY ./

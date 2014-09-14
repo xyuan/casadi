@@ -45,6 +45,7 @@
 #ifndef SHARED_LIBRARY_SUFFIX
 #define SHARED_LIBRARY_SUFFIX ".so"
 #endif // SHARED_LIBRARY_SUFFIX
+
 #endif // WITH_DL
 
 namespace casadi {
@@ -98,24 +99,58 @@ namespace casadi {
 
     // Load the dll
     std::string regName = "casadi_register_" + Derived::infix_ + "_" + name;
+
+    // Error string
+    std::string errors = "PluginInterface::loadPlugin: Cannot load shared library:";
 #ifdef _WIN32
     HINSTANCE handle = LoadLibrary(TEXT(lib.c_str()));
-    casadi_assert_message(handle!=0, "PluginInterface::loadPlugin: Cannot open function: "
-                        << lib << ". error code (WIN32): "<< GetLastError());
+    if (!handle) {
+      errors += "\n  Tried " + lib + ":\n    Error code (WIN32): " + STRING(GetLastError());
+
+      #ifdef PLUGIN_EXTRA_SEARCH_PATH
+      // Try the second search path
+      std::string lib2 = PLUGIN_EXTRA_SEARCH_PATH "\\" + lib;
+      handle = LoadLibrary(TEXT(lib2.c_str()));
+      if (!handle) {
+        errors += "\n  Tried: " + lib2 + ":\n    Error code (WIN32): " + STRING(GetLastError());
+      }
+      #endif // PLUGIN_EXTRA_SEARCH_PATH
+
+      if (!handle) {
+        // Try current directory
+        std::string lib3 = ".\\" + lib;
+        handle = LoadLibrary(TEXT(lib3.c_str()));
+        if (!handle) {
+          errors += "\n  Tried: " + lib3 + ":\n    Error code (WIN32): " + STRING(GetLastError());
+        }
+      }
+    }
+    casadi_assert_message(handle!=0, errors);
 
     reg = (RegFcn)GetProcAddress(handle, TEXT(regName.c_str()));
-    if (reg==0) throw CasadiException("PluginInterface::loadPlugin: no \"" + regName + "\" found");
+    casadi_assert_message(reg!=0, "PluginInterface::loadPlugin: no \"" + regName + "\" found");
 #else // _WIN32
     void* handle = dlopen(lib.c_str(), RTLD_LAZY | RTLD_GLOBAL);
-    casadi_assert_message(handle!=0, "PluginInterface::loadPlugin: Cannot open function: "
-                          << lib << ". error code: "<< dlerror());
-    // reset error
+    if (!handle) {
+      errors += "\n  Tried " + lib + ":\n    Error code: " + dlerror();
+
+      #ifdef PLUGIN_EXTRA_SEARCH_PATH
+      // Try the second search path
+      lib = PLUGIN_EXTRA_SEARCH_PATH "/" + lib;
+      handle = dlopen(lib.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+      if (!handle) {
+        errors += "\n  Tried " + lib + ":\n    Error code: " + dlerror();
+      }
+      #endif // PLUGIN_EXTRA_SEARCH_PATH
+    }
+    casadi_assert_message(handle!=0, errors);
+
+    // Reset error
     dlerror();
 
     // Load creator
     reg = (RegFcn)dlsym(handle, regName.c_str());
-    if (dlerror())
-      throw CasadiException("PluginInterface::loadPlugin: no \""+regName+"\" found");
+    casadi_assert_message(!dlerror(), "PluginInterface::loadPlugin: no \""+regName+"\" found");
 #endif // _WIN32
 
     // Register the plugin

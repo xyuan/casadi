@@ -9,6 +9,10 @@ Build-Depends: debhelper (>= 9),
                liblapack-dev,
                gfortran,
                libslicot-dev,
+               libsundials-serial-dev,
+               libsuitesparse-dev,
+               libtinyxml-dev,
+#               libdsdp-dev,
                swig2.0,
                dh-python,
                python-dev (>= 2.6.6),
@@ -52,7 +56,7 @@ Section: libdevel
 Architecture: any
 Depends: ${misc:Depends},
          libcasadi-core2.0 (= ${binary:Version})
-Description: development files for CasADi core module
+Description: CasADi core module (development files)
  CasADi is a numerical optimization and algorithmic differentiation framework.
  It can be used from C++ or Python.
  .
@@ -73,10 +77,10 @@ Description: development files for CasADi core module
  self-contained C-code and symbolic import of models from the Modelica physical
  modeling language and the AMPL algebraic modeling language.
  .
- This package contains the header files for developers.
+ This package contains the core library development files.
 
 
-Package: libcasadi-ipopt2.0
+Package: libcasadi-nlpsolver-ipopt
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -106,7 +110,7 @@ Description: IPOPT plugin for CasADi optimization framework
  This package contains the IPOPT NLP solver interface plugin.
 
 
-Package: libcasadi-snopt2.0
+Package: libcasadi-nlpsolver-snopt
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -135,7 +139,7 @@ Description: SNOPT plugin for CasADi optimization framework
  This package contains the SNOPT NLP solver interface plugin.
 
 
-Package: libcasadi-solvers2.0
+Package: libcasadi-solvers
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -164,7 +168,7 @@ Description: CasADi's suite of numerical solvers
  This package contains a variety of in-house solver plugins.
 
 
-Package: libcasadi-csparse2.0
+Package: libcasadi-linearsolver-csparse
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -193,36 +197,36 @@ Description: CSparse plugin for CasADi
  This package contains the CSparse linear-solver interface plugin.
 
 
-Package: libcasadi-dsdp2.0
-Architecture: any
-Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         libcasadi-core2.0 (= ${binary:Version})
-Description: DSDP plugin for CasADi
- CasADi is a numerical optimization and algorithmic differentiation framework.
- It can be used from C++ or Python.
- .
- It provides users with a set of building blocks that simplify the process of
- implementing efficient gradient-based solvers for numerical optimization
- problems in general, and simulation-based nonlinear programs (optimal control)
- in particular. This can be done with a range of different methods including
- direct collocation, direct multiple shooting and indirect methods.
- .
- CasADi is designed as a symbolic framework that allows construction of
- large computational graphs made up of matrix-valued operations, and a
- state-of-the-art framework for algorithmic differentiation (AD) - also known
- as automatic differentiation - that operates on these computational graphs.
- Also contained is a set of solvers and interfaces to third-party solvers for
- nonlinear programming (NLP), quadratic programming (QP) and initial-value
- problems in ordinary differential equations (ODE) or diffential-algebraic
- equations (DAE). Other features of interest include generation of
- self-contained C-code and symbolic import of models from the Modelica physical
- modeling language and the AMPL algebraic modeling language.
- .
- This package contains the DSDP interface plugin.
+#Package: libcasadi-sdpsolver-dsdp
+#Architecture: any
+#Depends: ${shlibs:Depends},
+#         ${misc:Depends},
+#         libcasadi-core2.0 (= ${binary:Version})
+#Description: DSDP plugin for CasADi
+# CasADi is a numerical optimization and algorithmic differentiation framework.
+# It can be used from C++ or Python.
+# .
+# It provides users with a set of building blocks that simplify the process of
+# implementing efficient gradient-based solvers for numerical optimization
+# problems in general, and simulation-based nonlinear programs (optimal control)
+# in particular. This can be done with a range of different methods including
+# direct collocation, direct multiple shooting and indirect methods.
+# .
+# CasADi is designed as a symbolic framework that allows construction of
+# large computational graphs made up of matrix-valued operations, and a
+# state-of-the-art framework for algorithmic differentiation (AD) - also known
+# as automatic differentiation - that operates on these computational graphs.
+# Also contained is a set of solvers and interfaces to third-party solvers for
+# nonlinear programming (NLP), quadratic programming (QP) and initial-value
+# problems in ordinary differential equations (ODE) or diffential-algebraic
+# equations (DAE). Other features of interest include generation of
+# self-contained C-code and symbolic import of models from the Modelica physical
+# modeling language and the AMPL algebraic modeling language.
+# .
+# This package contains the DSDP interface plugin.
 
 
-Package: libcasadi-slicot2.0
+Package: libcasadi-dplesolver-slicot
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -251,7 +255,7 @@ Description: SLICOT plugin for CasADi
  This package contains the SLICOT interface plugin.
 
 
-Package: libcasadi-qpoases2.0
+Package: libcasadi-qpsolver-qpoases
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -280,7 +284,7 @@ Description: qpOASES plugin for CasADi
  This package contains the qpOASES QP solver interface plugin.
 
 
-Package: libcasadi-lapack2.0
+Package: libcasadi-linearsolver-lapack
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -309,7 +313,7 @@ Description: LAPACK linear solver plugin for CasADi
  This package contains LAPACK linear solver interface plugins.
 
 
-Package: libcasadi-sundials2.0
+Package: libcasadi-sundials
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -338,7 +342,7 @@ Description: SUNDIALS integrators plugin for CasADi
  This package contains SUNDIALS ODE/DAE solver interface plugins.
 
 
-Package: libcasadi-tinyxml2.0
+Package: libcasadi-xmlfile-tinyxml
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -396,4 +400,4 @@ Description: Python bindings for CasADi
  self-contained C-code and symbolic import of models from the Modelica physical
  modeling language and the AMPL algebraic modeling language.
  .
- This package contains the python bindings.
+ This package contains the Python bindings.

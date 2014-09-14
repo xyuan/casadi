@@ -256,7 +256,7 @@ COMMAND ${CMAKE_COMMAND}
   -P cmake_install.cmake
 )
 foreach(my_module ${CASADI_SWIG_MODULES})
-add_dependencies(install_python DEPENDS _${my_module})
+add_dependencies(install_python _${my_module})
 endforeach()
 
 # MATLAB interface
@@ -267,6 +267,16 @@ if(WITH_MATLAB)
 endif()
   
 # json interface
+
+# fooXML_wrap.xml are a big files which Joris wants to delete immedately after using.
+# These files are dependencies of json outputs, but they don't exist according to cmake.
+# So we silence these warnings. THIS IS A HACK AND WE NEED A BETTER SOLUTION
+if(COMMAND cmake_policy)
+  if(CMAKE_MAJOR_VERSION GREATER 2)
+    cmake_policy(SET CMP0046 OLD)
+  endif()
+endif()
+
 foreach(my_module ${CASADI_SWIG_MODULES})
   swig_add_module_xml(${my_module}_xml ${my_module}.i)
 endforeach()
@@ -276,7 +286,9 @@ add_custom_target(${my_module}_json
   COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/json/generate.py ${PROJECT_BINARY_DIR}/swig/${my_module}XML_wrap.xml ${my_module}
   COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_BINARY_DIR}/swig/${my_module}XML_wrap.xml
 )
-add_dependencies(${my_module}_json ${my_module}_xml DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/json/generate.py ${PROJECT_BINARY_DIR}/swig/${my_module}XML_wrap.xml)
+add_dependencies(${my_module}_json ${my_module}_xml
+                 ${CMAKE_CURRENT_SOURCE_DIR}/json/generate.py
+                 ${PROJECT_BINARY_DIR}/swig/${my_module}XML_wrap.xml)
 endforeach()
 
 #foreach(my_module ${CASADI_SWIG_MODULES})

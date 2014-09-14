@@ -11258,6 +11258,18 @@ You can retrieve the entire state trajectory as follows, after the evaluate
 call: Call reset. Then call integrate(t_i) and getOuput for a series of
 times t_i.
 
+Note: depending on the dimension and structure of your problem, you may
+experience a dramatic speed-up by using a sparse linear solver:
+
+
+
+::
+
+     intg.setOption(\"linear_solver\",\"csparse\")
+     intg.setOption(\"linear_solver_type\",\"user_defined\")
+
+
+
 >List of available options
 
 +-----------------+-----------------+-----------------+-----------------+
@@ -19132,11 +19144,12 @@ Take the inverse of a sparsity pattern; flip zeros and non-zeros.
 
 ";
 
-%feature("docstring") casadi::EmptySparsity::removeDuplicates "[INTERNAL]
-Remove duplicate entries.
+%feature("docstring") casadi::EmptySparsity::patternProductNew "[INTERNAL]
+Sparsity pattern for a matrix-matrix product Returns the sparsity pattern
+resulting from multiplying the pattern with another pattern y from the
+right.
 
-The same indices will be removed from the mapping vector, which must have
-the same length as the number of nonzeros
+This will replace patternProduct after deprecation.
 
 ";
 
@@ -19336,11 +19349,12 @@ options: None (0), largest first (1)
 ";
 
 %feature("docstring") casadi::EmptySparsity::patternProduct "[INTERNAL]
-Sparsity pattern for a matrix-matrix product Returns the sparsity pattern
-resulting from pre-multiplying the pattern with the transpose of x. Returns
-the new sparsity pattern as well as a mapping with the same length as the
-number of non-zero elements The mapping contains a vector of the index pairs
-that makes up the scalar products for each non-zero.
+Sparsity pattern for a matrix-matrix product [deprecated] Returns the
+sparsity pattern resulting from pre-multiplying the pattern with the
+transpose of x. Returns the new sparsity pattern as well as a mapping with
+the same length as the number of non-zero elements The mapping contains a
+vector of the index pairs that makes up the scalar products for each non-
+zero.
 
 ";
 
@@ -19466,6 +19480,14 @@ non-zeros on the diagonal, i.e. the number of elements (i, j) with j==i.
 
 %feature("docstring") casadi::EmptySparsity::isVector "[INTERNAL]  Is
 vector (i.e. size2()==1)
+
+";
+
+%feature("docstring") casadi::EmptySparsity::removeDuplicates "[INTERNAL]
+Remove duplicate entries.
+
+The same indices will be removed from the mapping vector, which must have
+the same length as the number of nonzeros
 
 ";
 
@@ -27693,6 +27715,18 @@ Integrator
 
 Interface to IDAS from the Sundials suite.
 
+Note: depending on the dimension and structure of your problem, you may
+experience a dramatic speed-up by using a sparse linear solver:
+
+
+
+::
+
+     intg.setOption(\"linear_solver\",\"csparse\")
+     intg.setOption(\"linear_solver_type\",\"user_defined\")
+
+
+
 >List of available options
 
 +-----------------+-----------------+-----------------+-----------------+
@@ -27929,7 +27963,7 @@ Interface to IDAS from the Sundials suite.
 |                 |                 |                 | the end of the  |
 |                 |                 |                 | interval        |
 +-----------------+-----------------+-----------------+-----------------+
-| suppress_algebr | OT_BOOLEAN      | false           | Supress         |
+| suppress_algebr | OT_BOOLEAN      | false           | Suppress        |
 | aic             |                 |                 | algebraic       |
 |                 |                 |                 | variables in    |
 |                 |                 |                 | the error       |
@@ -28446,7 +28480,7 @@ Joel Andersson
 |              |              |              | of the       |              |
 |              |              |              | interval     |              |
 +--------------+--------------+--------------+--------------+--------------+
-| suppress_alg | OT_BOOLEAN   | false        | Supress      | casadi::Idas |
+| suppress_alg | OT_BOOLEAN   | false        | Suppress     | casadi::Idas |
 | ebraic       |              |              | algebraic    | Interface    |
 |              |              |              | variables in |              |
 |              |              |              | the error    |              |
@@ -33199,6 +33233,18 @@ You can retrieve the entire state trajectory as follows, after the evaluate
 call: Call reset. Then call integrate(t_i) and getOuput for a series of
 times t_i.
 
+Note: depending on the dimension and structure of your problem, you may
+experience a dramatic speed-up by using a sparse linear solver:
+
+
+
+::
+
+     intg.setOption(\"linear_solver\",\"csparse\")
+     intg.setOption(\"linear_solver_type\",\"user_defined\")
+
+
+
 >List of available options
 
 +-----------------+-----------------+-----------------+-----------------+
@@ -33480,6 +33526,18 @@ idas
 
 Interface to IDAS from the Sundials suite.
 
+Note: depending on the dimension and structure of your problem, you may
+experience a dramatic speed-up by using a sparse linear solver:
+
+
+
+::
+
+     intg.setOption(\"linear_solver\",\"csparse\")
+     intg.setOption(\"linear_solver_type\",\"user_defined\")
+
+
+
 >List of available options
 
 +-----------------+-----------------+-----------------+-----------------+
@@ -33716,7 +33774,7 @@ Interface to IDAS from the Sundials suite.
 |                 |                 |                 | the end of the  |
 |                 |                 |                 | interval        |
 +-----------------+-----------------+-----------------+-----------------+
-| suppress_algebr | OT_BOOLEAN      | false           | Supress         |
+| suppress_algebr | OT_BOOLEAN      | false           | Suppress        |
 | aic             |                 |                 | algebraic       |
 |                 |                 |                 | variables in    |
 |                 |                 |                 | the error       |
@@ -39171,11 +39229,11 @@ KNITRO interface
 | FeasTol         | OT_REAL         | 0.000           | Feasible        |
 |                 |                 |                 | tolerance       |
 +-----------------+-----------------+-----------------+-----------------+
-| FeasTolAbs      | OT_REAL         | 1               | Absolute        |
+| FeasTolAbs      | OT_REAL         | 0               | Absolute        |
 |                 |                 |                 | feasible        |
 |                 |                 |                 | tolerance       |
 +-----------------+-----------------+-----------------+-----------------+
-| Feasible        | OT_BOOLEAN      | 0               | Allow           |
+| Feasible        | OT_BOOLEAN      | 1               | Allow           |
 |                 |                 |                 | infeasible      |
 |                 |                 |                 | iterations      |
 +-----------------+-----------------+-----------------+-----------------+
@@ -39212,7 +39270,7 @@ KNITRO interface
 | NewPoint        | OT_BOOLEAN      | 0               | Select new-     |
 |                 |                 |                 | point feature   |
 +-----------------+-----------------+-----------------+-----------------+
-| ObjRange        | OT_REAL         | 0.000           | Maximum         |
+| ObjRange        | OT_REAL         | 1.000e+20       | Maximum         |
 |                 |                 |                 | objective value |
 +-----------------+-----------------+-----------------+-----------------+
 | OptTol          | OT_REAL         | 0.000           | Relative        |
@@ -39261,6 +39319,14 @@ KNITRO interface
 +-------------+
 | eval_jac_g  |
 +-------------+
+
+>List of available stats
+
++---------------+
+|      Id       |
++===============+
+| return_status |
++---------------+
 
 >Input scheme: casadi::NlpSolverInput (NLP_SOLVER_NUM_IN = 8) [nlpSolverIn]
 
@@ -39354,11 +39420,11 @@ KNITRO interface
 | FeasTol      | OT_REAL      | 0.000        | Feasible     | casadi::Knit |
 |              |              |              | tolerance    | roInterface  |
 +--------------+--------------+--------------+--------------+--------------+
-| FeasTolAbs   | OT_REAL      | 1            | Absolute     | casadi::Knit |
+| FeasTolAbs   | OT_REAL      | 0            | Absolute     | casadi::Knit |
 |              |              |              | feasible     | roInterface  |
 |              |              |              | tolerance    |              |
 +--------------+--------------+--------------+--------------+--------------+
-| Feasible     | OT_BOOLEAN   | 0            | Allow        | casadi::Knit |
+| Feasible     | OT_BOOLEAN   | 1            | Allow        | casadi::Knit |
 |              |              |              | infeasible   | roInterface  |
 |              |              |              | iterations   |              |
 +--------------+--------------+--------------+--------------+--------------+
@@ -39403,7 +39469,7 @@ KNITRO interface
 |              |              |              | point        | roInterface  |
 |              |              |              | feature      |              |
 +--------------+--------------+--------------+--------------+--------------+
-| ObjRange     | OT_REAL      | 0.000        | Maximum      | casadi::Knit |
+| ObjRange     | OT_REAL      | 1.000e+20    | Maximum      | casadi::Knit |
 |              |              |              | objective    | roInterface  |
 |              |              |              | value        |              |
 +--------------+--------------+--------------+--------------+--------------+
@@ -39646,6 +39712,14 @@ KNITRO interface
 +-------------+--------------------------+
 | outputs     | casadi::FunctionInternal |
 +-------------+--------------------------+
+
+>List of available stats
+
++---------------+-------------------------+
+|      Id       |         Used in         |
++===============+=========================+
+| return_status | casadi::KnitroInterface |
++---------------+-------------------------+
 
 Diagrams
 --------
@@ -52749,11 +52823,11 @@ KNITRO interface
 | FeasTol         | OT_REAL         | 0.000           | Feasible        |
 |                 |                 |                 | tolerance       |
 +-----------------+-----------------+-----------------+-----------------+
-| FeasTolAbs      | OT_REAL         | 1               | Absolute        |
+| FeasTolAbs      | OT_REAL         | 0               | Absolute        |
 |                 |                 |                 | feasible        |
 |                 |                 |                 | tolerance       |
 +-----------------+-----------------+-----------------+-----------------+
-| Feasible        | OT_BOOLEAN      | 0               | Allow           |
+| Feasible        | OT_BOOLEAN      | 1               | Allow           |
 |                 |                 |                 | infeasible      |
 |                 |                 |                 | iterations      |
 +-----------------+-----------------+-----------------+-----------------+
@@ -52790,7 +52864,7 @@ KNITRO interface
 | NewPoint        | OT_BOOLEAN      | 0               | Select new-     |
 |                 |                 |                 | point feature   |
 +-----------------+-----------------+-----------------+-----------------+
-| ObjRange        | OT_REAL         | 0.000           | Maximum         |
+| ObjRange        | OT_REAL         | 1.000e+20       | Maximum         |
 |                 |                 |                 | objective value |
 +-----------------+-----------------+-----------------+-----------------+
 | OptTol          | OT_REAL         | 0.000           | Relative        |
@@ -52839,6 +52913,14 @@ KNITRO interface
 +-------------+
 | eval_jac_g  |
 +-------------+
+
+>List of available stats
+
++---------------+
+|      Id       |
++===============+
+| return_status |
++---------------+
 
 --------------------------------------------------------------------------------
 
@@ -72875,11 +72957,11 @@ Is symmetric?
 
 ";
 
-%feature("docstring") casadi::ScalarSparseSparsity::patternProduct "[INTERNAL]   Sparsity pattern for a matrix-matrix product Returns the
-sparsity pattern resulting from pre-multiplying the pattern with the
-transpose of x. Returns the new sparsity pattern as well as a mapping with
-the same length as the number of non-zero elements The mapping contains a
-vector of the index pairs that makes up the scalar products for each non-
+%feature("docstring") casadi::ScalarSparseSparsity::patternProduct "[INTERNAL]   Sparsity pattern for a matrix-matrix product [deprecated]
+Returns the sparsity pattern resulting from pre-multiplying the pattern with
+the transpose of x. Returns the new sparsity pattern as well as a mapping
+with the same length as the number of non-zero elements The mapping contains
+a vector of the index pairs that makes up the scalar products for each non-
 zero.
 
 ";
@@ -72905,6 +72987,14 @@ storage format: The format: The first two entries are the number of rows
 (nrow) and columns (ncol) The next ncol+1 entries are the column offsets
 (colind). Note that the last element, colind[ncol], gives the number of
 nonzeros The last colind[ncol] entries are the row indices
+
+";
+
+%feature("docstring") casadi::ScalarSparseSparsity::patternProductNew "[INTERNAL]   Sparsity pattern for a matrix-matrix product Returns the
+sparsity pattern resulting from multiplying the pattern with another pattern
+y from the right.
+
+This will replace patternProduct after deprecation.
 
 ";
 
@@ -73677,17 +73767,27 @@ square?
 
 ";
 
+%feature("docstring") casadi::ScalarSparsity::patternProductNew "[INTERNAL]
+Sparsity pattern for a matrix-matrix product Returns the sparsity pattern
+resulting from multiplying the pattern with another pattern y from the
+right.
+
+This will replace patternProduct after deprecation.
+
+";
+
 %feature("docstring") casadi::ScalarSparsity::isInit "[INTERNAL]  Is
 initialized?
 
 ";
 
 %feature("docstring") casadi::ScalarSparsity::patternProduct "[INTERNAL]
-Sparsity pattern for a matrix-matrix product Returns the sparsity pattern
-resulting from pre-multiplying the pattern with the transpose of x. Returns
-the new sparsity pattern as well as a mapping with the same length as the
-number of non-zero elements The mapping contains a vector of the index pairs
-that makes up the scalar products for each non-zero.
+Sparsity pattern for a matrix-matrix product [deprecated] Returns the
+sparsity pattern resulting from pre-multiplying the pattern with the
+transpose of x. Returns the new sparsity pattern as well as a mapping with
+the same length as the number of non-zero elements The mapping contains a
+vector of the index pairs that makes up the scalar products for each non-
+zero.
 
 ";
 
@@ -88395,11 +88495,12 @@ Reshape a sparsity, order of nonzeros remains the same.
 
 %feature("docstring") casadi::Sparsity::patternProduct "
 
-Sparsity pattern for a matrix-matrix product Returns the sparsity pattern
-resulting from pre-multiplying the pattern with the transpose of x. Returns
-the new sparsity pattern as well as a mapping with the same length as the
-number of non-zero elements The mapping contains a vector of the index pairs
-that makes up the scalar products for each non-zero.
+Sparsity pattern for a matrix-matrix product [deprecated] Returns the
+sparsity pattern resulting from pre-multiplying the pattern with the
+transpose of x. Returns the new sparsity pattern as well as a mapping with
+the same length as the number of non-zero elements The mapping contains a
+vector of the index pairs that makes up the scalar products for each non-
+zero.
 
 ";
 
@@ -88693,6 +88794,16 @@ Make a patten dense.
 %feature("docstring") casadi::Sparsity::getDescription "
 
 Return a string with a description (for SWIG)
+
+";
+
+%feature("docstring") casadi::Sparsity::patternProductNew "
+
+Sparsity pattern for a matrix-matrix product Returns the sparsity pattern
+resulting from multiplying the pattern with another pattern y from the
+right.
+
+This will replace patternProduct after deprecation.
 
 ";
 
@@ -110147,6 +110258,11 @@ Construct a matrix from a list of list of blocks.
 [INTERNAL] 
 Construct a matrix from 4 blocks.
 
+>  Sparsity casadi::blockcat(const std::vector< std::vector< Sparsity > > &v)
+------------------------------------------------------------------------
+
+Construct a sparsity from a list of list of sparsities.
+
 >  MX casadi::blockcat(const std::vector< std::vector< MX > > &v)
 ------------------------------------------------------------------------
 
@@ -110373,7 +110489,7 @@ Attempts to find the eigenvalues of a symbolic matrix This will only work
 for up to 3x3 matrices.
 
 Bring m in block diagonal form, calculating eigenvalues of each block
-seperately ";
+separately ";
 
 %feature("docstring") casadi::casadi_load_xmlfile_tinyxml "";
 
@@ -110951,6 +111067,11 @@ Matrix product of n matrices.
 ------------------------------------------------------------------------
 
 Get the sparsity resulting from a matrix multiplication.
+
+>  Sparsity casadi::mul(const std::vector< Sparsity > &s)
+------------------------------------------------------------------------
+
+Get the sparsity resulting from a series of matrix multiplication.
 
 >  MX casadi::mul(const MX &x, const MX &y, const Sparsity &sp_z=Sparsity())
 ------------------------------------------------------------------------
