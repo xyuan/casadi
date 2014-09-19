@@ -39,10 +39,10 @@
 namespace casadi {
 
   /** \brief \pluginbrief{ImplicitFunction,newton}
-  
+
       @copydoc ImplicitFunction_doc
       @copydoc plugin_ImplicitFunction_newton
-         
+
       \author Joris Gillis
       \date 2012
   */
@@ -87,6 +87,16 @@ namespace casadi {
 
     /// Absolute tolerance that should be met on step
     double abstolStep_;
+
+    /// If true, each iteration will be printed
+    bool print_iteration_;
+
+    /// Print iteration header
+    void printIteration(std::ostream &stream);
+
+    /// Print iteration
+    void printIteration(std::ostream &stream, int iter, double abstol, double abstolStep);
+
   };
 
 } // namespace casadi
