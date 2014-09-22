@@ -684,12 +684,15 @@ memberbinops(pow,argtype,argCast,selfCast,returntype) \
 #include "casadi/core/function/parallelizer.hpp"
 #include "casadi/core/function/custom_function.hpp"
 #include "casadi/core/function/nullspace.hpp"
+#include "casadi/core/function/lr_dle_solver.hpp"
+#include "casadi/core/function/lr_dple_solver.hpp"
 #include "casadi/core/functor.hpp"
 
 using namespace casadi;
 
 %}
 
+#ifdef CASADI_MODULE
 #ifndef SWIGXML
 %traits_swigtype(casadi::DerivativeGenerator);
 %fragment(SWIG_Traits_frag(casadi::DerivativeGenerator));
@@ -705,6 +708,7 @@ using namespace casadi;
 %traits_swigtype(casadi::Function);
 %fragment(SWIG_Traits_frag(casadi::Function));
 
+#endif
 #endif
 
 
