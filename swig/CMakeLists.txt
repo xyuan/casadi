@@ -75,7 +75,7 @@ set(CASADI_SWIG_MAIN_MODULE casadi_core)
 set(USE_SWIG_FLAGS_python ${USE_SWIG_FLAGS_python} "-DPy_USING_UNICODE")
 set(USE_SWIG_FLAGS_python ${USE_SWIG_FLAGS_python} "-noproxydel")
 
-set(CASADI_SWIG_FLAGS ${CASADI_SWIG_FLAGS} "-DSWIG_TYPE_TABLE=${CASADI_SWIG_MAIN_MODULE}")
+set(CASADI_SWIG_FLAGS ${CASADI_SWIG_FLAGS} "-DSWIG_TYPE_TABLE=casadi")
 foreach(my_module ${CASADI_SWIG_MODULES})
 set_source_files_properties(${my_module}.i  PROPERTIES  CPLUSPLUS ON)
 endforeach()
@@ -195,9 +195,9 @@ The idea is to supply a directory that python knows about (included in PYTHONPAT
 endif()
 
 # Construct a dynamic loader for python
-file(WRITE "${PROJECT_BINARY_DIR}/python/casadi/casadi.py" "failed_modules={}\nloaded_modules=[]\n")
+file(WRITE "${PROJECT_BINARY_DIR}/python/casadi/casadi_loader.py" "failed_modules={}\nloaded_modules=[]\n")
 foreach(my_module ${CASADI_SWIG_MODULES})
-file(APPEND "${PROJECT_BINARY_DIR}/python/casadi/casadi.py"
+file(APPEND "${PROJECT_BINARY_DIR}/python/casadi/casadi_loader.py"
 "try:\n"
 "  from ${my_module} import *\n"
 "  loaded_modules.append('${my_module}')\n"
