@@ -29,6 +29,7 @@
 /** \defgroup plugin_LrDleSolver_smith
  Solving the Low-rank Discrete Lyapunov Equations with Smith iterations
 
+   @copdyoc DleSolversmith
 */
 /** \pluginsection{LrDleSolver,smith} */
 
