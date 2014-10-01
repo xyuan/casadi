@@ -251,6 +251,16 @@ endif()
 
 
 ################################################################################
+############################### symbol visibility ##############################
+################################################################################
+if(ENABLE_SHARED)
+  if(NOT ENABLE_EXPORT_ALL)
+    add_compiler_export_flags()
+  endif()
+endif()
+
+
+################################################################################
 ############################### compiler warnings ##############################
 ################################################################################
 # add compiler warnings
@@ -363,6 +373,7 @@ if(WITH_SUNDIALS)
     set(SUNDIALS_FOUND ON)
   else()
     # try to find system sundials
+    add_definitions(-DWITH_SYSTEM_SUNDIALS)
     find_package(SUNDIALS)
   endif()
 endif()

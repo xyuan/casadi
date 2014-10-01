@@ -47,13 +47,14 @@ except:
 
 try:
   NlpSolver.loadPlugin("snopt")
-  solvers.append(("snopt",{"_verify_level": 3,"detect_linear": True,"_optimality_tolerance":1e-12,"_feasibility_tolerance":1e-12}))
+  solvers.append(("snopt",{"Verify level": 3,"detect_linear": True,"Major optimality tolerance":1e-12,"Minor feasibility tolerance":1e-12,"Major feasibility tolerance":1e-12}))
   print "Will test snopt"
 except:
   pass
 
 try:
   NlpSolver.loadPlugin("ipopt")
+  NlpSolver.loadPlugin("sqpmethod")
   qp_solver_options = {"nlp_solver": "ipopt", "nlp_solver_options": {"tol": 1e-12} }
   solvers.append(("sqpmethod",{"qp_solver": "nlp","qp_solver_options": qp_solver_options}))
   print "Will test sqpmethod"
@@ -62,6 +63,7 @@ except:
   
 try:
   NlpSolver.loadPlugin("ipopt")
+  NlpSolver.loadPlugin("stabilizedsqp")
   qp_solver_options = {"nlp_solver": "ipopt", "nlp_solver_options": {"tol": 1e-12, "print_level": 0, "print_time": False} }
   solvers.append(("stabilizedsqp",{"tol_pr": 1e-9, "tol_du": 1e-9,"stabilized_qp_solver": "qp", "stabilized_qp_solver_options": {"qp_solver": "nlp", "qp_solver_options": qp_solver_options}}))
   print "Will test stabilizedsqp"
@@ -71,6 +73,7 @@ except:
 try:
   qp_solver_options = {}
   QpSolver.loadPlugin("sqic")
+  NlpSolver.loadPlugin("stabilizedsqp")
   solvers.append(("stabilizedsqp",{"tol_pr": 1e-9, "tol_du": 1e-9,"stabilized_qp_solver": "qp", "stabilized_qp_solver_options": {"qp_solver": "sqic"}}))
   print "Will test stabilizedsqp"
 except:
@@ -1397,9 +1400,7 @@ class NLPtests(casadiTestCase):
     #solver.setOption("detect_linear",False)
     solver.setOption("verbose",True)
     solver.setOption("monitor",["setup_nlp","eval_nlp"])
-    solver.setOption("_verify_level",3)
-    #solver.setOption("_optimality_tolerance",1e-8)
-    #solver.setOption("_feasibility_tolerance",1e-8)
+    solver.setOption("Verify level",3)
     #solver.setOption("_iteration_limit",1000)
 
     solver.init()

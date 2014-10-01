@@ -93317,8 +93317,6 @@ Get the number of function outputs.
 
 ";
 
-%feature("docstring") casadi::SnoptInterface::reset "[INTERNAL] ";
-
 %feature("docstring") casadi::SnoptInterface::setNumInputs "[INTERNAL]  Set
 the number of function inputs.
 
@@ -93617,11 +93615,6 @@ Generate the sparsity of a Jacobian block.
 structure recognition.
 
 Decide which ad_mode to take ";
-
-%feature("docstring") casadi::SnoptInterface::passOptions "[INTERNAL]  Pass
-the supplied options to Snopt.
-
-";
 
 %feature("docstring") casadi::SnoptInterface::getHessLag "[INTERNAL]  Get
 or generate a function to calculate the Hessian of the Lagrangian function.
@@ -94442,6 +94435,204 @@ the Hessian of the Lagrangian function.
 symbolically, MX type.
 
 ";
+
+
+// File: classsnoptProblem.xml
+%feature("docstring") snoptProblem::setParameter "";
+
+%feature("docstring") snoptProblem::setLog "";
+
+%feature("docstring") snoptProblem::getIntParameter "";
+
+%feature("docstring") snoptProblem::setSpecsFile "";
+
+%feature("docstring") snoptProblem::setIntParameter "";
+
+%feature("docstring") snoptProblem::getRealParameter "";
+
+%feature("docstring") snoptProblem::setPrintFile "";
+
+%feature("docstring") snoptProblem::getParameter "";
+
+%feature("docstring") snoptProblem::setUserR "";
+
+%feature("docstring") snoptProblem::setSTOP "";
+
+%feature("docstring") snoptProblem::setRealParameter "";
+
+%feature("docstring") snoptProblem::setUserI "";
+
+%feature("docstring") snoptProblem::setProbName "";
+
+%feature("docstring") snoptProblem::solve "";
+
+%feature("docstring") snoptProblem::setUserspace "";
+
+%feature("docstring") snoptProblem "C++ includes: snoptProblem.hpp ";
+
+
+// File: classsnoptProblemA.xml
+%feature("docstring") snoptProblemA::getIntParameter "";
+
+%feature("docstring") snoptProblemA::computeJac "";
+
+%feature("docstring") snoptProblemA::snoptProblemA "";
+
+%feature("docstring") snoptProblemA::getRealParameter "";
+
+%feature("docstring") snoptProblemA::setSpecsFile "";
+
+%feature("docstring") snoptProblemA::setRealParameter "";
+
+%feature("docstring") snoptProblemA::setWorkspace "";
+
+%feature("docstring") snoptProblemA::setNeG "";
+
+%feature("docstring") snoptProblemA::setNeA "";
+
+%feature("docstring") snoptProblemA::setSTOP "";
+
+%feature("docstring") snoptProblemA::setUserspace "";
+
+%feature("docstring") snoptProblemA::setIntParameter "";
+
+%feature("docstring") snoptProblemA::setG "";
+
+%feature("docstring") snoptProblemA::setF "";
+
+%feature("docstring") snoptProblemA::~snoptProblemA "";
+
+%feature("docstring") snoptProblemA::setPrintFile "";
+
+%feature("docstring") snoptProblemA::setA "";
+
+%feature("docstring") snoptProblemA::solve "";
+
+%feature("docstring") snoptProblemA "C++ includes: snoptProblem.hpp ";
+
+%feature("docstring") snoptProblemA::setX "";
+
+%feature("docstring") snoptProblemA::setUserFun "";
+
+%feature("docstring") snoptProblemA::getParameter "";
+
+%feature("docstring") snoptProblemA::setProblemSize "";
+
+%feature("docstring") snoptProblemA::setParameter "";
+
+%feature("docstring") snoptProblemA::setLog "";
+
+%feature("docstring") snoptProblemA::setUserI "";
+
+%feature("docstring") snoptProblemA::setObjective "";
+
+%feature("docstring") snoptProblemA::setUserR "";
+
+%feature("docstring") snoptProblemA::setProbName "";
+
+
+// File: classsnoptProblemB.xml
+%feature("docstring") snoptProblemB::setPrintFile "";
+
+%feature("docstring") snoptProblemB::getRealParameter "";
+
+%feature("docstring") snoptProblemB::setFuncon "";
+
+%feature("docstring") snoptProblemB::setParameter "";
+
+%feature("docstring") snoptProblemB::setObjective "";
+
+%feature("docstring") snoptProblemB::setWorkspace "";
+
+%feature("docstring") snoptProblemB::setSTOP "";
+
+%feature("docstring") snoptProblemB::getIntParameter "";
+
+%feature("docstring") snoptProblemB::setFunobj "";
+
+%feature("docstring") snoptProblemB::setUserspace "";
+
+%feature("docstring") snoptProblemB::snoptProblemB "";
+
+%feature("docstring") snoptProblemB::getParameter "";
+
+%feature("docstring") snoptProblemB::setUserFun "";
+
+%feature("docstring") snoptProblemB::setIntParameter "";
+
+%feature("docstring") snoptProblemB::setLog "";
+
+%feature("docstring") snoptProblemB::setUserI "";
+
+%feature("docstring") snoptProblemB::setJ "";
+
+%feature("docstring") snoptProblemB::setProbName "";
+
+%feature("docstring") snoptProblemB::setUserR "";
+
+%feature("docstring") snoptProblemB "C++ includes: snoptProblem.hpp ";
+
+%feature("docstring") snoptProblemB::setProblemSize "";
+
+%feature("docstring") snoptProblemB::setX "";
+
+%feature("docstring") snoptProblemB::setSpecsFile "";
+
+%feature("docstring") snoptProblemB::setRealParameter "";
+
+%feature("docstring") snoptProblemB::solve "";
+
+%feature("docstring") snoptProblemB::~snoptProblemB "";
+
+
+// File: classsnoptProblemC.xml
+%feature("docstring") snoptProblemC::setPrintFile "";
+
+%feature("docstring") snoptProblemC "C++ includes: snoptProblem.hpp ";
+
+%feature("docstring") snoptProblemC::getRealParameter "";
+
+%feature("docstring") snoptProblemC::setRealParameter "";
+
+%feature("docstring") snoptProblemC::solve "";
+
+%feature("docstring") snoptProblemC::setParameter "";
+
+%feature("docstring") snoptProblemC::setUserR "";
+
+%feature("docstring") snoptProblemC::getIntParameter "";
+
+%feature("docstring") snoptProblemC::getParameter "";
+
+%feature("docstring") snoptProblemC::snoptProblemC "";
+
+%feature("docstring") snoptProblemC::setUserspace "";
+
+%feature("docstring") snoptProblemC::setUserI "";
+
+%feature("docstring") snoptProblemC::setWorkspace "";
+
+%feature("docstring") snoptProblemC::setJ "";
+
+%feature("docstring") snoptProblemC::setProbName "";
+
+%feature("docstring") snoptProblemC::setSpecsFile "";
+
+%feature("docstring") snoptProblemC::setSTOP "";
+
+%feature("docstring") snoptProblemC::setX "";
+
+%feature("docstring") snoptProblemC::setUserFun "";
+
+%feature("docstring") snoptProblemC::~snoptProblemC "";
+
+%feature("docstring") snoptProblemC::setObjective "";
+
+%feature("docstring") snoptProblemC::setLog "";
+
+%feature("docstring") snoptProblemC::setProblemSize "";
+
+%feature("docstring") snoptProblemC::setIntParameter "";
 
 
 // File: classcasadi_1_1SOCPInputIOSchemeVector.xml
@@ -118238,41 +118429,7 @@ Get upper triangular part.
 
 ";
 
-%feature("docstring") casadi::integratorOut "
-
->  IntegratorOutputIOSchemeVector<M> casadi::integratorOut(const std::string &arg_s0=\"\", const M &arg_m0=M(), const std::string &arg_s1=\"\", const M &arg_m1=M(), const std::string &arg_s2=\"\", const M &arg_m2=M(), const std::string &arg_s3=\"\", const M &arg_m3=M(), const std::string &arg_s4=\"\", const M &arg_m4=M(), const std::string &arg_s5=\"\", const M &arg_m5=M())
-------------------------------------------------------------------------
-
-Output arguments of an integrator
-
->Output scheme: casadi::IntegratorOutput (INTEGRATOR_NUM_OUT = 6) [integratorOut]
-
-+------------------------+------------------------+------------------------+
-|       Full name        |         Short          |      Description       |
-+========================+========================+========================+
-| INTEGRATOR_XF          | xf                     | Differential state at  |
-|                        |                        | the final time .       |
-+------------------------+------------------------+------------------------+
-| INTEGRATOR_QF          | qf                     | Quadrature state at    |
-|                        |                        | the final time .       |
-+------------------------+------------------------+------------------------+
-| INTEGRATOR_ZF          | zf                     | Algebraic variable at  |
-|                        |                        | the final time .       |
-+------------------------+------------------------+------------------------+
-| INTEGRATOR_RXF         | rxf                    | Backward differential  |
-|                        |                        | state at the initial   |
-|                        |                        | time .                 |
-+------------------------+------------------------+------------------------+
-| INTEGRATOR_RQF         | rqf                    | Backward quadrature    |
-|                        |                        | state at the initial   |
-|                        |                        | time .                 |
-+------------------------+------------------------+------------------------+
-| INTEGRATOR_RZF         | rzf                    | Backward algebraic     |
-|                        |                        | variable at the        |
-|                        |                        | initial time .         |
-+------------------------+------------------------+------------------------+
-
-";
+%feature("docstring") casadi::casadi_register_lrdlesolver_fixed_smith "";
 
 %feature("docstring") casadi::cofactor "
 
@@ -118608,7 +118765,39 @@ scheme:  'radau' or 'legendre'
 
 %feature("docstring") casadi::bvec_toggle "[INTERNAL] ";
 
-%feature("docstring") casadi::casadi_load_lrdlesolver_fixed_smith "";
+%feature("docstring") casadi::substituteInPlace "
+
+>  void casadi::substituteInPlace(const std::vector< MX > &v, std::vector< MX > &vdef, bool reverse=false)
+------------------------------------------------------------------------
+[INTERNAL] 
+Inplace substitution Substitute variables v out of the expressions
+vdef sequentially.
+
+>  void casadi::substituteInPlace(const std::vector< MX > &v, std::vector< MX > &vdef, std::vector< MX > &ex, bool reverse=false)
+------------------------------------------------------------------------
+[INTERNAL] 
+Inplace substitution with piggyback expressions Substitute variables v
+out of the expressions vdef sequentially, as well as out of a number
+of other expressions piggyback.
+
+>  void casadi::substituteInPlace(const SX &v, SX &vdef, bool reverse=false)
+------------------------------------------------------------------------
+
+Substitute variable var out of or into an expression expr.
+
+>  void casadi::substituteInPlace(const SX &v, SX &vdef, std::vector< SX > &ex, bool reverse=false)
+------------------------------------------------------------------------
+
+Substitute variable var out of or into an expression expr, with an arbitrary
+number of other expressions piggyback.
+
+>  void casadi::substituteInPlace(const std::vector< SX > &v, std::vector< SX > &vdef, std::vector< SX > &ex, bool reverse=false)
+------------------------------------------------------------------------
+
+Substitute variable var out of or into an expression expr, with an arbitrary
+number of other expressions piggyback (vector version)
+
+";
 
 %feature("docstring") casadi::slicot_mb03vd "[INTERNAL] ";
 
@@ -119101,41 +119290,24 @@ functions from the 'math.h' ('cmath') header.
 
 ";
 
-%feature("docstring") casadi::substituteInPlace "
+%feature("docstring") casadi::quad_form "
 
->  void casadi::substituteInPlace(const std::vector< MX > &v, std::vector< MX > &vdef, bool reverse=false)
-------------------------------------------------------------------------
-[INTERNAL] 
-Inplace substitution Substitute variables v out of the expressions
-vdef sequentially.
-
->  void casadi::substituteInPlace(const std::vector< MX > &v, std::vector< MX > &vdef, std::vector< MX > &ex, bool reverse=false)
-------------------------------------------------------------------------
-[INTERNAL] 
-Inplace substitution with piggyback expressions Substitute variables v
-out of the expressions vdef sequentially, as well as out of a number
-of other expressions piggyback.
-
->  void casadi::substituteInPlace(const SX &v, SX &vdef, bool reverse=false)
-------------------------------------------------------------------------
-
-Substitute variable var out of or into an expression expr.
-
->  void casadi::substituteInPlace(const SX &v, SX &vdef, std::vector< SX > &ex, bool reverse=false)
-------------------------------------------------------------------------
-
-Substitute variable var out of or into an expression expr, with an arbitrary
-number of other expressions piggyback.
-
->  void casadi::substituteInPlace(const std::vector< SX > &v, std::vector< SX > &vdef, std::vector< SX > &ex, bool reverse=false)
-------------------------------------------------------------------------
-
-Substitute variable var out of or into an expression expr, with an arbitrary
-number of other expressions piggyback (vector version)
+Calculate quadratic form AXA^T.
 
 ";
 
-%feature("docstring") casadi::constpow "[INTERNAL]  CasADi additions.
+%feature("docstring") casadi::norm_0_mul_nn "
+
+0-norm (nonzero count) of a Matrix-matrix product, no memory allocation
+mul(x, y)
+
+Parameters:
+-----------
+
+Bwork:  A boolean work vector that you must allocate Minimum size: y.size1()
+
+Iwork:  A integer work vector that you must allocate Minimum size:
+y.size1()+x.size2()+1
 
 ";
 
@@ -119370,7 +119542,41 @@ with Q-transpose (lapack)
 
 %feature("docstring") casadi::casadi_load_nlpsolver_knitro "";
 
-%feature("docstring") casadi::casadi_register_lrdlesolver_fixed_smith "";
+%feature("docstring") casadi::integratorOut "
+
+>  IntegratorOutputIOSchemeVector<M> casadi::integratorOut(const std::string &arg_s0=\"\", const M &arg_m0=M(), const std::string &arg_s1=\"\", const M &arg_m1=M(), const std::string &arg_s2=\"\", const M &arg_m2=M(), const std::string &arg_s3=\"\", const M &arg_m3=M(), const std::string &arg_s4=\"\", const M &arg_m4=M(), const std::string &arg_s5=\"\", const M &arg_m5=M())
+------------------------------------------------------------------------
+
+Output arguments of an integrator
+
+>Output scheme: casadi::IntegratorOutput (INTEGRATOR_NUM_OUT = 6) [integratorOut]
+
++------------------------+------------------------+------------------------+
+|       Full name        |         Short          |      Description       |
++========================+========================+========================+
+| INTEGRATOR_XF          | xf                     | Differential state at  |
+|                        |                        | the final time .       |
++------------------------+------------------------+------------------------+
+| INTEGRATOR_QF          | qf                     | Quadrature state at    |
+|                        |                        | the final time .       |
++------------------------+------------------------+------------------------+
+| INTEGRATOR_ZF          | zf                     | Algebraic variable at  |
+|                        |                        | the final time .       |
++------------------------+------------------------+------------------------+
+| INTEGRATOR_RXF         | rxf                    | Backward differential  |
+|                        |                        | state at the initial   |
+|                        |                        | time .                 |
++------------------------+------------------------+------------------------+
+| INTEGRATOR_RQF         | rqf                    | Backward quadrature    |
+|                        |                        | state at the initial   |
+|                        |                        | time .                 |
++------------------------+------------------------+------------------------+
+| INTEGRATOR_RZF         | rzf                    | Backward algebraic     |
+|                        |                        | variable at the        |
+|                        |                        | initial time .         |
++------------------------+------------------------+------------------------+
+
+";
 
 %feature("docstring") casadi::ProfilingType< ProfilingData_NAME > "
 [INTERNAL] ";
@@ -120801,6 +121007,10 @@ functions from the 'math.h' ('cmath') header.
 
 ";
 
+%feature("docstring") casadi::constpow "[INTERNAL]  CasADi additions.
+
+";
+
 %feature("docstring") casadi::print "[INTERNAL]  Print description.
 
 ";
@@ -121361,6 +121571,8 @@ functions from the 'math.h' header.
 Return summation of all elements.
 
 ";
+
+%feature("docstring") casadi::casadi_load_lrdlesolver_fixed_smith "";
 
 %feature("docstring") casadi::vecNZcat "
 
@@ -123143,6 +123355,12 @@ This file does absolutely nothing but including all headers ";
 // File: snopt__interface__meta_8cpp.xml
 
 
+// File: snoptProblem_8hpp.xml
+%feature("docstring") summaryOn  "
+";
+%feature("docstring") summaryOff  "";
+
+
 // File: socp__solver_8cpp.xml
 
 
@@ -123414,28 +123632,6 @@ This file does absolutely nothing but including all headers ";
 
 
 // File: wrapper_8hpp.xml
-
-
-// File: wsnopt_8hpp.xml
-%feature("docstring") snkerc_  "
-[INTERNAL] ";
-%feature("docstring") sqlog_  "[INTERNAL] ";
-
-%feature("docstring") sninit_  "[INTERNAL] ";
-
-%feature("docstring") snlog2_  "[INTERNAL] ";
-
-%feature("docstring") snseti_  "[INTERNAL] ";
-
-%feature("docstring") snsetr_  "[INTERNAL] ";
-
-%feature("docstring") snlog_  "[INTERNAL] ";
-
-%feature("docstring") snset_  "[INTERNAL] ";
-
-%feature("docstring") snoptc_  "[INTERNAL] ";
-
-%feature("docstring") snmemb_  "[INTERNAL] ";
 
 
 // File: wsqic_8cpp.xml

@@ -3685,12 +3685,6 @@
 %exception  casadi::SnoptInterface::init() {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::SnoptInterface::passOptions() {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
-%exception  casadi::SnoptInterface::reset() {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
 %exception  casadi::SnoptInterface::setOptionsFromFile(const std::string &file) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
@@ -4798,16 +4792,7 @@
 %exception  casadi::vertcat(const Sparsity &a, const Sparsity &b) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  snlog2_() {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
-%exception  snlog_() {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
 %exception  sqicDestroy() {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
-%exception  sqlog_() {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
 %exception casadi::Assertion::Assertion(const MX &x, const MX &y, const std::string &s) {
