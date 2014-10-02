@@ -51,21 +51,8 @@ SundialsInterface::SundialsInterface(const Function& f, const Function& g)
             "Upper band-width of banded Jacobian (estimations)");
   addOption("lower_bandwidth",             OT_INTEGER,          GenericType(),
             "Lower band-width of banded Jacobian (estimations)");
-  // system sundials (macports/python) currently has a critical bug
-  // in the iterative solver
-  #ifdef WITH_SYSTEM_SUNDIALS
-  // todo(Greg/Joel): add back banded solver
-  //addOption("linear_solver_type",          OT_STRING,           "dense",
-  //          "", "user_defined|dense|banded");
   addOption("linear_solver_type",          OT_STRING,           "dense",
-            "", "user_defined|dense");
-  #else
-  // todo(Greg/Joel): add back banded solver
-  //addOption("linear_solver_type",          OT_STRING,           "dense",
-  //          "", "user_defined|dense|banded|iterative");
-  addOption("linear_solver_type",          OT_STRING,           "dense",
-            "", "user_defined|dense|iterative");
-  #endif // WITH_SYSTEM_SUNDIALS
+            "", "user_defined|dense|banded|iterative");
   addOption("iterative_solver",            OT_STRING,           "gmres",
             "", "gmres|bcgstab|tfqmr");
   addOption("pretype",                     OT_STRING,           "none",
@@ -113,21 +100,8 @@ SundialsInterface::SundialsInterface(const Function& f, const Function& g)
   addOption("lower_bandwidthB",            OT_INTEGER,          GenericType(),
             "lower band-width of banded jacobians for backward integration "
             "[default: equal to lower_bandwidth]");
-  // system sundials (macports/python) currently has a critical bug
-  // in the iterative solver
-  #ifdef WITH_SYSTEM_SUNDIALS
-  // todo(Greg/Joel): add back banded dolver
-  //addOption("linear_solver_typeB",         OT_STRING,           GenericType(),
-  //          "", "user_defined|dense|banded");
   addOption("linear_solver_typeB",         OT_STRING,           GenericType(),
-            "", "user_defined|dense");
-  #else
-  // todo(Greg/Joel): add back banded dolver
-  //addOption("linear_solver_typeB",         OT_STRING,           GenericType(),
-  //          "", "user_defined|dense|banded|iterative");
-  addOption("linear_solver_typeB",         OT_STRING,           GenericType(),
-            "", "user_defined|dense|iterative");
-  #endif // WITH_SYSTEM_SUNDIALS
+            "", "user_defined|dense|banded|iterative");
   addOption("iterative_solverB",           OT_STRING,           GenericType(),
             "", "gmres|bcgstab|tfqmr");
   addOption("pretypeB",                    OT_STRING,           GenericType(),
@@ -331,6 +305,58 @@ void SundialsInterface::reset() {
   // Reset the base classes
   IntegratorInternal::reset();
 }
+
+  std::pair<int, int> SundialsInterface::getBandwidth() const {
+    std::pair<int, int> bw;
+
+    // Get upper bandwidth
+    if (hasSetOption("upper_bandwidth")) {
+      bw.first = getOption("upper_bandwidth");
+    } else if (!jac_.isNull()) {
+      bw.first = jac_.getOutput().sparsity().bandwidthU();
+    } else {
+      casadi_error("\"upper_bandwidth\" has not been set and cannot be "
+                   "detected since exact Jacobian is not available.");
+    }
+
+    // Get lower bandwidth
+    if (hasSetOption("lower_bandwidth")) {
+      bw.second = getOption("lower_bandwidth");
+    } else if (!jac_.isNull()) {
+      bw.second = jac_.getOutput().sparsity().bandwidthL();
+    } else {
+      casadi_error("\"lower_bandwidth\" has not been set and cannot be "
+                   "detected since exact Jacobian is not available.");
+    }
+
+    return bw;
+  }
+
+  std::pair<int, int> SundialsInterface::getBandwidthB() const {
+    std::pair<int, int> bw;
+
+    // Get upper bandwidth
+    if (hasSetOption("upper_bandwidthB")) {
+      bw.first = getOption("upper_bandwidthB");
+    } else if (!jacB_.isNull()) {
+      bw.first = jacB_.getOutput().sparsity().bandwidthU();
+    } else {
+      casadi_error("\"upper_bandwidthB\" has not been set and cannot be detected "
+                   "since exact Jacobian for backward problem is not available.");
+    }
+
+    // Get lower bandwidth
+  if (hasSetOption("lower_bandwidthB")) {
+      bw.second = getOption("lower_bandwidthB");
+    } else if (!jacB_.isNull()) {
+      bw.second = jacB_.getOutput().sparsity().bandwidthL();
+    } else {
+      casadi_error("\"lower_bandwidthB\" has not been set and cannot be detected "
+                   "since exact Jacobian for backward problem is not available.");
+    }
+
+    return bw;
+  }
 
 } // namespace casadi
 

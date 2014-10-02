@@ -20,6 +20,12 @@ macro(casadi_library name)
   casadi_library_or_plugin(${name} FALSE ${ARGN})
 endmacro()
 
+if(ENABLE_SHARED)
+  if(NOT ENABLE_EXPORT_ALL)
+    add_compiler_export_flags()
+  endif()
+endif()
+
 # this function handles libraries and plugins
 # there is so much similarity in plugins/libraries, we just
 # use a flag and wrap this with casadi_plugin or casadi_library (above)

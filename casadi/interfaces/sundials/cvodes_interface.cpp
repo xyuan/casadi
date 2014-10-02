@@ -1739,9 +1739,8 @@ namespace casadi {
   }
 
   void CvodesInterface::initBandedLinearSolver() {
-    int flag = CVBand(mem_, nx_,
-                      getOption("upper_bandwidth").toInt(),
-                      getOption("lower_bandwidth").toInt());
+    pair<int, int> bw = getBandwidth();
+    int flag = CVBand(mem_, nx_, bw.first, bw.second);
     if (flag!=CV_SUCCESS) cvodes_error("CVBand", flag);
     if (exact_jacobian_) {
       flag = CVDlsSetBandJacFn(mem_, bjac_wrapper);
@@ -1816,20 +1815,14 @@ namespace casadi {
     int flag = CVDenseB(mem_, whichB_, nrx_);
     if (flag!=CV_SUCCESS) cvodes_error("CVDenseB", flag);
     if (exact_jacobianB_) {
-      // Generate jacobians if not already provided
-      if (jacB_.isNull()) jacB_ = getJac();
-      if (!jacB_.isInit()) jacB_.init();
-
-      // Pass to CVodes
       flag = CVDlsSetDenseJacFnB(mem_, whichB_, djacB_wrapper);
       if (flag!=CV_SUCCESS) cvodes_error("CVDlsSetDenseJacFnB", flag);
     }
   }
 
   void CvodesInterface::initBandedLinearSolverB() {
-    int flag = CVBandB(mem_, whichB_, nrx_,
-                       getOption("upper_bandwidthB").toInt(),
-                       getOption("lower_bandwidthB").toInt());
+    pair<int, int> bw = getBandwidthB();
+    int flag = CVBandB(mem_, whichB_, nrx_, bw.first, bw.second);
     if (flag!=CV_SUCCESS) cvodes_error("CVBandB", flag);
 
     if (exact_jacobianB_) {
