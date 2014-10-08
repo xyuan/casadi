@@ -2,7 +2,9 @@
  *    This file is part of CasADi.
  *
  *    CasADi -- A symbolic framework for dynamic optimization.
- *    Copyright (C) 2010 by Joel Andersson, Moritz Diehl, K.U.Leuven. All rights reserved.
+ *    Copyright (C) 2010-2014 Joel Andersson, Joris Gillis, Moritz Diehl,
+ *                            K.U. Leuven. All rights reserved.
+ *    Copyright (C) 2011-2014 Greg Horn
  *
  *    CasADi is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public
@@ -19,6 +21,7 @@
  *    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+
 
 #ifndef CASADI_PLUGIN_INTERFACE_HPP
 #define CASADI_PLUGIN_INTERFACE_HPP
@@ -151,14 +154,14 @@ namespace casadi {
     reg = (RegFcn)GetProcAddress(handle, TEXT(regName.c_str()));
     casadi_assert_message(reg!=0, "PluginInterface::loadPlugin: no \"" + regName + "\" found");
 #else // _WIN32
-    void* handle = dlopen(lib.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+    void* handle = dlopen(lib.c_str(), RTLD_LAZY | RTLD_LOCAL);
     if (!handle) {
       errors += "\n  Tried " + lib + ":\n    Error code: " + dlerror();
 
       #ifdef PLUGIN_EXTRA_SEARCH_PATH
       // Try the second search path
       lib = PLUGIN_EXTRA_SEARCH_PATH "/" + lib;
-      handle = dlopen(lib.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+      handle = dlopen(lib.c_str(), RTLD_LAZY | RTLD_LOCAL);
       if (!handle) {
         errors += "\n  Tried " + lib + ":\n    Error code: " + dlerror();
       }
