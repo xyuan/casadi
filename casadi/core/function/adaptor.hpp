@@ -32,14 +32,6 @@
 
 namespace casadi {
 
-  class AdaptorBase {
-    public:
-      virtual std::string prefix() = 0;
-
-      bool target_reached_;
-
-  };
-
   /** \brief A helper class for a Solver that delegates work to another solver
   *
   *
@@ -47,7 +39,7 @@ namespace casadi {
   *    \date 2014
   */
   template< class Derived, class Solver>
-  class Adaptor : public virtual AdaptorBase {
+  class Adaptor {
     public:
 
       /// Initialize
@@ -60,7 +52,7 @@ namespace casadi {
       Solver solver_;
 
       /// Get the prefix of the target solver
-      virtual std::string prefix();
+      std::string prefix();
 
       /// \brief Get the name of the target solver
       std::string targetName();
@@ -73,7 +65,6 @@ namespace casadi {
 
   };
 
-#ifndef SWIG
 template< class Derived, class Solver>
 void Adaptor<Derived, Solver>::adaptorLoader(const std::string& name) {
   Solver::loadPlugin(name);
@@ -134,7 +125,6 @@ template< class Derived, class Solver>
 std::string Adaptor<Derived, Solver>::targetName() {
   return static_cast<Derived*>(this)->getOption(prefix()+"_solver");
 }
-#endif
 
 } // namespace casadi
 

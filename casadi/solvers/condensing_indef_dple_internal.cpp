@@ -46,8 +46,7 @@ namespace casadi {
     plugin->creator = CondensingIndefDpleInternal::creator;
     plugin->name = "condensing";
     plugin->doc = CondensingIndefDpleInternal::meta_doc.c_str();
-    plugin->version = 20;
-    plugin->adaptorLoader = CondensingIndefDpleInternal::adaptorLoader;
+    plugin->version = 21;
     return 0;
   }
 
