@@ -71,18 +71,41 @@ namespace casadi {
     // Plugin registration function
     typedef int (*RegFcn)(Plugin* plugin);
 
+    /// Check if a plugin is available or can be loaded
+    static bool hasPlugin(const std::string& name);
+
     /// Load a plugin dynamically
-    static void loadPlugin(const std::string& name);
+    static void loadPlugin(const std::string& name, bool register_plugin=true);
 
     /// Register an integrator in the factory
     static void registerPlugin(RegFcn regfcn);
 
     /// Load and get the creator function
     static Plugin& getPlugin(const std::string& name);
+
+    // Create solver instance
+    template<class Problem>
+      static Derived* instantiatePlugin(const std::string& name, Problem problem);
   };
 
   template<class Derived>
-  void PluginInterface<Derived>::loadPlugin(const std::string& name) {
+  bool PluginInterface<Derived>::hasPlugin(const std::string& name) {
+    // Quick return if available
+    if (Derived::solvers_.find(name) != Derived::solvers_.end()) {
+      return true;
+    }
+
+    // Try loading the plugin
+    try {
+      loadPlugin(name, false);
+      return true;
+    } catch (CasadiException& ex) {
+      return false;
+    }
+  }
+
+  template<class Derived>
+  void PluginInterface<Derived>::loadPlugin(const std::string& name, bool register_plugin) {
     // Issue warning and quick return if already loaded
     if (Derived::solvers_.find(name) != Derived::solvers_.end()) {
       casadi_warning("PluginInterface: Solver " + name + " is already in use. Ignored.");
@@ -156,7 +179,9 @@ namespace casadi {
 #endif // _WIN32
 
     // Register the plugin
-    registerPlugin(reg);
+    if (register_plugin) {
+      registerPlugin(reg);
+    }
 #endif // WITH_DL
   }
 
@@ -193,6 +218,30 @@ namespace casadi {
     casadi_assert(it!=Derived::solvers_.end());
     return it->second;
   }
+
+  template<class Derived>
+  template<class Problem>
+  Derived*
+  PluginInterface<Derived>::instantiatePlugin(const std::string& name, Problem problem) {
+    // Check if any dot in the name, i.e. a convertor
+    std::string::size_type dotpos = name.find(".");
+    if (dotpos == std::string::npos) {
+      // No dot, normal instantiation
+      return getPlugin(name).creator(problem);
+    } else {
+      // Dot present, separate convertor name from solver name
+      std::string convertor_name = name.substr(0, dotpos);
+      std::string solver_name = name.substr(dotpos+1);
+
+      // Load the convertor
+      Derived* convertor = getPlugin(convertor_name).creator(problem);
+
+      // Pass solver name to convertor
+      convertor->setOption(convertor_name + "_solver", solver_name);
+      return convertor;
+    }
+  }
+
 
 } // namespace casadi
 

@@ -55,6 +55,10 @@ namespace casadi {
     return dynamic_cast<const LrDleInternal*>(ptr)!=0;
   }
 
+  bool LrDleSolver::hasPlugin(const std::string& name) {
+    return LrDleInternal::hasPlugin(name);
+  }
+
   void LrDleSolver::loadPlugin(const std::string& name) {
     LrDleInternal::loadPlugin(name);
   }
@@ -70,10 +74,6 @@ namespace casadi {
 
   Sparsity LrDleSolver::getSparsity(const LrDleStructure& st, const std::vector<int> &Hs) {
     return LrDleInternal::getSparsity(st, Hs);
-  }
-
-  std::string LrDleSolver::infix() {
-    return LrDleInternal::infix_;
   }
 
 } // namespace casadi
