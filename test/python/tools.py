@@ -794,7 +794,24 @@ class Toolstests(casadiTestCase):
       self.checkarray(f.output(1),DMatrix([1,3,5]).T)
       self.checkarray(f.output(2),DMatrix([4,6]).T)
       self.checkarray(f.output(3),DMatrix([1,2]))
+   
+  def test_empty_bug(self):
+    
+    Params = struct_symMX([ ])
+    params = Params()
+    
+    self.checkarray(params.shape,(0,1))
 
+  def test_empty_expr_bug(self):
+    
+    eq = MX.sym("X")
+
+    g = struct_MX([ entry( 'equality', expr = eq),
+                    entry( 'inequality', expr = [] )   ])
+    
+    self.checkarray(g.shape,(1,1))
+    
+    self.assertTrue(len(g["inequality"])==0)
     
 if __name__ == '__main__':
     unittest.main()
