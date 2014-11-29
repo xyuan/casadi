@@ -51,8 +51,6 @@ option(WITH_DL "Enable dynamic loading of functions" ON)
 option(WITH_DOC "Enable documentation generation" OFF)
 option(ENABLE_EXPORT_ALL "Export all symbols to a shared library" OFF)
 option(WITH_EXAMPLES "Build examples" ON)
-option(WITH_PYTHON_INTERRUPTS "With interrupt handling inside python interface" OFF)
-# option(WITH_GSL "Compile the GSL interface" ON)
 option(WITH_OPENMP "Compile with parallelization support" OFF)
 option(WITH_OOQP "Enable OOQP interface" ON)
 option(WITH_SQIC "Enable SQIC interface" OFF)
@@ -78,7 +76,11 @@ option(WITH_BUILD_TINYXML "Compile the included TinyXML source code" ON)
 option(WITH_TINYXML "Compile the interface to TinyXML" ON)
 option(WITH_PROFILING "Enable a built-in profiler to be switched used" OFF)
 option(WITH_COVERAGE "Create coverage report" OFF)
-option(WITH_MATLAB "Compile with support for MATLAB front-end (experimental)" OFF)
+option(WITH_MATLAB "Compile the MATLAB front-end (experimental)" OFF)
+option(WITH_PYTHON "Compile the Python front-end" OFF)
+option(WITH_JSON "Compile the JSON front-end" OFF)
+option(WITH_PYTHON_INTERRUPTS "With interrupt handling inside Python front-end" OFF)
+
 option(WITH_DEBIAN_BUILD "Add -DWITH_DEBIAN_BUILD (used for debian-specific warnings)" OFF)
 # static on windows, shared on linux/osx by default
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -118,27 +120,19 @@ include(GenerateExportHeader)
 ############################################################
 # Enforce cmake2.4+ style behaviour for
 # mixed filename/full path linker directives
-if(COMMAND cmake_policy)
 cmake_policy(SET CMP0003 NEW)
-endif()
 
 # cmake_policy propagation rules
-if(COMMAND cmake_policy)
 if(POLICY CMP0011)
 cmake_policy(SET CMP0011 OLD)
 endif()
-endif()
 
 # cmake_policy avoid escaping in add_definitions
-if(COMMAND cmake_policy)
 cmake_policy(SET CMP0005 OLD)
-endif()
 
 # cmake_policy use MACOSX_RPATH=ON by default
-if(COMMAND cmake_policy)
-  if(CMAKE_MAJOR_VERSION GREATER 2)
-    cmake_policy(SET CMP0042 NEW)
-  endif()
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
 endif()
 
 ############################################################
@@ -520,15 +514,8 @@ endif()
 #####################################################
 ######################### swig ######################
 #####################################################
-find_package(SWIG)
-  if(SWIG_FOUND)
-    add_subdirectory(swig)
-    add_custom_target(python     DEPENDS _python_modules)
-
-    if(WITH_MATLAB)
-        add_custom_target(matlab DEPENDS _matlab_modules)
-    endif()
-    add_custom_target(json DEPENDS _json_modules)
+if(WITH_PYTHON OR WITH_MATLAB OR WITH_JSON)
+  add_subdirectory(swig)
 endif()
 
 #####################################################

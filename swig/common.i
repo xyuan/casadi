@@ -27,7 +27,7 @@
 // for example vertcat(SXVector), vertcat(DMatrixVector) and vertcat(MXVector) appears to work fine
 #pragma SWIG nowarn=509,303,302
 
-#define CASADI_CORE_EXPORT
+#define CASADI_EXPORT
 
 // Incude cmath early on, see #622
 %begin %{
@@ -317,7 +317,6 @@ namespace std {
 %include "std_map.i"
 #endif
 
-//#ifdef SWIG_MAIN_MODULE
 %template(StringVector) std::vector<std::string>;
 
 %template(BVector)             std::vector<bool> ;
@@ -336,26 +335,6 @@ namespace std {
 
 %template(Pair_Int_Int) std::pair<int,int>;
 %template(VectorPair_Int_Int) std::vector< std::pair<int,int> >;
-//#endif //SWIG_MAIN_MODULE
-//#ifndef SWIG_MAIN_MODULE
-/**%template() std::vector<std::string>;
-
-%template() std::vector<std::vector<bool> > ;
-%template() std::vector< std::vector<std::vector<bool> > > ;
-
-%template()  std::vector<unsigned char>;
-
-%template() std::vector<int>;
-%template() std::vector<std::vector<int> > ;
-%template() std::vector< std::vector<std::vector<int> > > ;
-
-%template() std::vector<double>;
-%template() std::vector<std::vector<double> > ;
-%template() std::vector< std::vector<std::vector<double> > > ;
-
-%template() std::pair<int,int>;
-%template() std::vector< std::pair<int,int> >;*/
-//#endif //SWIG_MAIN_MODULE
 
 // The following is a work-around since it appears not possible to use the standard print functions from stl_vector tools,
 // nor the std::stringstream class, since these are included _after_ std::vector in the C++ generated wrapper code
@@ -429,8 +408,6 @@ namespace std {
     return ret;
   }
 };
-
-#ifdef CASADI_MODULE
 
 %define DEPRECATED_MSG(MSG)
 if (deprecated("$decl",MSG)) SWIG_fail;
@@ -517,16 +494,9 @@ if (casadi::CasadiOptions::catch_errors_swig) { \
 }
 %include "internal.i"
 %include "deprecated.i"
-#endif // CASADI_MODULE
-
 
 #ifdef SWIGPYTHON
-#ifndef WITH_NUMPY
-//#warning "Not using numpy. option(WITH_NUMPY = OFF)"
-#endif
 
-#ifdef WITH_NUMPY
-//#warning "Using numpy. option(WITH_NUMPY = ON)"
 %{
 #define SWIG_FILE_WITH_INIT
 %}
@@ -542,7 +512,6 @@ if (casadi::CasadiOptions::catch_errors_swig) { \
 %init %{
 import_array();
 %}
-#endif // WITH_NUMPY
 #endif // SWIGPYTHON
 
 
@@ -648,7 +617,6 @@ memberbinops(pow,argtype,argCast,selfCast,returntype) \
 using namespace casadi;
 %}
 
-#ifdef CASADI_MODULE
 #ifndef SWIGXML
 %traits_swigtype(casadi::DerivativeGenerator);
 %fragment(SWIG_Traits_frag(casadi::DerivativeGenerator));
@@ -664,7 +632,6 @@ using namespace casadi;
 %traits_swigtype(casadi::Function);
 %fragment(SWIG_Traits_frag(casadi::Function));
 
-#endif
 #endif
 
 
@@ -713,7 +680,7 @@ void dummy2(
 
 #ifdef SWIGPYTHON
 %pythoncode %{
-import _casadi_core
+import _casadi
 %}
 #endif // SWIGPYTHON
 

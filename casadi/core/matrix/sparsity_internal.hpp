@@ -31,7 +31,7 @@
 
 namespace casadi {
 
-  class CASADI_CORE_EXPORT SparsityInternal : public SharedObjectNode {
+  class CASADI_EXPORT SparsityInternal : public SharedObjectNode {
   public:
     /// Construct a sparsity pattern from vectors
     SparsityInternal(int nrow, int ncol, const std::vector<int>& colind,
@@ -256,14 +256,8 @@ namespace casadi {
     /// Get the dimension as a string
     std::string dimString() const;
 
-    ///@{
     /// Sparsity pattern for a matrix-matrix product (details in public class)
-    Sparsity patternProduct(const Sparsity& x_trans,
-                            std::vector< std::vector< std::pair<int, int> > >& mapping) const;
-
-    /// New implementation, multiplies with y from the right
-    Sparsity patternProductNew(const Sparsity& y) const;
-    ///@}
+    Sparsity patternProduct(const Sparsity& y) const;
 
     ///@{
     /// Union of two sparsity patterns

@@ -1462,7 +1462,7 @@ namespace casadi {
     Matrix<DataType> ret;
     if (sp_z.isNull()) {
       // Create the sparsity pattern for the matrix-matrix product
-      Sparsity spres = x.sparsity().patternProductNew(y.sparsity());
+      Sparsity spres = x.sparsity().patternProduct(y.sparsity());
 
       // Create the return object
       ret = Matrix<DataType>::zeros(spres);
@@ -1471,29 +1471,31 @@ namespace casadi {
     }
 
     // Carry out the matrix product
-    mul_no_alloc_nn(x, y, ret);
+    std::vector<DataType> work(x.size1());
+    mul_no_alloc(x, y, ret, work);
 
     return ret;
   }
 
   template<typename DataType>
-  void Matrix<DataType>::mul_no_alloc_nn(const Matrix<DataType> &x, const Matrix<DataType> &y,
-                                         Matrix<DataType>& z, std::vector<DataType>& work) {
-    // Dimensions of the result
-    int d1 = x.size1();
-    int d2 = y.size2();
+  void Matrix<DataType>::mul_no_alloc(const Matrix<DataType> &x, const Matrix<DataType> &y,
+                                      Matrix<DataType>& z, std::vector<DataType>& work,
+                                      bool transpose_x) {
 
     // Assert dimensions
-    casadi_assert_message(d1==z.size1(), "Dimension error. Got x=" << x.dimString()
-                          << " and z=" << z.dimString() << ".");
-    casadi_assert_message(d2==z.size2(), "Dimension error. Got y=" << y.dimString()
-                          << " and z=" << z.dimString() << ".");
-    casadi_assert_message(y.size1()==x.size2(), "Dimension error. Got y=" << y.dimString()
-                          << " and x=" << x.dimString() << ".");
-
-    // Assert work vector large enough
-    casadi_assert_message(work.size()>=d1, "Work vector too small. Got length "
-                          << work.size() << " < " << x.size1());
+    if (transpose_x) {
+      casadi_assert_message(z.size1()==x.size2() && x.size1()==y.size1() && y.size2()==z.size2(),
+                            "Dimension error. Got x=" << x.dimString() << ", y=" << y.dimString()
+                            << " and z=" << z.dimString() << ".");
+      casadi_assert_message(work.size()>=y.size1(),
+                            "Work vector too small: " << work.size() << " < " << y.size1());
+    } else {
+      casadi_assert_message(z.size1()==x.size1() && x.size2()==y.size1() && y.size2()==z.size2(),
+                            "Dimension error. Got x=" << x.dimString() << ", y=" << y.dimString()
+                            << " and z=" << z.dimString() << ".");
+      casadi_assert_message(work.size()>=z.size1(),
+                            "Work vector too small: " << work.size() << " < " << z.size1());
+    }
 
     // Direct access to the arrays
     const std::vector<int> &y_colind = y.colind();
@@ -1507,26 +1509,46 @@ namespace casadi {
     std::vector<DataType> &z_data = z.data();
 
     // Loop over the columns of y and z
-    for (int cc=0; cc<d2; ++cc) {
-      // Get the dense column of z
-      for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
-        work[z_row[kk]] = z_data[kk];
-      }
+    int ncol = z.size2();
+    for (int cc=0; cc<ncol; ++cc) {
+      if (transpose_x) { // Transposed variant, loop over z
 
-      // Loop over the nonzeros of y
-      for (int kk=y_colind[cc]; kk<y_colind[cc+1]; ++kk) {
-        int rr = y_row[kk];
-        DataType yy = y_data[kk];
-
-        // Loop over corresponding columns of x
-        for (int kk1=x_colind[rr]; kk1<x_colind[rr+1]; ++kk1) {
-          work[x_row[kk1]] += x_data[kk1]*yy;
+        // Get the dense column of y
+        for (int kk=y_colind[cc]; kk<y_colind[cc+1]; ++kk) {
+          work[y_row[kk]] = y_data[kk];
         }
-      }
 
-      // Get the sparse column of z
-      for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
-        z_data[kk] = work[z_row[kk]];
+        // Loop over the nonzeros of z
+        for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
+          int rr = z_row[kk];
+
+          // Loop over corresponding columns of x
+          for (int kk1=x_colind[rr]; kk1<x_colind[rr+1]; ++kk1) {
+            z_data[kk] += x_data[kk1] * work[x_row[kk1]];
+          }
+        }
+
+      } else { // Non-transposed variant, loop over y
+
+        // Get the dense column of z
+        for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
+          work[z_row[kk]] = z_data[kk];
+        }
+
+        // Loop over the nonzeros of y
+        for (int kk=y_colind[cc]; kk<y_colind[cc+1]; ++kk) {
+          int rr = y_row[kk];
+
+          // Loop over corresponding columns of x
+          for (int kk1=x_colind[rr]; kk1<x_colind[rr+1]; ++kk1) {
+            work[x_row[kk1]] += x_data[kk1] * y_data[kk];
+          }
+        }
+
+        // Get the sparse column of z
+        for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
+          z_data[kk] = work[z_row[kk]];
+        }
       }
     }
   }
@@ -1576,53 +1598,48 @@ namespace casadi {
   }
 
   template<typename DataType>
-  void Matrix<DataType>::mul_no_alloc_tn(const Matrix<DataType> &x_trans,
-                                         const std::vector<DataType> &y,
-                                         std::vector<DataType>& z) {
+  void Matrix<DataType>::mul_no_alloc(const Matrix<DataType> &x,
+                                      const std::vector<DataType> &y,
+                                      std::vector<DataType>& z, bool transpose_x) {
     // Assert dimensions
-    casadi_assert_message(x_trans.size2()==z.size(), "Dimension error. Got x_trans="
-                          << x_trans.dimString() << " and z=" << z.size() << ".");
-    casadi_assert_message(x_trans.size1()==y.size(), "Dimension error. Got x_trans="
-                          << x_trans.dimString() << " and y=" << y.size() << ".");
-
-    // Direct access to the arrays
-    const std::vector<int> &x_rowind = x_trans.colind();
-    const std::vector<int> &x_col = x_trans.row();
-    const std::vector<DataType> &x_trans_data = x_trans.data();
-
-    // loop over the columns of the matrix
-    for (int i=0; i<x_rowind.size()-1; ++i) {
-      for (int el=x_rowind[i]; el<x_rowind[i+1]; ++el) { // loop over the non-zeros of the matrix
-        int j = x_col[el];
-
-        // Perform operation
-        z[i] += x_trans_data[el] * y[j];
-      }
-    }
-  }
-
-  template<typename DataType>
-  void Matrix<DataType>::mul_no_alloc_nn(const Matrix<DataType>& x,
-                                         const std::vector<DataType> &y,
-                                         std::vector<DataType> &z) {
-    // Assert dimensions
-    casadi_assert_message(x.size1()==z.size(), "Dimension error. Got x=" << x.dimString()
-                          << " and z=" << z.size() << ".");
-    casadi_assert_message(x.size2()==y.size(), "Dimension error. Got x=" << x.dimString()
-                          << " and y=" << y.size() << ".");
+    casadi_assert_message(z.size()==transpose_x ? x.size2() : x.size1(),
+                          "Dimension error. Got transpose_x=" << transpose_x
+                          << ", x=" << x.dimString() << " and z=" << z.size() << ".");
+    casadi_assert_message(y.size()==transpose_x ? x.size1() : x.size2(),
+                          "Dimension error. Got transpose_x=" << transpose_x
+                          << ", x=" << x.dimString() << " and y=" << y.size() << ".");
 
     // Direct access to the arrays
     const std::vector<int> &x_colind = x.colind();
     const std::vector<int> &x_row = x.row();
     const std::vector<DataType> &x_data = x.data();
 
-    // loop over the rows of the matrix
+    // loop over the columns of the matrix
     for (int i=0; i<x_colind.size()-1; ++i) {
-      for (int el=x_colind[i]; el<x_colind[i+1]; ++el) { // loop over the non-zeros of the matrix
+      // loop over the non-zeros of the matrix
+      for (int el=x_colind[i]; el<x_colind[i+1]; ++el) {
         int j = x_row[el];
-        z[j] += x_data[el] * y[i];
+        if (transpose_x) {
+          z[i] += x_data[el] * y[j];
+        } else {
+          z[j] += x_data[el] * y[i];
+        }
       }
     }
+  }
+
+  template<typename DataType>
+  void Matrix<DataType>::mul_no_alloc_tn(const Matrix<DataType> &x_trans,
+                                         const std::vector<DataType> &y,
+                                         std::vector<DataType>& z) {
+    mul_no_alloc(x_trans, y, z, true);
+  }
+
+  template<typename DataType>
+  void Matrix<DataType>::mul_no_alloc_nn(const Matrix<DataType>& x,
+                                         const std::vector<DataType> &y,
+                                         std::vector<DataType> &z) {
+    mul_no_alloc(x, y, z);
   }
 
   template<typename DataType>
@@ -1717,48 +1734,65 @@ namespace casadi {
 
   template<typename DataType>
   template<bool Fwd>
-  void Matrix<DataType>::mul_sparsity(Matrix<DataType> &x_trans,
+  void Matrix<DataType>::mul_sparsity(Matrix<DataType> &x,
                                       Matrix<DataType> &y,
-                                      Matrix<DataType>& z) {
+                                      Matrix<DataType>& z,
+                                      std::vector<DataType>& work) {
+
+    // Assert dimensions
+    casadi_assert_message(z.size1()==x.size1() && x.size2()==y.size1() && y.size2()==z.size2(),
+                          "Dimension error. Got x=" << x.dimString() << ", y=" << y.dimString()
+                          << " and z=" << z.dimString() << ".");
+
+    // Make sure work vector large enough
+    casadi_assert_message(work.size()>=z.size1(),
+                          "Work vector too small: " << work.size() << " < " << z.size1());
+
     // Direct access to the arrays
-    const std::vector<int> &z_row = z.row();
-    const std::vector<int> &z_colind = z.colind();
-    const std::vector<int> &y_row = y.row();
-    const std::vector<int> &x_col = x_trans.row();
     const std::vector<int> &y_colind = y.colind();
-    const std::vector<int> &x_rowind = x_trans.colind();
+    const std::vector<int> &y_row = y.row();
+    const std::vector<int> &x_colind = x.colind();
+    const std::vector<int> &x_row = x.row();
+    const std::vector<int> &z_colind = z.colind();
+    const std::vector<int> &z_row = z.row();
 
     // Convert data array to arrays of integers
     bvec_t *y_data = get_bvec_t(y.data());
-    bvec_t *x_trans_data = get_bvec_t(x_trans.data());
+    bvec_t *x_data = get_bvec_t(x.data());
     bvec_t *z_data = get_bvec_t(z.data());
+    bvec_t *w = get_bvec_t(work);
 
-    // loop over the cols of the resulting matrix)
-    for (int i=0; i<z_colind.size()-1; ++i) {
-      // loop over the non-zeros of the resulting matrix
-      for (int el=z_colind[i]; el<z_colind[i+1]; ++el) {
-        int j = z_row[el];
-        int el1 = y_colind[i];
-        int el2 = x_rowind[j];
-        while (el1 < y_colind[i+1] && el2 < x_rowind[j+1]) { // loop over non-zero elements
-          int j1 = y_row[el1];
-          int i2 = x_col[el2];
-          if (j1==i2) {
-            // | and not & since we are propagating dependencies
-            if (Fwd) {
-              z_data[el] |= y_data[el1] | x_trans_data[el2];
-            } else {
-              y_data[el1] |= z_data[el];
-              x_trans_data[el2] |= z_data[el];
-            }
-            el1++;
-            el2++;
-          } else if (j1<i2) {
-            el1++;
-          } else {
-            el2++;
+    // Loop over the columns of y and z
+    int ncol = z.size2();
+    for (int cc=0; cc<ncol; ++cc) {
+      // Get the dense column of z
+      for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
+        w[z_row[kk]] = z_data[kk];
+      }
+
+      // Loop over the nonzeros of y
+      for (int kk=y_colind[cc]; kk<y_colind[cc+1]; ++kk) {
+        int rr = y_row[kk];
+
+        // Loop over corresponding columns of x
+        if (Fwd) {
+          bvec_t yy = y_data[kk];
+          for (int kk1=x_colind[rr]; kk1<x_colind[rr+1]; ++kk1) {
+            w[x_row[kk1]] |= x_data[kk1] | yy;
           }
+        } else {
+          bvec_t yy = 0;
+          for (int kk1=x_colind[rr]; kk1<x_colind[rr+1]; ++kk1) {
+            yy |= w[x_row[kk1]];
+            x_data[kk1] |= w[x_row[kk1]];
+          }
+          y_data[kk] |= yy;
         }
+      }
+
+      // Get the sparse column of z
+      for (int kk=z_colind[cc]; kk<z_colind[cc+1]; ++kk) {
+        z_data[kk] = w[z_row[kk]];
       }
     }
   }

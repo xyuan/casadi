@@ -48,7 +48,7 @@ namespace casadi {
 
 
   template<typename DataType>
-  class CASADI_CORE_EXPORT NonZeroIterator :
+  class CASADI_EXPORT NonZeroIterator :
         public std::iterator< std::forward_iterator_tag, NonZero<DataType> > {
   public:
     NonZeroIterator(const Matrix<DataType> & m);
@@ -103,7 +103,7 @@ namespace casadi {
       \date 2010-2014
   */
   template<typename DataType>
-  class CASADI_CORE_EXPORT Matrix :
+  class CASADI_EXPORT Matrix :
         public GenericExpression<Matrix<DataType> >,
         public GenericMatrix<Matrix<DataType> >,
         public PrintableObject<Matrix<DataType> > {
@@ -584,35 +584,41 @@ namespace casadi {
     /// Matrix-matrix product
     Matrix<DataType> mul(const Matrix<DataType> &y, const Sparsity & sp_z=Sparsity()) const;
 
-    /// Matrix-matrix product, no memory allocation: z += mul(x, y)
+    /// Matrix-matrix product, no memory allocation: z += mul(x, y), with work vector
+    static void mul_no_alloc(const Matrix<DataType> &x, const Matrix<DataType>& y,
+                             Matrix<DataType>& z, std::vector<DataType>& work,
+                             bool transpose_x=false);
+
+    /// Matrix-vector product, no memory allocation: z += mul(trans(x), y)
+    static void mul_no_alloc(const Matrix<DataType>& x, const std::vector<DataType> &y,
+                             std::vector<DataType>& z, bool transpose_x=false);
+
+    /// DEPRECATED: Matrix-matrix product, no memory allocation: z += mul(x, y)
     static void mul_no_alloc_nn(const Matrix<DataType> &x, const Matrix<DataType>& y,
                                 Matrix<DataType>& z);
 
-    /// Matrix-matrix product, no memory allocation: z += mul(x, y), with work vector
-    static void mul_no_alloc_nn(const Matrix<DataType> &x, const Matrix<DataType>& y,
-                                Matrix<DataType>& z, std::vector<DataType>& work);
-
-    /// Matrix-matrix product, no memory allocation: z += mul(trans(x), y)
+    /// DEPRECATED: Matrix-matrix product, no memory allocation: z += mul(trans(x), y)
     static void mul_no_alloc_tn(const Matrix<DataType> &trans_x, const Matrix<DataType> &y,
                                 Matrix<DataType>& z);
 
-    /// Matrix-matrix product, no memory allocation: z += mul(x, trans(y))
+    /// DEPRECATED: Matrix-matrix product, no memory allocation: z += mul(x, trans(y))
     static void mul_no_alloc_nt(const Matrix<DataType>& x, const Matrix<DataType> &trans_y,
                                 Matrix<DataType>& z);
 
-    /// Matrix-vector product, no memory allocation: z += mul(trans(x), y)
+    /// DEPRECATED: Matrix-vector product, no memory allocation: z += mul(trans(x), y)
     static void mul_no_alloc_tn(const Matrix<DataType>& trans_x, const std::vector<DataType> &y,
                                 std::vector<DataType>& z);
 
-    /// vector-matrix product, no memory allocation: z += mul(x, y)
+    /// DEPRECATED: vector-matrix product, no memory allocation: z += mul(x, y)
     static void mul_no_alloc_nn(const Matrix<DataType>& x, const std::vector<DataType> &y,
                                 std::vector<DataType>& z);
 
     /** \brief Propagate sparsity using 0-1 logic through a matrix product,
-     * no memory allocation: <tt>z = mul(trans(x), y)</tt>
+     * no memory allocation: <tt>z = mul(x, y)</tt> with work vector
      */
     template<bool Fwd>
-    static void mul_sparsity(Matrix<DataType> &x_trans, Matrix<DataType> &y, Matrix<DataType>& z);
+    static void mul_sparsity(Matrix<DataType> &x, Matrix<DataType> &y, Matrix<DataType>& z,
+                             std::vector<DataType>& work);
 
     /// Calculates inner_prod(x, mul(A, x)) without memory allocation
     static DataType quad_form(const std::vector<DataType>& x, const Matrix<DataType>& A);
@@ -947,7 +953,7 @@ namespace casadi {
   /// \endcond
 } // namespace casadi
 
-#ifdef casadi_core_implementation
+#ifdef casadi_implementation
 #include "matrix_impl.hpp"
 #endif
 

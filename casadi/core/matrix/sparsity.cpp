@@ -329,17 +329,8 @@ namespace casadi {
     return (*this)->patternCombine(y, true, true);
   }
 
-  Sparsity Sparsity::patternProductNew(const Sparsity& y) const {
-    return (*this)->patternProductNew(y);
-  }
-
-  Sparsity Sparsity::patternProduct(const Sparsity& x_trans) const {
-    return x_trans.T().patternProductNew(*this);
-  }
-
-  Sparsity Sparsity::patternProduct(const Sparsity& x_trans,
-                                    std::vector< std::vector< pair<int, int> > >& mapping) const {
-    return (*this)->patternProduct(x_trans, mapping);
+  Sparsity Sparsity::patternProduct(const Sparsity& y) const {
+    return (*this)->patternProduct(y);
   }
 
   bool Sparsity::isEqual(const Sparsity& y) const {

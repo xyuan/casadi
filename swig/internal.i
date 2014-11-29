@@ -445,10 +445,10 @@
 %exception  casadi::DenseIO< Derived >::writeOutputs() {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::DenseMultiplication< TrX, TrY >::clone() const  {
+%exception  casadi::DenseMultiplication::clone() const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::DenseMultiplication< TrX, TrY >::generateOperation(std::ostream &stream, const std::vector< std::string > &arg, const std::vector< std::string > &res, CodeGenerator &gen) const  {
+%exception  casadi::DenseMultiplication::generateOperation(std::ostream &stream, const std::vector< std::string > &arg, const std::vector< std::string > &res, CodeGenerator &gen) const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
 %exception  casadi::DenseTranspose::clone() const  {
@@ -2680,34 +2680,37 @@
 %exception  casadi::MultipleOutput::sparsity(int oind) const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::clone() const  {
+%exception  casadi::Multiplication::clone() const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::evaluateD(const DMatrixPtrV &input, DMatrixPtrV &output, std::vector< int > &itmp, std::vector< double > &rtmp) {
+%exception  casadi::Multiplication::evaluateD(const DMatrixPtrV &input, DMatrixPtrV &output, std::vector< int > &itmp, std::vector< double > &rtmp) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::evaluateGen(const MatV &input, MatV &output, std::vector< int > &itmp, std::vector< T > &rtmp) {
+%exception  casadi::Multiplication::evaluateGen(const MatV &input, MatV &output, std::vector< int > &itmp, std::vector< T > &rtmp) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::evaluateMX(const MXPtrV &input, MXPtrV &output, const MXPtrVV &fwdSeed, MXPtrVV &fwdSens, const MXPtrVV &adjSeed, MXPtrVV &adjSens, bool output_given) {
+%exception  casadi::Multiplication::evaluateMX(const MXPtrV &input, MXPtrV &output, const MXPtrVV &fwdSeed, MXPtrVV &fwdSens, const MXPtrVV &adjSeed, MXPtrVV &adjSens, bool output_given) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::evaluateSX(const SXPtrV &input, SXPtrV &output, std::vector< int > &itmp, std::vector< SXElement > &rtmp) {
+%exception  casadi::Multiplication::evaluateSX(const SXPtrV &input, SXPtrV &output, std::vector< int > &itmp, std::vector< SXElement > &rtmp) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::generateOperation(std::ostream &stream, const std::vector< std::string > &arg, const std::vector< std::string > &res, CodeGenerator &gen) const  {
+%exception  casadi::Multiplication::generateOperation(std::ostream &stream, const std::vector< std::string > &arg, const std::vector< std::string > &res, CodeGenerator &gen) const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::getOp() const  {
+%exception  casadi::Multiplication::getOp() const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::numInplace() const  {
+%exception  casadi::Multiplication::nTmp(size_t &ni, size_t &nr) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::printPart(std::ostream &stream, int part) const  {
+%exception  casadi::Multiplication::numInplace() const  {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::Multiplication< TrX, TrY >::propagateSparsity(DMatrixPtrV &input, DMatrixPtrV &output, bool fwd) {
+%exception  casadi::Multiplication::printPart(std::ostream &stream, int part) const  {
+ CATCH_OR_NOT(INTERNAL_MSG() $action) 
+}
+%exception  casadi::Multiplication::propagateSparsity(DMatrixPtrV &input, DMatrixPtrV &output, std::vector< int > &itmp, std::vector< double > &rtmp, bool fwd) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
 %exception  casadi::NanSX::getValue() const  {
@@ -4309,6 +4312,9 @@
 %exception  casadi::ceil(const T &x) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
+%exception  casadi::check_exposed(T t) {
+ CATCH_OR_NOT(INTERNAL_MSG() $action) 
+}
 %exception  casadi::collocationInterpolators(const std::vector< double > &tau_root, std::vector< std::vector< double > > &C, std::vector< double > &D) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
@@ -4576,12 +4582,6 @@
 %exception  casadi::sinh(const T &x) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception  casadi::slicot_periodic_schur(int n, int K, const std::vector< double > &a, std::vector< double > &t, std::vector< double > &z, std::vector< double > &dwork, std::vector< double > &eig_real, std::vector< double > &eig_imag, double num_zero) {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
-%exception  casadi::slicot_periodic_schur(int n, int K, const std::vector< double > &a, std::vector< double > &t, std::vector< double > &z, std::vector< double > &eig_real, std::vector< double > &eig_imag, double num_zero) {
- CATCH_OR_NOT(INTERNAL_MSG() $action) 
-}
 %exception  casadi::sort(const std::vector< T > &values, std::vector< T > &sorted_values, std::vector< int > &indices, bool invert_indices=false) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
@@ -4702,7 +4702,7 @@
 %exception casadi::DPLEOutputIOSchemeVector< M >::DPLEOutputIOSchemeVector(const std::vector< M > &t) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception casadi::DenseMultiplication< TrX, TrY >::DenseMultiplication(const MX &z, const MX &x, const MX &y) {
+%exception casadi::DenseMultiplication::DenseMultiplication(const MX &z, const MX &x, const MX &y) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
 %exception casadi::DenseTranspose::DenseTranspose(const MX &x) {
@@ -4921,7 +4921,7 @@
 %exception casadi::MultipleOutput::MultipleOutput() {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
-%exception casadi::Multiplication< TrX, TrY >::Multiplication(const MX &z, const MX &x, const MX &y) {
+%exception casadi::Multiplication::Multiplication(const MX &z, const MX &x, const MX &y) {
  CATCH_OR_NOT(INTERNAL_MSG() $action) 
 }
 %exception casadi::NLPInputIOSchemeVector< M >::NLPInputIOSchemeVector(const std::vector< M > &t) {
