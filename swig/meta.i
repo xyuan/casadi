@@ -22,42 +22,23 @@
  *
  */
 
-
-%{
-#include <sstream>
-#include "casadi/core/std_vector_tools.hpp"
-#include "casadi/core/printable_object.hpp"
-#include "casadi/core/shared_object.hpp"
-#include "casadi/core/generic_type.hpp"
-#include "casadi/core/casadi_types.hpp"
-#include "casadi/core/options_functionality.hpp"
-#include "casadi/core/matrix/sparsity.hpp"
-#include "casadi/core/matrix/slice.hpp"
-#include "casadi/core/matrix/matrix.hpp"
-#include "casadi/core/matrix/matrix_tools.hpp"
-#include "casadi/core/sx/sx_element.hpp"
-#include "casadi/core/sx/sx_tools.hpp"
-#include "casadi/core/mx/mx.hpp"
-#include "casadi/core/mx/mx_tools.hpp"
-#include "casadi/core/function/function.hpp"
-%}
-
 %define %my_genericmatrix_const_typemap(Precedence,Type...) 
 %typemap(in) const casadi::GenericMatrix< Type > & (Type m) {
-  if (meta< Type >::isa($input)) { // Type object get passed on as-is, and fast.
-    $1 = meta< Type >::get_ptr($input);
-    if ($1==0) {
+  if (is_a($input, $descriptor(Type *))) {
+    if (SWIG_ConvertPtr($input, (void **) &$1, $descriptor(Type *), 0) == -1) {
       SWIG_exception_fail(SWIG_TypeError,"Type cast failed");
     }
   } else {
-    bool result=meta< Type >::as($input,m);
+    bool result=meta< Type >::as($input,&m);
     if (!result)
       SWIG_exception_fail(SWIG_TypeError,meta< Type >::expected_message);
     $1 = &m;
   }
 }
 
-%typemap(typecheck,precedence=Precedence) const casadi::GenericMatrix< Type > & { $1 = meta< Type >::isa($input) || meta< Type >::couldbe($input); }
+%typemap(typecheck,precedence=Precedence) const casadi::GenericMatrix< Type > & {
+  $1 = is_a($input, $descriptor(Type *)) || meta< Type >::couldbe($input);
+ }
 %typemap(freearg) const casadi::GenericMatrix< Type >  & {}
 
 %enddef
