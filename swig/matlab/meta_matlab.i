@@ -64,14 +64,11 @@
 
 %inline %{
 /// int
-template<> char meta< int >::expected_message[] = "Expecting integer";
-
 template <>
-int meta< int >::as(GUESTOBJECT * p, int *m) {
-  if (is_a(p, *meta< int >::name)) {
+int meta< int >::toCpp(GUESTOBJECT * p, int *m, swig_type_info *type) {
+  if (is_a(p, type)) {
     int *mp;
-    if (SWIG_ConvertPtr(p, (void **) &mp, *meta< int >::name, 0) == -1)
-      return false;
+    if (SWIG_ConvertPtr(p, (void **) &mp, type, 0) == -1) return false;
     *m=*mp;
     return true;
   }
@@ -88,17 +85,9 @@ int meta< int >::as(GUESTOBJECT * p, int *m) {
   }
 }
 
-/// std::vector<double>
-template <> char meta< std::vector< double > >::expected_message[] = "Expecting sequence(double)";
-
-/// std::vector<int>
-template <> char meta< std::vector< int > >::expected_message[] = "Expecting sequence(integer) or 1D numpy.array of ints"; 
-
 /// double
-template<> char meta< double >::expected_message[] = "Expecting double";
-
 template <>
-int meta< double >::as(GUESTOBJECT * p, double *m) {
+int meta< double >::toCpp(GUESTOBJECT * p, double *m, swig_type_info *type) {
   if (is_a(p, *meta< double >::name)) {
     double *mp;
     if (SWIG_ConvertPtr(p, (void **) &mp, *meta< double >::name, 0) == -1)
@@ -127,32 +116,12 @@ int meta< double >::as(GUESTOBJECT * p, double *m) {
   }
 }
 
-/// std::string
-template<> char meta< std::string >::expected_message[] = "Expecting string";
-
-/// casadi::DerivativeGenerator
- template<> char meta< casadi::DerivativeGenerator >::expected_message[] = "Expecting sparsity generator";
-
-/// casadi::CustomEvaluate
-template<> char meta< casadi::CustomEvaluate >::expected_message[] = "Expecting CustomFunction wrapper generator";
-
-/// casadi::Callback
-template<> char meta< casadi::Callback >::expected_message[] = "Expecting Callback";
-
-/// casadi::GenericType
-template<> char meta< casadi::GenericType >::expected_message[] = "Expecting any type (None might be an exception)";
-
-/// casadi::GenericType::Dictionary
-template<> char meta< casadi::GenericType::Dictionary >::expected_message[] = "Expecting dictionary of GenericTypes";
-
 // Explicit intialization of these two member functions, so we can use them in meta< casadi::SXElement >
-template<> int meta< casadi::SX >::as(GUESTOBJECT *p, casadi::SX *);
+template<> int meta< casadi::SX >::toCpp(GUESTOBJECT *p, casadi::SX *, swig_type_info *type);
 
 /// casadi::SX
-template<> char meta< casadi::SXElement >::expected_message[] = "Expecting SXElement or number";
-
 template <>
-int meta< casadi::SXElement >::as(GUESTOBJECT *p, casadi::SXElement *s) {
+int meta< casadi::SXElement >::toCpp(GUESTOBJECT *p, casadi::SXElement *s, swig_type_info *type) {
   if (is_a(p, *meta< casadi::SXElement >::name)) {
     casadi::SXElement *mp;
     if (SWIG_ConvertPtr(p, (void **) &mp, *meta< casadi::SXElement >::name, 0) == -1)
@@ -162,9 +131,7 @@ int meta< casadi::SXElement >::as(GUESTOBJECT *p, casadi::SXElement *s) {
   }
   if (meta< double >::couldbe(p)) {
     double res;
-    int result = meta< double >::as(p, &res);
-    if (!result)
-      return false;
+    if (!meta< double >::toCpp(p, &res, *meta< double >::name)) return false;
     *s=casadi::SXElement(res);
   } else {
     return false;
@@ -173,10 +140,8 @@ int meta< casadi::SXElement >::as(GUESTOBJECT *p, casadi::SXElement *s) {
 }
 
 /// casadi::Matrix<int>
-template<> char meta< casadi::Matrix<int> >::expected_message[] = "Expecting IMatrix";
-
 template <>
-int meta< casadi::Matrix<int> >::as(GUESTOBJECT * p,casadi::Matrix<int> *m) {
+int meta< casadi::Matrix<int> >::toCpp(GUESTOBJECT * p,casadi::Matrix<int> *m, swig_type_info *type) {
   if (is_a(p, *meta< casadi::Matrix<int> >::name)) {
     casadi::Matrix<int> *mp;
     if (SWIG_ConvertPtr(p, (void **) &mp, *meta< casadi::Matrix<int> >::name, 0) == -1)
@@ -186,7 +151,7 @@ int meta< casadi::Matrix<int> >::as(GUESTOBJECT * p,casadi::Matrix<int> *m) {
   }
   if (meta< int >::couldbe(p)) {
     int t;
-    int res = meta< int >::as(p, &t);
+    int res = meta< int >::toCpp(p, &t, *meta< int >::name);
     *m = t;
     return res;
   } else {
@@ -197,10 +162,8 @@ int meta< casadi::Matrix<int> >::as(GUESTOBJECT * p,casadi::Matrix<int> *m) {
 }
 
 /// casadi::Matrix<double>
-template<> char meta< casadi::Matrix<double> >::expected_message[] = "Expecting DMatrix";
-
 template <>
-int meta< casadi::Matrix<double> >::as(GUESTOBJECT * p,casadi::Matrix<double> *m) {
+int meta< casadi::Matrix<double> >::toCpp(GUESTOBJECT * p, casadi::Matrix<double> *m, swig_type_info *type) {
   if (is_a(p, *meta< casadi::Matrix<double> >::name)) {
     casadi::Matrix<double> *mp;
     if (SWIG_ConvertPtr(p, (void **) &mp, *meta< casadi::Matrix<double> >::name, 0) == -1)
@@ -217,7 +180,7 @@ int meta< casadi::Matrix<double> >::as(GUESTOBJECT * p,casadi::Matrix<double> *m
   }
   if (meta< double >::couldbe(p)) {
     double t;
-    int res = meta< double >::as(p, &t);
+    int res = meta< double >::toCpp(p, &t, *meta< double >::name);
     *m = t;
     return res;
   } else {
@@ -228,10 +191,8 @@ int meta< casadi::Matrix<double> >::as(GUESTOBJECT * p,casadi::Matrix<double> *m
 }
 
 /// casadi::SX
-template<> char meta< casadi::SX >::expected_message[] = "Expecting one of: SX, SXElement, number";
-
 template <>
-int meta< casadi::SX >::as(GUESTOBJECT * p,casadi::SX *m) {
+int meta< casadi::SX >::toCpp(GUESTOBJECT * p,casadi::SX *m, swig_type_info *type) {
   if (is_a(p, *meta< casadi::SX >::name)) {
     casadi::SX *mp;
     if (SWIG_ConvertPtr(p, (void **) &mp, *meta< casadi::SX >::name, 0) == -1)
@@ -247,7 +208,7 @@ int meta< casadi::SX >::as(GUESTOBJECT * p,casadi::SX *m) {
     return true;
   }
   casadi::DMatrix mt;
-  if(meta< casadi::Matrix<double> >::as(p, &mt)) {
+  if(meta< casadi::Matrix<double> >::toCpp(p, &mt, *meta< casadi::Matrix<double> >::name)) {
     *m = casadi::SX(mt);
   } else {
     //SWIG_Error(SWIG_TypeError, "asSX: unrecognised type. Should have been caught by typemap(typecheck)");
@@ -262,10 +223,8 @@ meta_vector(casadi::Matrix< casadi::SXElement >);
 meta_vector(std::vector< casadi::Matrix< casadi::SXElement > >);
 
 /// casadi::MX
-template<> char meta< casadi::MX >::expected_message[] = "Expecting (MX, numberarray)";
-
 template <>
-int meta< casadi::MX >::as(GUESTOBJECT * p,casadi::MX *m) {
+int meta< casadi::MX >::toCpp(GUESTOBJECT * p,casadi::MX *m, swig_type_info *type) {
   if (is_a(p, *meta< casadi::MX >::name)) {
     casadi::MX *mp;
     if (SWIG_ConvertPtr(p, (void **) &mp, *meta< casadi::MX >::name, 0) == -1)
@@ -274,7 +233,7 @@ int meta< casadi::MX >::as(GUESTOBJECT * p,casadi::MX *m) {
     return true;
   }
   casadi::DMatrix mt;
-  if(meta< casadi::Matrix<double> >::as(p, &mt)) {
+  if(meta< casadi::Matrix<double> >::toCpp(p, &mt, *meta< casadi::Matrix<double> >::name)) {
     *m = casadi::MX(mt);
     return true;
   }

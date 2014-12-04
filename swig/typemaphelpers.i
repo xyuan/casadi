@@ -23,19 +23,6 @@
  */
 
 
-%{
-#include "casadi/core/matrix/sparsity.hpp"
-#include "casadi/core/matrix/matrix.hpp"
-#include <sstream>
-#include "casadi/core/casadi_exception.hpp"
-
-// to allow for typechecking
-#include "casadi/core/sx/sx_element.hpp"
-
-// to typecheck for MX
-#include "casadi/core/mx/mx.hpp"
-%}
-
 #ifndef SWIGXML
 %include "typemaps.i"
 #endif
@@ -67,9 +54,11 @@
 template<class T>
 class meta {
   public:
+    static swig_type_info** name;
+
     /// Convert Guest object to type T
     /// This function must work when is_a(GUESTOBJECT *p) too
-    static int as(GUESTOBJECT *p, T *m) {
+    static int toCpp(GUESTOBJECT *p, T *m, swig_type_info *type) {
         T *t = 0;
         int res = swig::asptr(p, &t);
         if(SWIG_CheckState(res) && t) {
@@ -86,10 +75,8 @@ class meta {
         //int res = swig::asptr(p, (T**)(0));
         //if SWIG_CheckState(res) return true;
         T m;
-        return as(p, &m);
+        return toCpp(p, &m, *meta<T>::name);
     }
-    static swig_type_info** name;
-    static char expected_message[];
     
     // Vector specific stuff
     
@@ -141,10 +128,11 @@ class meta {
         if (size==-1) { PyErr_Clear();  return false;}
         m->resize(size);
         int i=0;
-        while ((pe = PyIter_Next(it))) {                                // Iterate over the sequence inside the sequence
-          bool result=meta< T >::as(pe, &(*m)[i++]);
-          if (!result) {
-            Py_DECREF(pe);Py_DECREF(it);
+        while ((pe = PyIter_Next(it))) {
+          // Iterate over the sequence inside the sequence
+          if (!meta< T >::toCpp(pe, &(*m)[i++], *meta< T >::name)) {
+            Py_DECREF(pe);
+            Py_DECREF(it);
             return false;
           }
           Py_DECREF(pe);
@@ -159,7 +147,7 @@ class meta {
         m->resize(sz);
         for (int i=0; i<sz; ++i) {
           GUESTOBJECT *pi = mxGetCell(p, i);
-          if (pi==0 || !meta< T >::as(pi, &(*m)[i])) return false;
+          if (pi==0 || !meta< T >::toCpp(pi, &(*m)[i], *meta< T >::name)) return false;
         }
         return true;
       }
@@ -178,10 +166,11 @@ class meta {
 %define %my_generic_const_typemap(Precedence,Type...) 
 %typemap(in) const Type & (Type m) {
   if (SWIG_ConvertPtr($input, (void **) &$1, $descriptor(Type*), 0) == -1) {
-    if (!meta< Type >::as($input,&m)) SWIG_exception_fail(SWIG_TypeError,meta< Type >::expected_message);
+    if (!meta< Type >::toCpp($input, &m, $descriptor(Type*)))
+      SWIG_exception_fail(SWIG_TypeError,"Input type conversion failure ($1_type)");
     $1 = &m;
   }
-}
+ }
 
 %typemap(typecheck,precedence=Precedence) const Type & { $1 = is_a($input, $descriptor(Type *)) || meta< Type >::couldbe($input); }
 %typemap(freearg) const Type  & {}
@@ -231,7 +220,7 @@ class meta {
 // Create an output typemap for a const ref such that a copy is made
 %define %outputConstRefCopy(Type)
 %typemap(out) const Type & {
-   $result = SWIG_NewPointerObj((new Type(*$1)), *meta< Type >::name, SWIG_POINTER_OWN |  0 );
+  $result = SWIG_NewPointerObj((new Type(*$1)), $descriptor(Type*), SWIG_POINTER_OWN |  0 );
 }
 %enddef
 
@@ -267,8 +256,8 @@ void PyDECREFParent(PyObject* self) {
 // We are actually abusing the term SWIG_POINTER_OWN: a non-const ref is usually created with SWIG_NewPointerObj(..., 0 |  0 )
 %define %outputRefOwn(Type)
 %typemap(out) Type & {
-   $result = SWIG_NewPointerObj($1, *meta< Type >::name, 0 |  0 );
-   PySetParent($result, obj0);
+  $result = SWIG_NewPointerObj($1, $descriptor(Type*), 0 |  0 );
+  PySetParent($result, obj0);
 }
 %typemap(out) const Type & {
    $result = swig::from(static_cast< Type * >($1));
@@ -307,13 +296,11 @@ void PyDECREFParent(PyObject* self) {
 %inline %{
 /// std::vector< Type >
 #define meta_vector(Type) \
-template<> char meta< std::vector< Type > >::expected_message[] = "Expecting sequence(Type)"; \
- \
 template <> \
-int meta< std::vector< Type > >::as(GUESTOBJECT *p, std::vector< Type > *m) { \
-  if (is_a(p, *meta< std::vector< Type > >::name)) {                                                       \
+int meta< std::vector< Type > >::toCpp(GUESTOBJECT *p, std::vector< Type > *m, swig_type_info *type) { \
+  if (is_a(p, type)) {\
     std::vector< Type > *mp; \
-    if (SWIG_ConvertPtr(p, (void **) &mp, *meta< std::vector< Type > >::name, 0) == -1) \
+    if (SWIG_ConvertPtr(p, (void **) &mp, type, 0) == -1) \
       return false; \
     if(m) *m=*mp;    \
     return true; \
@@ -323,51 +310,6 @@ int meta< std::vector< Type > >::as(GUESTOBJECT *p, std::vector< Type > *m) { \
 
 %}
 
-
-/// std::pair< TypeA, TypeB >
-#ifdef SWIGPYTHON
-%define %meta_pair(TypeA,TypeB) 
-%inline %{
-template <>
-int meta< std::pair<TypeA, TypeB> >::as(PyObject * p, std::pair< TypeA, TypeB > *m) {
-  std::pair< TypeA, TypeB > *tm;
-  if (SWIG_ConvertPtr(p, (void **)&tm, *meta< std::pair< TypeA, TypeB > >::name, 0 )>=0) {
-    if(m) *m = *tm;
-    return true;
-  }
-  if(!PySequence_Check(p)) return false;
-  if(PySequence_Size(p)!=2) return false;
-  PyObject * first =  PySequence_GetItem(p,0);
-  PyObject * second = PySequence_GetItem(p,1);
-  bool result;
-  if (m) {
-    result = meta< TypeA  >::as(first, &m->first) && meta< TypeB  >::as(second, &m->second);
-  } else {
-    result = meta< TypeA  >::as(first, 0) && meta< TypeB  >::as(second, 0);
-  }
-  Py_DECREF(first);
-  Py_DECREF(second);
-  return result;   
- }
-
-template <>
-bool meta < std::pair< TypeA, TypeB > >::toPython(const std::pair< TypeA, TypeB > &m, PyObject *&p) {
-  p = PyTuple_New(2);
-  PyObject *first = 0;
-  first  = SWIG_NewPointerObj((new TypeA(static_cast< const TypeA& >(m.first ))), *meta< TypeA >::name , SWIG_POINTER_OWN |  0 );
-  PyObject *second = 0;
-  second = SWIG_NewPointerObj((new TypeB(static_cast< const TypeB& >(m.second))), *meta< TypeB >::name , SWIG_POINTER_OWN |  0 );
-  
-  if (first==0 || second==0) return false;
-  
-  PyTuple_SetItem(p, 0, first);
-  PyTuple_SetItem(p, 1, second);
-  
-  return true;
-}
-%}
-%enddef
-#endif //SWIGPYTHON
 
 #ifdef SWIGPYTHON
 %inline%{
