@@ -154,13 +154,7 @@ class meta {
 #endif // SWIGMATLAB
       return false;
     }
-
-    #ifdef SWIGPYTHON
-    // Would love to make this const T&, but looks like not allowed
-    static bool toPython(const T &, PyObject *&p);
-    #endif //SWIGPYTHON
 };
-
 %}
 
 %define %my_generic_const_typemap(Precedence,Type...) 

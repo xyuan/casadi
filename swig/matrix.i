@@ -249,13 +249,13 @@ PyObject* arrayView() {
   def toArray(self,shared=False):
     import numpy as n
     if shared:
-      if self.size()!=self.numel():
+      if not self.isDense():
         raise Expection("toArray(shared=True) only possible for dense arrays.")
       return self.arrayView()
     else:
       r = n.zeros((self.size1(),self.size2()))
       self.get(r)
-    return r
+      return r
 %}
 
 %python_array_wrappers(999.0)
@@ -334,9 +334,10 @@ binopsFull(const casadi::MX & b,,casadi::MX,casadi::MX)
     def toArray(self):
       import numpy as n
       r = n.zeros((self.size1(),self.size2()))
-      for i in range(r.shape[0]):
-        for j in range(r.shape[1]):
-          r[i,j] = self.elem(i,j)
+      for j in range(self.size2()):
+        for k in range(self.colind(j),self.colind(j+1)):
+          i = self.row(k)
+          r[i,j] = self.at(k)
       return r
   %}
   

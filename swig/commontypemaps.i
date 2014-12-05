@@ -57,7 +57,6 @@
 #define PRECEDENCE_SXVector 103
 #define PRECEDENCE_SXVectorVector 103
 #define PRECEDENCE_SXElementVector 102
-#define PRECEDENCE_SXElementVectorVector 102
 #define PRECEDENCE_MX 104
 #define PRECEDENCE_MXVector 105
 #define PRECEDENCE_MXVectorVector 106
@@ -81,8 +80,6 @@
 %template(DMatrixVector) std::vector<casadi::Matrix<double> > ;
 %template(DMatrixVectorVector) std::vector< std::vector<casadi::Matrix<double> > > ;
 %template(IMatrixVectorVector) std::vector< std::vector<casadi::Matrix<int> > > ;
-%template(SXElementVectorVector)       std::vector<std::vector<casadi::SXElement> > ;
-%template(SXElementVectorVectorVector) std::vector< std::vector<std::vector<casadi::SXElement> > > ;
 
 #ifdef SWIGPYTHON
 %typemap(in) int (int m) {
@@ -107,9 +104,8 @@
 
 #ifdef SWIGPYTHON
 %typemap(out) casadi::GenericType {
-  if(!meta<  casadi::GenericType >::toPython($1,$result)) {
+  if(!($result = fromCpp($1)))
     SWIG_exception_fail(SWIG_TypeError,"GenericType not yet implemented");
-  }
 }
 
 %typemap(out) std::vector< casadi::GenericType > {
@@ -117,7 +113,7 @@
   std::vector< casadi::GenericType > & in = $1;
   for (int k=0 ; k < in.size(); ++k) {
     PyObject* rete;
-    if (!meta< casadi::GenericType >::toPython(in[k],rete))
+    if (!(rete = fromCpp(in[k])))
       SWIG_exception_fail(SWIG_TypeError,"GenericType not yet implemented");
     PyList_Append(ret, rete);
   }
@@ -125,7 +121,7 @@
 }
 
 %typemap(out) const casadi::GenericType::Dictionary&  {
-  if(!meta<  casadi::GenericType::Dictionary >::toPython(*$1,$result)) {
+  if(!($result = fromCpp(*$1))) {
     SWIG_exception_fail(SWIG_TypeError,"GenericType not yet implemented");
   }
 }
@@ -155,7 +151,6 @@
 
 %my_generic_const_typemap(PRECEDENCE_SXElement,casadi::SXElement);
 %my_generic_const_typemap(PRECEDENCE_SXElementVector,std::vector< casadi::SXElement >);
-%my_generic_const_typemap(PRECEDENCE_SXElementVectorVector,std::vector< std::vector< casadi::SXElement > >);
 
 %my_generic_const_typemap(PRECEDENCE_SX,casadi::Matrix<casadi::SXElement>);
 %my_genericmatrix_const_typemap(PRECEDENCE_SX,casadi::Matrix<casadi::SXElement>);
