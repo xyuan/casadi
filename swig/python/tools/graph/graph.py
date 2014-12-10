@@ -21,7 +21,7 @@
 #     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 #
-from casadi import SXElement, SX, MX, getOperatorRepresentation
+from casadi import SX, MX, getOperatorRepresentation
 import casadi as C
 
 try:
@@ -65,12 +65,17 @@ def addDependencies(master,slaves,dep={},invdep={}):
   for slave in slaves:
     dependencyGraph(slave,dep = dep,invdep = invdep)
 
+def isLeaf(s):
+  return s.isLeaf()
+  #return s.isScalar(True) and (s.isConstant() or s.isSymbolic())
+
 def dependencyGraph(s,dep = {},invdep = {}):
   if isinstance(s,SX):
-    addDependencies(s,list(s.data()),dep = dep,invdep = invdep)
-  elif isinstance(s,SXElement):
-    if not(s.isLeaf()):
-      addDependencies(s,getDeps(s),dep = dep,invdep = invdep)
+    if s.isScalar(True):
+      if not(isLeaf(s)):
+        addDependencies(s,getDeps(s),dep = dep,invdep = invdep)
+    else:
+      addDependencies(s,list(s),dep = dep,invdep = invdep)
   elif isinstance(s,MX):
     addDependencies(s,getDeps(s),dep = dep,invdep = invdep)
   return (dep,invdep)
@@ -527,7 +532,7 @@ class SXArtist(DotArtist):
         if k==-1:
           label+="<TD>.</TD>"
         else:
-          sx = s.at(k)
+          sx = s.nz[k]
           if self.shouldEmbed(sx):
             label+="<TD BGCOLOR='#eeeeee'>%s</TD>" % str(sx)
           else:
@@ -582,12 +587,15 @@ class SXNonLeafArtist(DotArtist):
   
 def createArtist(node,dep={},invdep={},graph=None,artists={}):
   if isinstance(node,SX):
-    return SXArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
-  elif isinstance(node,SXElement):
-    if node.isLeaf():
-      return SXLeafArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
+    if node.isScalar(True):
+      if isLeaf(node):
+        return SXLeafArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
+      else:
+        return SXNonLeafArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
     else:
-      return SXNonLeafArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
+      return SXArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
+    
+    
   elif isinstance(node,MX):
     if node.isSymbolic():
       return MXSymbolicArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
@@ -614,40 +622,52 @@ def createArtist(node,dep={},invdep={},graph=None,artists={}):
         
 def dotgraph(s,direction="BT"):
   """
-  Creates and returns a pydot graph structure that represents an SXElement or SX.
+  Creates and returns a pydot graph structure that represents an SX.
   
   direction   one of "BT", "LR", "TB", "RL"
   """
-  
-  # Get the dependencies and inverse dependencies in a dict
-  dep, invdep = dependencyGraph(s,{},{})
-  
-  allnodes = set(dep.keys()).union(set(invdep.keys()))
-  
-  #print "a", set(dep.keys()), [i.__hash__() for i in dep.keys()]
-  #print "b", set(invdep.keys()), [i.__hash__() for i in invdep.keys()]
-  #print "allnodes", allnodes, [i.__hash__() for i in allnodes]
-  
-  #return None
-  
-  artists = {}
-  
-  graph = pydot.Dot('G', graph_type='digraph',rankdir=direction)
+
+  try:
+    def getHashSX(e):
+      try:
+        return e.getElementHash()
+      except:
+        return SX__hash__backup(e)
+        
+    SX__hash__backup = SX.__hash__
+    SX.__hash__ = getHashSX
     
-  for node in allnodes:
-    artists[node] = createArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
+    # Get the dependencies and inverse dependencies in a dict
+    dep, invdep = dependencyGraph(s,{},{})
     
-  for artist in artists.itervalues():
-    if artist is None: continue
-    artist.draw()
-  
-  file('source.dot','w').write(graph.to_string())
+    allnodes = set(dep.keys()).union(set(invdep.keys()))
+    
+    #print "a", set(dep.keys()), [i.__hash__() for i in dep.keys()]
+    #print "b", set(invdep.keys()), [i.__hash__() for i in invdep.keys()]
+    #print "allnodes", allnodes, [i.__hash__() for i in allnodes]
+    
+    #return None
+    
+    artists = {}
+    
+    graph = pydot.Dot('G', graph_type='digraph',rankdir=direction)
+      
+    for node in allnodes:
+      artists[node] = createArtist(node,dep=dep,invdep=invdep,graph=graph,artists=artists)
+      
+    for artist in artists.itervalues():
+      if artist is None: continue
+      artist.draw()
+    
+    file('source.dot','w').write(graph.to_string())
+  finally:
+    SX.__hash__ = SX__hash__backup
   return graph
 
 
 def dotsave(s,format='ps',filename="temp",direction="RL"):
   """
-  Make a drawing of an SXElement or SX and save it.
+  Make a drawing of an SX and save it.
   
   format can be one of:
     dot canon cmap cmapx cmapx_np dia dot fig gd gd2 gif hpgl imap imap_np
@@ -671,7 +691,7 @@ def dotsave(s,format='ps',filename="temp",direction="RL"):
   
 def dotdraw(s,direction="RL"):
   """
-  Make a drawing of an SXElement or SX and display it.
+  Make a drawing of an SX and display it.
   
   direction   one of "BT", "LR", "TB", "RL"
   """

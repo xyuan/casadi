@@ -2170,6 +2170,21 @@ namespace casadi {
   }
 
   template<typename DataType>
+  long Matrix<DataType>::getElementHash() const {
+    throw CasadiException("\"getElementHash\" not defined for instantiation");
+  }
+
+  template<typename DataType>
+  bool Matrix<DataType>::isLeaf() const {
+    throw CasadiException("\"isLeaf\" not defined for instantiation");
+  }
+
+  template<typename DataType>
+  bool Matrix<DataType>::isCommutative() const {
+    throw CasadiException("\"isCommutative\" not defined for instantiation");
+  }
+
+  template<typename DataType>
   bool Matrix<DataType>::isSymbolic() const {
     return false;
   }
@@ -2287,6 +2302,16 @@ namespace casadi {
   }
 
   template<typename DataType>
+  Matrix<DataType> Matrix<DataType>::getDep(int ch) const {
+    throw CasadiException("\"getDep\" not defined for instantiation");
+  }
+
+  template<typename DataType>
+  int Matrix<DataType>::getNdeps() const {
+    throw CasadiException("\"getNdeps\" not defined for instantiation");
+  }
+
+  template<typename DataType>
   Matrix<DataType> Matrix<DataType>::setSparse(const Sparsity& sp, bool intersect) const {
     if (intersect) {
       return setSparse(sp.patternIntersection(sparsity()), false);
@@ -2316,7 +2341,6 @@ namespace casadi {
   int Matrix<DataType>::getEqualityCheckingDepth() {
     throw CasadiException("\"getEqualityCheckingDepth\" not defined for instantiation");
   }
-
 
 } // namespace casadi
 

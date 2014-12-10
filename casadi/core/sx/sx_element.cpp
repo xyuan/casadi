@@ -880,6 +880,21 @@ namespace casadi {
   }
 
   template<>
+  long SX::getElementHash() const {
+    return toScalar().__hash__();
+  }
+
+  template<>
+  bool SX::isLeaf() const {
+    return toScalar().isLeaf();
+  }
+
+  template<>
+  bool SX::isCommutative() const {
+    return toScalar().isCommutative();
+  }
+
+  template<>
   bool SX::isSymbolic() const {
     if (isDense()) {
       return isSymbolicSparse();
@@ -905,6 +920,16 @@ namespace casadi {
   template<>
   std::string SX::getName() const {
     return toScalar().getName();
+  }
+
+  template<>
+  SX SX::getDep(int ch) const {
+    return toScalar().getDep(ch);
+  }
+
+  template<>
+  int SX::getNdeps() const {
+    return toScalar().getNdeps();
   }
 
 } // namespace casadi

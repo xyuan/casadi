@@ -46,11 +46,10 @@ namespace casadi {
   /** \brief  forward declaration of Node and Matrix */
   class SXNode; // include will follow in the end
 
+  /** SXElement is exposed only as an empty struct to SWIG */
 #ifdef SWIG
-#ifdef WITH_IMPLICITCONV
-  %implicitconv SXElement;
-#endif // WITH_IMPLICITCONV
-#endif // SWIG
+  struct SXElement {};
+#else // SWIG
 
   /** \brief The basic scalar symbolic class of CasADi
       \author Joel Andersson
@@ -83,8 +82,6 @@ namespace casadi {
         SXElement objects with non-unique names.
     */
     static SXElement sym(const std::string& name);
-
-#ifndef SWIG
 
     /// \cond INTERNAL
     /// Create an expression from a node: extra dummy argument to avoid ambiguity for 0/NULL
@@ -128,8 +125,6 @@ namespace casadi {
     const SXNode* operator->() const;
     SXNode* operator->();
     /// \endcond
-
-#endif // SWIG
 
     /** \brief  Perform operations by ID */
     static SXElement binary(int op, const SXElement& x, const SXElement& y);
@@ -286,7 +281,6 @@ namespace casadi {
     /** \brief SXElement nodes are not allowed to be null */
     inline bool isNull() {return false;}
 
-#ifndef SWIG
   private:
     /// Pointer to node (SXElement is only a reference class)
     SXNode* node;
@@ -295,12 +289,9 @@ namespace casadi {
     /// replaces the ternary conditional operator "?:", which cannot be overloaded
     friend SXElement if_else(const SXElement& cond, const SXElement& if_true,
                              const SXElement& if_false);
-#endif // SWIG
-
   };
 
-/// \cond INTERNAL
-#ifndef SWIG
+  /// \cond INTERNAL
   // Template specializations
   template<>
   CASADI_EXPORT bool Matrix<SXElement>::__nonzero__() const;
@@ -347,18 +338,22 @@ namespace casadi {
   template<> SX GenericMatrix<SX>::sym(const std::string& name, const Sparsity& sp);
   template<> bool SX::isRegular() const;
   template<> bool SX::isSmooth() const;
+  template<> bool SX::isLeaf() const;
+  template<> bool SX::isCommutative() const;
   template<> bool SX::isSymbolic() const;
   template<> bool SX::isSymbolicSparse() const;
   template<> double SX::getValue() const;
+  template<> SX SX::getDep(int ch) const;
+  template<> int SX::getNdeps() const;
   template<> std::string SX::getName() const;
   template<> void SX::setMaxNumCallsInPrint(long num);
   template<> long SX::getMaxNumCallsInPrint();
   template<> void SX::setEqualityCheckingDepth(int eq_depth);
   template<> int SX::getEqualityCheckingDepth();
+  template<> long SX::getElementHash() const;
+
 
 } // namespace casadi
-
-
 
 #ifndef SWIG
 

@@ -860,11 +860,29 @@ namespace casadi {
     /** \brief  create an n-by-n identity matrix */
     static Matrix<DataType> eye(int ncol);
 
+    /** \brief Returns a number that is unique for a given symbolic scalar
+     * 
+     * Only defined if symbolic scalar. 
+     */
+    long getElementHash() const;
+
     /// Checks if expression does not contain NaN or Inf
     bool isRegular() const;
 
     /** \brief Check if smooth */
     bool isSmooth() const;
+
+    /** \brief Check if SX is a leaf of the SX graph
+    
+        Only defined if symbolic scalar. 
+    */
+    bool isLeaf() const;
+
+    /** \brief Check whether a binary SX is commutative
+    
+        Only defined if symbolic scalar. 
+    */
+    bool isCommutative() const;
 
     /** \brief Check if symbolic (Dense)
         Sparse matrices invariable return false
@@ -911,6 +929,17 @@ namespace casadi {
 
     /** \brief Get name (only if symbolic scalar) */
     std::string getName() const;
+
+    /** \brief Get expressions of the children of the expression 
+        Only defined if symbolic scalar. 
+        Wraps SXElement SXElement::getDep(int ch=0) const.
+     */
+    Matrix<DataType> getDep(int ch=0) const;
+
+    /** \brief Get the number of dependencies of a binary SXElement
+        Only defined if symbolic scalar. 
+    */
+    int getNdeps() const;
 
     // @{
     /// Set the 'precision, width & scientific' used in printing and serializing to streams

@@ -28,4 +28,7 @@
 %include <casadi/core/casadi_types.hpp>
 %include <casadi/core/generic_type.hpp>
 
+%casadi_typemaps_constref(GenericType, PRECEDENCE_GENERICTYPE, casadi::GenericType)
+%casadi_typemaps_vector(GenericType, PRECEDENCE_GENERICTYPE, casadi::GenericType)
+
 #endif // CASADI_GENERIC_TYPE_I

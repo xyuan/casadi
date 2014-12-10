@@ -424,29 +424,35 @@ if (deprecated("$decl",MSG)) SWIG_fail;
 if (internal("$decl")) SWIG_fail;
 %enddef
 
-#ifndef SWIGXML
+#ifdef SWIGPYTHON
 %wrapper %{
 int deprecated(const std::string & c,const std::string & a) {
   std::string msg = "This CasADi function (" + c + ") is deprecated. " + a;
-#if defined(SWIGPYTHON)
   return PyErr_WarnEx(PyExc_DeprecationWarning,msg.c_str(),2);
-#elif defined(SWIGMATLAB)
-  mexWarnMsgIdAndTxt("SWIG:DeprecationWarning",msg.c_str());
-  return 1;
-#endif
 }
 int internal(const std::string & c) {
   if (CasadiOptions::allowed_internal_api) return 0;
   std::string msg = "This CasADi function (" + c + ") is not part of the public API. Use at your own risk.";
-#if defined(SWIGPYTHON)
   return PyErr_WarnEx(PyExc_SyntaxWarning,msg.c_str(),2);
-#elif defined(SWIGMATLAB)
-  mexWarnMsgIdAndTxt("SWIG:SyntaxWarning",msg.c_str());
-  return 1;
-#endif
 }
 %}
-#endif
+#endif // SWIGPYTHON
+
+#ifdef SWIGMATLAB
+%wrapper %{
+int deprecated(const std::string & c,const std::string & a) {
+  std::string msg = "This CasADi function (" + c + ") is deprecated. " + a;
+  mexWarnMsgIdAndTxt("SWIG:DeprecationWarning",msg.c_str());
+  return 1;
+}
+int internal(const std::string & c) {
+  if (CasadiOptions::allowed_internal_api) return 0;
+  std::string msg = "This CasADi function (" + c + ") is not part of the public API. Use at your own risk.";
+  mexWarnMsgIdAndTxt("SWIG:SyntaxWarning",msg.c_str());
+  return 1;
+}
+%}
+#endif // SWIGMATLAB
 
 #ifndef SWIGXML
 %{
@@ -603,18 +609,17 @@ memberbinops(mpower,argtype,argCast,selfCast,returntype)
 #define binopsNoPriority(argtype,argCast,selfCast,returntype) \
 memberbinops(pow,argtype,argCast,selfCast,returntype) \
 
-//%traits_swigtype(casadi::GenericType);
-//%traits_swigtype(std::mapcasadi::Dictionary);
-
-//%fragment(SWIG_Traits_frag(std::map< std::string, casadi::GenericType, std::less<std::string > , allocator<std::pair<const std::string, casadi::GenericType > > >));
-
-//%fragment(SWIG_Traits_frag(casadi::Dictionary));
-
 // typemaphelpers
 %include "typemaphelpers.i"
 
-// typemap meta implementations
-%include "meta.i"
+
+#ifdef SWIGPYTHON
+%include "python/meta_python.i"
+#endif
+
+#ifdef SWIGMATLAB
+%include "matlab/meta_matlab.i"
+#endif
 
 // common typemaps
 %include "commontypemaps.i"
