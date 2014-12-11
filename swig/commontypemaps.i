@@ -83,25 +83,42 @@
   int to_int(GUESTOBJECT *p, void *mv, int offs) {
     int *m = static_cast<int*>(mv);
     if (m) m += offs;
+
+    // Check if built-in int
+    if (SWIG_IsOK(SWIG_AsVal_int(p, m))) return true;
+
+    // Scalar IMatrix
+    if (is_a(p, type_IMatrix())) {
+      casadi::Matrix<int> *temp;
+      SWIG_ConvertPtr(p, (void **) &temp, type_IMatrix(), 0 );
+      if (temp->isScalar(true)) {
+        if (m) *m = temp->toScalar();
+        return true;
+      }
+      return false;
+    }
 #ifdef SWIGPYTHON
-    int *mp = 0;
-    if (!is_null(p) && SWIG_ConvertPtr(p, (void **) &mp, $descriptor(int *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    } else if (PyInt_Check(p) || PyLong_Check(p) || PyBool_Check(p)) {
-      PyObject *r = PyNumber_Long(p);
-      if (!r) return false;
-      if (m) *m = PyLong_AsLong(r);
-      Py_DECREF(r);
-      return true;
-    } else if (PyObject_HasAttrString(p,"dtype")) {
+    // Object has __int__ attribute
+    if (PyObject_HasAttrString(p,"dtype")) {
       PyObject *r = PyObject_GetAttrString(p,"dtype");
-      if (!PyObject_HasAttrString(r,"kind")) { Py_DECREF(r); return false;}
+      if (!PyObject_HasAttrString(r,"kind")) {
+        Py_DECREF(r);
+        return false;
+      }
       PyObject *k = PyObject_GetAttrString(r,"kind");
-      if (!PyObject_HasAttrString(p,"__int__")) { Py_DECREF(k);Py_DECREF(r); return false;}
+      if (!PyObject_HasAttrString(p,"__int__")) {
+        Py_DECREF(k);
+        Py_DECREF(r);
+        return false;
+      }
       char name[] = "__int__";
       PyObject *mm = PyObject_CallMethod(p, name,0);
-      if (!mm) { PyErr_Clear(); Py_DECREF(k); Py_DECREF(r); return false; }
+      if (!mm) {
+        PyErr_Clear();
+        Py_DECREF(k);
+        Py_DECREF(r);
+        return false;
+      }
       char *kk = PyString_AsString(k);
       bool result =  kk[0]=='i';
       Py_DECREF(k);
@@ -111,60 +128,47 @@
       }
       Py_DECREF(mm);
       return result;
-    } else if (is_a(p, $descriptor(casadi::Matrix<int> *))) {
-      casadi::Matrix<int> *temp;
-      SWIG_ConvertPtr(p, (void **) &temp, $descriptor(casadi::Matrix<int> *), 0 );
-      if (temp->numel()==1 && temp->size()==1) {
-        if (m) *m = temp->data()[0];
-        return true;
-      }
-      return false;
-    } else {
-      return false;
     }
 #endif //SWIGPYTHON
-#ifdef SWIGMATLAB
-    int *mp = 0;
-    if (!is_null(p) && SWIG_ConvertPtr(p, (void **) &mp, $descriptor(int *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    } else if (is_a(p, $descriptor(casadi::Matrix<int> *))) {
-      casadi::Matrix<int> *temp;
-      SWIG_ConvertPtr(p, (void **) &temp, $descriptor(casadi::Matrix<int> *), 0 );
-      if (temp->isScalar()) {
-        if (m) *m = temp->toScalar();
-        return true;
-      }
-      return false;
-    } else {
-      return false;
-    }
-#endif //SWIGMATLAB
+    // Failure if reached this point
     return false;
   }
  }
 
-// TODO: Remove completely?
-#ifdef SWIGPYTHON
 %casadi_typemaps(int, SWIG_TYPECHECK_INTEGER, int)
-#endif
 
 %fragment("to"{double}, "header", fragment="fwd") {
   int to_double(GUESTOBJECT *p, void *mv, int offs) {
     double *m = static_cast<double*>(mv);
     if (m) m += offs;
+
+    // Check if built-in double
+    if (SWIG_IsOK(SWIG_AsVal_double(p, m))) return true;
+
+    // Scalar DMatrix
+    if (is_a(p, type_DMatrix())) {
+      casadi::Matrix<double> *ptr;
+      SWIG_ConvertPtr(p, (void **) &ptr, type_DMatrix(), 0 );
+      if (ptr->isScalar(true)) {
+        if (m) *m = ptr->toScalar();
+        return true;
+      }
+      return false;
+    }
+
+    // Scalar IMatrix
+    if (is_a(p, type_IMatrix())) {
+      casadi::Matrix<int> *ptr;
+      SWIG_ConvertPtr(p, (void **) &ptr, type_IMatrix(), 0 );
+      if (ptr->isScalar(true)) {
+        if (m) *m = ptr->toScalar();
+        return true;
+      }
+      return false;
+    }
 #ifdef SWIGPYTHON
-    double *mp = 0;
-    if (!is_null(p) && SWIG_ConvertPtr(p, (void **) &mp, $descriptor(double *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    } else if (PyInt_Check(p) || PyLong_Check(p) || PyBool_Check(p) || PyFloat_Check(p)) {
-      PyObject *r = PyNumber_Float(p);
-      if (!r) return false;
-      if (m) *m = PyFloat_AsDouble(r);
-      Py_DECREF(r);
-      return true;
-    } else if (PyObject_HasAttrString(p,"dtype")) {
+    // Has dtype attribute
+    if (PyObject_HasAttrString(p,"dtype")) {
       PyObject *r = PyObject_GetAttrString(p,"dtype");
       if (!PyObject_HasAttrString(r,"kind")) {
         Py_DECREF(r);
@@ -191,60 +195,15 @@
       if (result && m) *m = PyFloat_AsDouble(mm);
       Py_DECREF(mm);
       return result;
-    } else if (is_a(p, type_DMatrix())) {
-      casadi::Matrix<double> *temp;
-      SWIG_ConvertPtr(p, (void **) &temp, type_DMatrix(), 0 );
-      if (temp->isScalar()) {
-        if (m) *m = temp->toScalar();
-        return true;
-      }
-      return false;
-    } else if (is_a(p, type_IMatrix())) {
-      casadi::Matrix<int> *temp;
-      SWIG_ConvertPtr(p, (void **) &temp, type_IMatrix(), 0 );
-      if (temp->isScalar()) {
-        if (m) *m = temp->toScalar();
-        return true;
-      }
-      return false;
-    } else {
-      return false;
     }
 #endif //SWIGPYTHON
-#ifdef SWIGMATLAB
-    double *mp = 0;
-    if (SWIG_ConvertPtr(p, (void **) &mp, $descriptor(double *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    } else if (is_a(p, $descriptor(casadi::Matrix<double> *))) {
-      casadi::Matrix<double> *temp;
-      SWIG_ConvertPtr(p, (void **) &temp, $descriptor(casadi::Matrix<double> *), 0 );
-      if (temp->numel()==1 && temp->size()==1) {
-        if (m) *m = temp->data()[0];
-        return true;
-      }
-      return false;
-    } else if (is_a(p, $descriptor(casadi::Matrix<int> *))) {
-      casadi::Matrix<int> *temp;
-      SWIG_ConvertPtr(p, (void **) &temp, $descriptor(casadi::Matrix<int> *), 0 );
-      if (temp->numel()==1 && temp->size()==1) {
-        if (m) *m = temp->data()[0];
-        return true;
-      }
-      return false;
-    } else {
-      return false;
-    }
-#endif //SWIGMATLAB
+    // Failure if reached this point
     return false;
   }
  }
 
-// TODO: Remove completely?
-#ifdef SWIGPYTHON
 %casadi_typemaps(double, SWIG_TYPECHECK_DOUBLE, double)
 %casadi_typemaps_constref(double, SWIG_TYPECHECK_DOUBLE, double)
-#endif
 
 #ifdef SWIGPYTHON
 %fragment("from"{GenericType}, "header", fragment="fwd") {
@@ -771,37 +730,28 @@
   int to_MX(GUESTOBJECT *p, void *mv, int offs) {
     MX *m = static_cast<MX*>(mv);
     if (m) m += offs;
-#ifdef SWIGPYTHON
-    casadi::MX *mp = 0;
-    if (SWIG_ConvertPtr(p, (void **) &mp, $descriptor(casadi::MX *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
+    // Use operator=
+    if (TRY_COPY(p, casadi::MX, type_MX(), m)) return true;
+    if (TRY_COPY(p, casadi::DMatrix, type_DMatrix(), m)) return true;
+    // Try first converting to a temporary DMatrix
+    {
+      casadi::DMatrix mt;
+      if(to_DMatrix(p, m ? &mt : 0)) {
+        if (m) *m = mt;
+        return true;
+      }
     }
-    casadi::DMatrix mt;
-    if(to_DMatrix(p, &mt)) {
-      if (m) *m = casadi::MX(mt);
-      return true;
-    } else if (PyObject_HasAttrString(p,"__MX__")) {
+#ifdef SWIGPYTHON
+    if (PyObject_HasAttrString(p,"__MX__")) {
       char name[] = "__MX__";
       PyObject *cr = PyObject_CallMethod(p, name,0);
-      if (!cr) { return false; }
+      if (!cr) return false;
       int result = to_MX(cr, m);
       Py_DECREF(cr);
       return result;
     }
 #endif // SWIGPYTHON
-#ifdef SWIGMATLAB
-    casadi::MX *mp = 0;
-    if (SWIG_ConvertPtr(p, (void **) &mp, $descriptor(casadi::MX *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    }
-    casadi::DMatrix mt;
-    if(to_DMatrix(p, &mt)) {
-      if (m) *m = casadi::MX(mt);
-      return true;
-    }
-#endif // SWIGMATLAB
+    // Failure if reached this point
     return false;
   }
  }
@@ -815,6 +765,14 @@
     // Use operator=
     if (TRY_COPY(p, casadi::DMatrix, type_DMatrix(), m)) return true;
     if (TRY_COPY(p, casadi::IMatrix, type_IMatrix(), m)) return true;
+    // If double
+    {
+      double t;
+      if (to_double(p, &t)) {
+        if (m) *m = t;
+        return true;
+      }
+    }
 #ifdef SWIGPYTHON
     // Object has __DMatrix__ method
     if (PyObject_HasAttrString(p,"__DMatrix__")) {
@@ -939,12 +897,6 @@
       Py_DECREF(cr);
       return result;
     }
-    if (to_double(p, 0)) {
-      double t;
-      int res = to_double(p, &t);
-      if (m) *m = t;
-      return res;
-    }
     {
       std::vector <double> t;
       int res = make_vector(p, &t, to_double);
@@ -957,12 +909,17 @@
     }
 #endif // SWIGPYTHON
 #ifdef SWIGMATLAB
-    {
-      double t;
-      if (to_double(p, &t)) {
-        if (m) *m = t;
-        return true;
+    // MATLAB dense matrix
+    if (mxIsDouble(p)) {
+      if (m) {
+        // Get dimensions
+        size_t nrow = mxGetM(p);
+        size_t ncol = mxGetN(p);
+        double* data = static_cast<double*>(mxGetData(p));
+        *m = casadi::DMatrix::zeros(nrow,ncol);
+        m->set(data);
       }
+      return true;
     }
 #endif // SWIGMATLAB
     return false;
@@ -976,19 +933,20 @@
 %fragment("to"{IMatrix}, "header", fragment="fwd,make_vector") {
   int to_IMatrix(GUESTOBJECT *p, void *mv, int offs) {
     casadi::IMatrix *m = static_cast<casadi::IMatrix*>(mv);
+    // Use operator=
     if (m) m += offs;
-#ifdef SWIGPYTHON
-    casadi::Matrix<int> *mp = 0;
-    if (SWIG_ConvertPtr(p, (void **) &mp, $descriptor(casadi::Matrix<int> *), 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    }
-    if (to_int(p, 0)) {
+    if (TRY_COPY(p, casadi::IMatrix, type_IMatrix(), m)) return true;
+    // If scalar
+    {
       int t;
-      int res = to_int(p, &t);
-      if (m) *m = t;
-      return res;
-    } else if (is_array(p)) { // Numpy arrays will be cast to dense Matrix<int>
+      if (to_int(p, &t)) {
+        if (m) *m = t;
+        return true;
+      }
+    }
+#ifdef SWIGPYTHON
+    // Numpy arrays will be cast to dense Matrix<int>
+    if (is_array(p)) {
       if (array_numdims(p)==0) {
         int d;
         int result = to_int(p, &d);
@@ -1033,14 +991,17 @@
            
       // Free memory
       if (array_is_new_object) Py_DECREF(array);
-    } else if (PyObject_HasAttrString(p,"__IMatrix__")) {
+      return true;
+    }
+    if (PyObject_HasAttrString(p,"__IMatrix__")) {
       char name[] = "__IMatrix__";
       PyObject *cr = PyObject_CallMethod(p, name,0);
       if (!cr) { return false; }
       int result = to_IMatrix(cr, m);
       Py_DECREF(cr);
       return result;
-    } else {
+    }
+    {
       std::vector <int> t;
       int res = make_vector(p, &t, to_int);
       if (m) *m = casadi::Matrix<int>(t,t.size(),1);
@@ -1049,18 +1010,6 @@
     return true;
 #endif // SWIGPYTHON
 #ifdef SWIGMATLAB
-    casadi::Matrix<int> *mp = 0;
-    if (SWIG_ConvertPtr(p, (void **) &mp, $descriptor(casadi::Matrix<int> *),, 0) != -1) {
-      if (m) *m=*mp;
-      return true;
-    } else if (to_int(p, 0)) {
-      int t;
-      int res = to_int(p, &t);
-      if (m) *m = t;
-      return res;
-    } else {
-      return false;
-    }
 #endif // SWIGMATLAB
     return false;
   }
