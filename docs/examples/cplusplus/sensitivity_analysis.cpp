@@ -163,7 +163,7 @@ int main(){
 
         {
           Dictionary kinsol_options;
-          kinsol_options["linear_solver"] = "csparse";
+          kinsol_options["linsol"] = "csparse";
           I.setOption("implicit_solver_options",kinsol_options);
         }
         break;
@@ -177,7 +177,7 @@ int main(){
         I.setOption("implicit_solver", "kinsol");
         {
           Dictionary kinsol_options;
-          kinsol_options["linear_solver"] = "csparse";
+          kinsol_options["linsol"] = "csparse";
           I.setOption("implicit_solver_options",kinsol_options);
         }
         break;
