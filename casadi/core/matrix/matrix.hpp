@@ -290,7 +290,6 @@ namespace casadi {
     /// Returns the truth value of a Matrix
     bool __nonzero__() const;
 
-    /// \cond INTERNAL
     ///@{
     /// Get a submatrix
     const Matrix<DataType> sub(int rr, int cc) const;
@@ -367,7 +366,6 @@ namespace casadi {
     template<typename RR, typename CC>
     void getSub(Matrix<DataType>& m, RR rr, CC cc) { m = sub(rr, cc);}
     ///@}
-    /// \endcond
 
     ///@{
     /// Get a set of nonzeros
@@ -385,13 +383,11 @@ namespace casadi {
     void setNZ(const Matrix<int>& k, const Matrix<DataType>& m);
     ///@}
 
-    /// \cond INTERNAL
     /// Append a matrix vertically (NOTE: only efficient if vector)
     void append(const Matrix<DataType>& y);
 
     /// Append a matrix horizontally
     void appendColumns(const Matrix<DataType>& y);
-    /// \endcond
 
     /// \cond INTERNAL
     ///@{
@@ -562,29 +558,21 @@ namespace casadi {
 
     /// \cond INTERNAL
     ///@{
-    /// Elementwise operations -- Octave/Python naming
-    Matrix<DataType> __add__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __sub__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __mul__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __div__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __lt__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __le__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __gt__(const Matrix<DataType> &y) const { return y.__lt__(*this);}
-    Matrix<DataType> __ge__(const Matrix<DataType> &y) const { return y.__le__(*this);}
-    Matrix<DataType> __eq__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __ne__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __truediv__(const Matrix<DataType> &y) const {return __div__(y);}
-    Matrix<DataType> __pow__(const Matrix<DataType> &y) const;
+    /// Functions called by the corresponding friend functions -- MATLAB naming
+    Matrix<DataType> zz_plus(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_minus(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_times(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_rdivide(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_lt(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_le(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_eq(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_ne(const Matrix<DataType> &y) const;
+    Matrix<DataType> __truediv__(const Matrix<DataType> &y) const {return zz_rdivide(y);}
+    Matrix<DataType> zz_power(const Matrix<DataType> &y) const;
     Matrix<DataType> __constpow__(const Matrix<DataType> &y) const;
-    Matrix<DataType> __mpower__(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_mpower(const Matrix<DataType> &y) const;
     Matrix<DataType> __mrdivide__(const Matrix<DataType> &y) const;
     ///@}
-
-    /// Matrix-matrix product
-    Matrix<DataType> mul_full(const Matrix<DataType> &y, const Sparsity & sp_z=Sparsity()) const;
-
-    /// Matrix-matrix product
-    Matrix<DataType> mul(const Matrix<DataType> &y, const Sparsity & sp_z=Sparsity()) const;
 
     /// Matrix-matrix product, no memory allocation: z += mul(x, y), with work vector
     static void mul_no_alloc(const Matrix<DataType> &x, const Matrix<DataType>& y,
@@ -627,49 +615,104 @@ namespace casadi {
     /// \endcond
 
     /// Transpose the matrix
-    Matrix<DataType> trans() const;
-
-#ifndef SWIG
-    /// Transpose the matrix (shorthand)
-    Matrix<DataType> T() const { return trans();}
-#endif
-
+    Matrix<DataType> T() const;
     ///@{
 
     ///@{
-    /// Operations defined in the standard namespace for unambiguous access and Numpy compatibility
-    Matrix<DataType> sin() const;
-    Matrix<DataType> cos() const;
-    Matrix<DataType> tan() const;
-    Matrix<DataType> arcsin() const;
-    Matrix<DataType> arccos() const;
-    Matrix<DataType> arctan() const;
-    Matrix<DataType> exp() const;
-    Matrix<DataType> log() const;
-    Matrix<DataType> sqrt() const;
-    Matrix<DataType> floor() const;
-    Matrix<DataType> ceil() const;
-    Matrix<DataType> fmod(const Matrix<DataType>& y) const;
-    Matrix<DataType> fabs() const;
-    Matrix<DataType> sign() const;
+    /// Operations called by the corresponding friend functions, MATLAB naming convention
+    Matrix<DataType> zz_sin() const;
+    Matrix<DataType> zz_cos() const;
+    Matrix<DataType> zz_tan() const;
+    Matrix<DataType> zz_asin() const;
+    Matrix<DataType> zz_acos() const;
+    Matrix<DataType> zz_atan() const;
+    Matrix<DataType> zz_exp() const;
+    Matrix<DataType> zz_log() const;
+    Matrix<DataType> zz_sqrt() const;
+    Matrix<DataType> zz_floor() const;
+    Matrix<DataType> zz_ceil() const;
+    Matrix<DataType> zz_mod(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_abs() const;
+    Matrix<DataType> zz_sign() const;
     Matrix<DataType> __copysign__(const Matrix<DataType>& y) const;
-    Matrix<DataType> erfinv() const;
-    Matrix<DataType> fmin(const Matrix<DataType>& y) const;
-    Matrix<DataType> fmax(const Matrix<DataType>& y) const;
-    Matrix<DataType> erf() const;
-    Matrix<DataType> sinh() const;
-    Matrix<DataType> cosh() const;
-    Matrix<DataType> tanh() const;
-    Matrix<DataType> arcsinh() const;
-    Matrix<DataType> arccosh() const;
-    Matrix<DataType> arctanh() const;
-    Matrix<DataType> arctan2(const Matrix<DataType>& y) const;
-    Matrix<DataType> log10() const;
+    Matrix<DataType> zz_erfinv() const;
+    Matrix<DataType> zz_min(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_max(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_erf() const;
+    Matrix<DataType> zz_sinh() const;
+    Matrix<DataType> zz_cosh() const;
+    Matrix<DataType> zz_tanh() const;
+    Matrix<DataType> zz_asinh() const;
+    Matrix<DataType> zz_acosh() const;
+    Matrix<DataType> zz_atanh() const;
+    Matrix<DataType> zz_atan2(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_log10() const;
     Matrix<DataType> printme(const Matrix<DataType>& y) const;
-    Matrix<DataType> logic_not() const;
-    Matrix<DataType> logic_and(const Matrix<DataType>& y) const;
-    Matrix<DataType> logic_or(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_not() const;
+    Matrix<DataType> zz_and(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_or(const Matrix<DataType>& y) const;
     Matrix<DataType> if_else_zero(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_mtimes(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_mtimes(const Matrix<DataType> &y, const Matrix<DataType> &z) const;
+    Matrix<DataType> zz_det() const;
+    Matrix<DataType> zz_sumAll() const;
+    Matrix<DataType> zz_sumCols() const;
+    Matrix<DataType> zz_sumRows() const;
+    Matrix<DataType> zz_adj() const;
+    Matrix<DataType> zz_inv() const;
+    Matrix<DataType> zz_cofactor(int i, int j) const;
+    Matrix<DataType> zz_getMinor(int i, int j) const;
+    Matrix<DataType> zz_reshape(int nrow, int ncol) const;
+    Matrix<DataType> zz_reshape(std::pair<int, int> rc) const;
+    Matrix<DataType> zz_reshape(const Sparsity& sp) const;
+    Matrix<DataType> zz_trace() const;
+    Matrix<DataType> zz_vec() const;
+    Matrix<DataType> zz_vecNZ() const;
+    static Matrix<DataType> zz_blockcat(const std::vector< std::vector<Matrix<DataType> > > &v);
+    static Matrix<DataType> zz_blockcat(const Matrix<DataType> &A,
+                                     const Matrix<DataType> &B,
+                                     const Matrix<DataType> &C,
+                                     const Matrix<DataType> &D);
+    static Matrix<DataType> zz_horzcat(const std::vector<Matrix<DataType> > &v);
+    std::vector<Matrix<DataType> > zz_horzsplit(const std::vector<int>& offset) const;
+    std::vector<Matrix<DataType> > zz_horzsplit(int incr) const;
+    static Matrix<DataType> zz_vertcat(const std::vector<Matrix<DataType> > &v);
+    std::vector< Matrix<DataType> > zz_vertsplit(const std::vector<int>& offset) const;
+    std::vector< Matrix<DataType> > zz_vertsplit(int incr=1) const;
+    std::vector< std::vector< Matrix<DataType> > >
+      zz_blocksplit(const std::vector<int>& vert_offset,
+                    const std::vector<int>& horz_offset) const;
+    std::vector< std::vector< Matrix<DataType> > >
+      zz_blocksplit(int vert_incr=1, int horz_incr=1) const;
+    std::vector< Matrix<DataType> > zz_diagsplitNative(const std::vector<int>& offset1,
+                                                       const std::vector<int>& offset2) const;
+    static Matrix<DataType> zz_veccat(const std::vector< Matrix<DataType> >& comp);
+    static Matrix<DataType> zz_vecNZcat(const std::vector< Matrix<DataType> >& comp);
+    Matrix<DataType> zz_inner_prod(const Matrix<DataType> &y) const;
+    Matrix<DataType> zz_outer_prod(const Matrix<DataType> &y) const;
+    DataType zz_all() const;
+    DataType zz_any() const;
+    Matrix<DataType> zz_norm_1() const;
+    Matrix<DataType> zz_norm_2() const;
+    Matrix<DataType> zz_norm_F() const;
+    Matrix<DataType> zz_norm_inf() const;
+    void zz_qr(Matrix<DataType>& Q, Matrix<DataType> &R) const;
+    Matrix<DataType> zz_nullspace() const;
+    Matrix<DataType> zz_solve(const Matrix<DataType>& b) const;
+    Matrix<DataType> zz_pinv() const;
+    Matrix<DataType> zz_kron(const Matrix<DataType>& b) const;
+    Matrix<DataType> zz_repmat(int n, int m) const;
+    Matrix<DataType> zz_diag() const;
+    static Matrix<DataType> zz_blkdiag(const std::vector< Matrix<DataType> > &A);
+    Matrix<DataType> zz_unite(const Matrix<DataType>& B) const;
+    Matrix<DataType> zz_polyval(const Matrix<DataType>& x) const;
+    void zz_addMultiple(const std::vector<DataType>& v,
+                        std::vector<DataType>& res, bool trans_A=false) const;
+    Matrix<DataType> zz_project(const Sparsity& sparsity) const;
+    int zz_sprank() const;
+    int zz_norm_0_mul_nn(const Matrix<DataType>& B,
+                         std::vector<bool>& Bwork,
+                         std::vector<int>& Iwork) const;
     ///@}
 
     /** \brief Set or reset the maximum number of calls to the

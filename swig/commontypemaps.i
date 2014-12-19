@@ -909,14 +909,11 @@
     }
 #endif // SWIGPYTHON
 #ifdef SWIGMATLAB
-    // MATLAB dense matrix
-    if (mxIsDouble(p)) {
+    // MATLAB double matrix (sparse or dense)
+    if (mxIsDouble(p) && mxGetNumberOfDimensions(p)==2) {
       if (m) {
-        // Get dimensions
-        size_t nrow = mxGetM(p);
-        size_t ncol = mxGetN(p);
+        *m = casadi::DMatrix(getSparsity(p));
         double* data = static_cast<double*>(mxGetData(p));
-        *m = casadi::DMatrix::zeros(nrow,ncol);
         m->set(data);
       }
       return true;
@@ -974,7 +971,7 @@
         if (m) {
           *m = casadi::Matrix<int>::zeros(ncols,nrows);
           for (int k=0;k<nrows*ncols;k++) m->data()[k]=temp[k];
-          *m = m->trans();                  
+          *m = m->T();                  
         }
         // Free memory
         if (array_is_new_object) Py_DECREF(array);

@@ -45,6 +45,7 @@ set(CASADI_SRCS
   matrix/generic_matrix_tools.hpp                       # Tools for both Matrix<> and MX
   matrix/matrix.hpp           matrix/matrix_impl.hpp    # The Matrix template class
   matrix/sparse_storage.hpp   matrix/sparse_storage_impl.hpp
+  matrix/sparsity_interface.hpp
   matrix/sparsity.hpp         matrix/sparsity.cpp  matrix/sparsity_internal.hpp   matrix/sparsity_internal.cpp    # reference counted sparsity pattern
   matrix/slice.hpp            matrix/slice.cpp          # A "slice" in a language such as Python, A[start:stop:step], or Matlab, A(start:step:stop)
   matrix/submatrix.hpp                                  # A reference to a block of the matrix to allow operations such as A(:,3) = ...
@@ -86,7 +87,7 @@ set(CASADI_SRCS
   mx/inner_prod.hpp          mx/inner_prod.cpp          # Inner product
   mx/multiple_output.hpp     mx/multiple_output.cpp     # Base class for nodes with multiple outputs
   mx/assertion.hpp           mx/assertion.cpp           # Assertion
-  mx/mx_tools.hpp            mx/mx_tools.cpp
+  mx/mx_tools.hpp
 
   # A dynamically created function with AD capabilities
   function/io_interface.hpp                                         # Input/output interface for Function and FunctionInternal

@@ -41,59 +41,10 @@ namespace casadi {
     return reshape(a, a.numel(), 1);
   }
 
-  Sparsity mul(const Sparsity& a, const Sparsity &b) {
-    return a.patternProduct(b);
-  }
-
-  Sparsity mul(const std::vector<Sparsity>& s) {
-    if (s.size()==0) return Sparsity();
-    Sparsity ret = s[0];
-    for (int i=1;i<s.size();++i) {
-      ret = mul(ret, s[i]);
-    }
-    return ret;
-  }
-
   int rank(const Sparsity& a) {
     std::vector<int> rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock;
     a.dulmageMendelsohn(rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock);
     return coarse_colblock.at(3);
-  }
-
-  Sparsity horzcat(const std::vector<Sparsity> & sp) {
-    if (sp.empty()) {
-      return Sparsity();
-    } else {
-      Sparsity ret = sp[0];
-      for (int i=1; i<sp.size(); ++i) {
-        ret.appendColumns(sp[i]);
-      }
-      return ret;
-    }
-  }
-
-  Sparsity horzcat(const Sparsity & a, const Sparsity & b) {
-    Sparsity ret = a;
-    ret.appendColumns(b);
-    return ret;
-  }
-
-  Sparsity vertcat(const std::vector<Sparsity> & sp) {
-    if (sp.empty()) {
-      return Sparsity();
-    } else if (sp[0].isVector()) {
-      Sparsity ret = sp[0];
-      for (int i=1; i<sp.size(); ++i) {
-        ret.append(sp[i]);
-      }
-      return ret;
-    } else {
-      Sparsity ret = sp[0].T();
-      for (int i=1; i<sp.size(); ++i) {
-        ret.appendColumns(sp[i].T());
-      }
-      return ret.T();
-    }
   }
 
   Sparsity blockcat(const std::vector< std::vector< Sparsity > > &v) {
@@ -101,52 +52,6 @@ namespace casadi {
     for (int i=0; i<v.size(); ++i)
       ret.push_back(horzcat(v[i]));
     return vertcat(ret);
-  }
-
-  Sparsity vertcat(const Sparsity & a, const Sparsity & b) {
-    if (a.isVector()) {
-      Sparsity ret = a;
-      ret.append(b);
-      return ret;
-    } else {
-      Sparsity ret = a.T();
-      ret.appendColumns(b.T());
-      return ret.T();
-    }
-  }
-
-  Sparsity blkdiag(const std::vector< Sparsity > &v) {
-    int n = 0;
-    int m = 0;
-
-    std::vector<int> colind(1, 0);
-    std::vector<int> row;
-
-    int nz = 0;
-    for (int i=0;i<v.size();++i) {
-      const std::vector<int> &colind_ = v[i].colind();
-      const std::vector<int> &row_ = v[i].row();
-      for (int k=1;k<colind_.size();++k) {
-        colind.push_back(colind_[k]+nz);
-      }
-      for (int k=0;k<row_.size();++k) {
-        row.push_back(row_[k]+m);
-      }
-      n+= v[i].size2();
-      m+= v[i].size1();
-      nz+= v[i].size();
-    }
-
-    return Sparsity(m, n, colind, row);
-  }
-
-  Sparsity blkdiag(const Sparsity &a, const Sparsity &b) {
-
-    std::vector<Sparsity> v;
-    v.push_back(a);
-    v.push_back(b);
-
-    return blkdiag(v);
   }
 
   std::vector<Sparsity> diagsplit(const Sparsity& sp,

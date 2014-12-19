@@ -35,7 +35,7 @@
             
         @property
         def T(self):
-            return self.transpose()
+            return _casadi.transpose(self)
             
         def __array__(self,*args,**kwargs):
             return DMatrix(self,1).toArray()
@@ -104,7 +104,10 @@ namespace casadi {
   %python_array_wrappers(1001.0)
   #endif // SWIGPYTHON 
   
+#ifdef SWIGPYTHON
   binopsrFull(casadi::Matrix<casadi::SXElement>)  
+#endif // SWIGPYTHON
+
 };
 
 } // namespace casadi

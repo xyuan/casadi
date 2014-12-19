@@ -163,7 +163,7 @@ namespace casadi {
     (*this)->resize(nrow, ncol);
   }
 
-  int Sparsity::getNZ(int rr, int cc) {
+  int Sparsity::elem(int rr, int cc) {
     // If negative index, count from the back
     if (rr<0) rr += size1();
     if (cc<0) cc += size2();
@@ -208,20 +208,20 @@ namespace casadi {
   }
 
   bool Sparsity::hasNZ(int rr, int cc) const {
-    return (*this)->getNZ(rr, cc)!=-1;
+    return (*this)->elem(rr, cc)!=-1;
   }
 
 
-  int Sparsity::getNZ(int rr, int cc) const {
-    return (*this)->getNZ(rr, cc);
+  int Sparsity::elem(int rr, int cc) const {
+    return (*this)->elem(rr, cc);
   }
 
   Sparsity Sparsity::reshape(int nrow, int ncol) const {
     return (*this)->reshape(nrow, ncol);
   }
 
-  std::vector<int> Sparsity::getNZ(const std::vector<int>& rr, const std::vector<int>& cc) const {
-    return (*this)->getNZ(rr, cc);
+  std::vector<int> Sparsity::elem(const std::vector<int>& rr, const std::vector<int>& cc) const {
+    return (*this)->elem(rr, cc);
   }
 
   bool Sparsity::isScalar(bool scalar_and_dense) const {
@@ -284,7 +284,7 @@ namespace casadi {
   }
 
   void Sparsity::getCRS(std::vector<int>& rowind, std::vector<int>& col) const {
-    transpose().getCCS(rowind, col);
+    T().getCCS(rowind, col);
   }
 
 
@@ -297,8 +297,8 @@ namespace casadi {
     return (*this)->transpose(mapping, invert_mapping);
   }
 
-  Sparsity Sparsity::transpose() const {
-    return (*this)->transpose();
+  Sparsity Sparsity::T() const {
+    return (*this)->T();
   }
 
   Sparsity Sparsity::patternCombine(const Sparsity& y, bool f0x_is_zero,
@@ -520,13 +520,13 @@ namespace casadi {
     (*this)->getElements(loc, col_major);
   }
 
-  void Sparsity::getNZInplace(std::vector<int>& indices) const {
-    (*this)->getNZInplace(indices);
+  void Sparsity::elem(std::vector<int>& indices) const {
+    (*this)->elem(indices);
   }
 
   Sparsity Sparsity::unidirectionalColoring(const Sparsity& AT, int cutoff) const {
     if (AT.isNull()) {
-      return (*this)->unidirectionalColoring(transpose(), cutoff);
+      return (*this)->unidirectionalColoring(T(), cutoff);
     } else {
       return (*this)->unidirectionalColoring(AT, cutoff);
     }
@@ -836,7 +836,7 @@ namespace casadi {
 
   Sparsity Sparsity::unit(int n, int el) {
     Sparsity ret = Sparsity::sparse(n);
-    ret.getNZ(el, 0);
+    ret.elem(el, 0);
     return ret;
   }
 
@@ -1069,6 +1069,61 @@ namespace casadi {
 
   int Sparsity::bandwidthL() const {
     return (*this)->bandwidthL();
+  }
+
+  Sparsity Sparsity::zz_horzcat(const std::vector<Sparsity> & sp) {
+    if (sp.empty()) {
+      return Sparsity();
+    } else {
+      Sparsity ret = sp[0];
+      for (int i=1; i<sp.size(); ++i) {
+        ret.appendColumns(sp[i]);
+      }
+      return ret;
+    }
+  }
+
+  Sparsity Sparsity::zz_vertcat(const std::vector<Sparsity> & sp) {
+    if (sp.empty()) {
+      return Sparsity();
+    } else if (sp[0].isVector()) {
+      Sparsity ret = sp[0];
+      for (int i=1; i<sp.size(); ++i) {
+        ret.append(sp[i]);
+      }
+      return ret;
+    } else {
+      Sparsity ret = sp[0].T();
+      for (int i=1; i<sp.size(); ++i) {
+        ret.appendColumns(sp[i].T());
+      }
+      return ret.T();
+    }
+  }
+
+  Sparsity Sparsity::zz_blkdiag(const std::vector< Sparsity > &v) {
+    int n = 0;
+    int m = 0;
+
+    std::vector<int> colind(1, 0);
+    std::vector<int> row;
+
+    int nz = 0;
+    for (int i=0;i<v.size();++i) {
+      const std::vector<int> &colind_ = v[i].colind();
+      const std::vector<int> &row_ = v[i].row();
+      for (int k=1;k<colind_.size();++k) {
+        colind.push_back(colind_[k]+nz);
+      }
+      for (int k=0;k<row_.size();++k) {
+        row.push_back(row_[k]+m);
+      }
+      n+= v[i].size2();
+      m+= v[i].size1();
+      nz+= v[i].size();
+    }
+
+    return Sparsity(m, n, colind, row);
   }
 
 } // namespace casadi

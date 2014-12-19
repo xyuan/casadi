@@ -192,69 +192,65 @@ namespace casadi {
     SXElement operator-() const;
 
     //  all binary operations
-    SXElement __add__(const SXElement& y) const;
-    SXElement __sub__(const SXElement& y) const;
-    SXElement __mul__(const SXElement& y) const;
-    SXElement __div__(const SXElement& y) const;
-    SXElement __lt__(const SXElement& y) const;
-    SXElement __le__(const SXElement& y) const;
-    SXElement __eq__(const SXElement& y) const;
-    SXElement __ne__(const SXElement& y) const;
-    using GenericExpression<SXElement>::__gt__;
-    using GenericExpression<SXElement>::__ge__;
-    using GenericExpression<SXElement>::__mldivide__;
-    SXElement __truediv__(const SXElement &y) const {return __div__(y);}
-    SXElement __pow__(const SXElement& b) const;
+    SXElement zz_plus(const SXElement& y) const;
+    SXElement zz_minus(const SXElement& y) const;
+    SXElement zz_times(const SXElement& y) const;
+    SXElement zz_rdivide(const SXElement& y) const;
+    SXElement zz_lt(const SXElement& y) const;
+    SXElement zz_le(const SXElement& y) const;
+    SXElement zz_eq(const SXElement& y) const;
+    SXElement zz_ne(const SXElement& y) const;
+    SXElement __truediv__(const SXElement &y) const {return zz_rdivide(y);}
+    SXElement zz_power(const SXElement& b) const;
     SXElement __constpow__(const SXElement& b) const;
 
     SXElement __mrdivide__(const SXElement& b) const {  return *this / b;}
-    SXElement __mpower__(const SXElement& b) const {return (*this).__pow__(b);}
-    SXElement trans() const { return *this;}
+    SXElement zz_mpower(const SXElement& b) const {return pow(*this, b);}
 
     // The following functions serves two purposes:
     // Numpy compatibility and to allow unambiguous access
-    SXElement mul(const SXElement& y) const { return __mul__(y);}
-    SXElement exp() const;
-    SXElement log() const;
-    SXElement sqrt() const;
+    SXElement mul(const SXElement& y) const { return zz_times(y);}
+    SXElement zz_exp() const;
+    SXElement zz_log() const;
+    SXElement zz_sqrt() const;
     SXElement sq() const;
-    SXElement sin() const;
-    SXElement cos() const;
-    SXElement tan() const;
-    SXElement arcsin() const;
-    SXElement arccos() const;
-    SXElement arctan() const;
-    SXElement floor() const;
-    SXElement ceil() const;
-    SXElement fmod(const SXElement &y) const;
-    SXElement erf() const;
-    SXElement erfinv() const;
-    SXElement fabs() const;
-    SXElement fmin(const SXElement &y) const;
-    SXElement fmax(const SXElement &y) const;
+    SXElement zz_sin() const;
+    SXElement zz_cos() const;
+    SXElement zz_tan() const;
+    SXElement zz_asin() const;
+    SXElement zz_acos() const;
+    SXElement zz_atan() const;
+    SXElement zz_floor() const;
+    SXElement zz_ceil() const;
+    SXElement zz_mod(const SXElement &y) const;
+    SXElement zz_erf() const;
+    SXElement zz_erfinv() const;
+    SXElement zz_abs() const;
+    SXElement zz_min(const SXElement &y) const;
+    SXElement zz_max(const SXElement &y) const;
     SXElement inv() const;
-    SXElement sinh() const;
-    SXElement cosh() const;
-    SXElement tanh() const;
-    SXElement arcsinh() const;
-    SXElement arccosh() const;
-    SXElement arctanh() const;
-    SXElement arctan2(const SXElement &y) const;
-    SXElement log10() const;
+    SXElement zz_sinh() const;
+    SXElement zz_cosh() const;
+    SXElement zz_tanh() const;
+    SXElement zz_asinh() const;
+    SXElement zz_acosh() const;
+    SXElement zz_atanh() const;
+    SXElement zz_atan2(const SXElement &y) const;
+    SXElement zz_log10() const;
     SXElement printme(const SXElement &y) const;
-    SXElement sign() const;
+    SXElement zz_sign() const;
     SXElement __copysign__(const SXElement &y) const;
     SXElement constpow(const SXElement& y) const;
-    SXElement logic_not() const;
-    SXElement logic_and(const SXElement& y) const;
-    SXElement logic_or(const SXElement& y) const;
+    SXElement zz_not() const;
+    SXElement zz_and(const SXElement& y) const;
+    SXElement zz_or(const SXElement& y) const;
     SXElement if_else_zero(const SXElement& y) const;
 
-    Matrix<SXElement> fmin(const Matrix<SXElement>& b) const;
-    Matrix<SXElement> fmax(const Matrix<SXElement>& b) const;
+    Matrix<SXElement> zz_min(const Matrix<SXElement>& b) const;
+    Matrix<SXElement> zz_max(const Matrix<SXElement>& b) const;
     Matrix<SXElement> constpow(const Matrix<SXElement>& n) const;
     Matrix<SXElement> __copysign__(const Matrix<SXElement>& n) const;
-    Matrix<SXElement> arctan2(const Matrix<SXElement>& b) const;
+    Matrix<SXElement> zz_atan2(const Matrix<SXElement>& b) const;
 
     /// \cond INTERNAL
     /// Get the temporary variable

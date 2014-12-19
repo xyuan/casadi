@@ -611,7 +611,7 @@ namespace casadi {
     }
 
     // Create return object
-    MatType ret = MatType(jacSparsity(iind, oind, compact, symmetric).transpose());
+    MatType ret = MatType(jacSparsity(iind, oind, compact, symmetric).T());
     if (verbose()) std::cout << "XFunctionInternal::jac allocated return value" << std::endl;
 
     // Quick return if empty
@@ -642,7 +642,7 @@ namespace casadi {
     std::vector<std::vector<MatType> > fseed, aseed, fsens, asens;
 
     // Get the sparsity of the Jacobian block
-    Sparsity jsp = jacSparsity(iind, oind, true, symmetric).transpose();
+    Sparsity jsp = jacSparsity(iind, oind, true, symmetric).T();
     const std::vector<int>& jsp_colind = jsp.colind();
     const std::vector<int>& jsp_row = jsp.row();
 
@@ -811,11 +811,11 @@ namespace casadi {
 
         // Locate the nonzeros of the forward sensitivity matrix
         output(oind).sparsity().getElements(nzmap, false);
-        fsens[d][oind].sparsity().getNZInplace(nzmap);
+        fsens[d][oind].sparsity().elem(nzmap);
 
         if (symmetric) {
           input(iind).sparsity().getElements(nzmap2, false);
-          fsens[d][oind].sparsity().getNZInplace(nzmap2);
+          fsens[d][oind].sparsity().elem(nzmap2);
         }
 
         // Assignments to the Jacobian
@@ -873,7 +873,7 @@ namespace casadi {
 
         // Locate the nonzeros of the adjoint sensitivity matrix
         input(iind).sparsity().getElements(nzmap, false);
-        asens[d][iind].sparsity().getNZInplace(nzmap);
+        asens[d][iind].sparsity().elem(nzmap);
 
         // For all the output nonzeros treated in the sweep
         for (int el = D2.colind(offset_nadir+d); el<D2.colind(offset_nadir+d+1); ++el) {

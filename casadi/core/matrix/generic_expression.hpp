@@ -44,61 +44,61 @@ class CASADI_EXPORT GenericExpression {
 
 #ifndef SWIG
     /// Addition
-    inline friend ExType operator+(const ExType &x, const ExType &y) { return x.__add__(y); }
+    inline friend ExType operator+(const ExType &x, const ExType &y) { return x.zz_plus(y); }
 
     /// Subtraction
-    inline friend ExType operator-(const ExType &x, const ExType &y) { return x.__sub__(y); }
+    inline friend ExType operator-(const ExType &x, const ExType &y) { return x.zz_minus(y); }
 
     /// Elementwise multiplication
-    inline friend ExType operator*(const ExType &x, const ExType &y) { return x.__mul__(y); }
+    inline friend ExType operator*(const ExType &x, const ExType &y) { return x.zz_times(y); }
 
     /// Elementwise division
-    inline friend ExType operator/(const ExType &x, const ExType &y) { return x.__div__(y); }
+    inline friend ExType operator/(const ExType &x, const ExType &y) { return x.zz_rdivide(y); }
 
     /// In-place addition
     inline ExType& operator+=(const ExType &y) {
-      return static_cast<ExType&>(*this) = static_cast<ExType*>(this)->__add__(y);
+      return static_cast<ExType&>(*this) = static_cast<ExType*>(this)->zz_plus(y);
     }
 
     /// In-place subtraction
     inline ExType& operator-=(const ExType &y) {
-      return static_cast<ExType&>(*this) = static_cast<ExType*>(this)->__sub__(y);
+      return static_cast<ExType&>(*this) = static_cast<ExType*>(this)->zz_minus(y);
     }
 
     /// In-place elementwise multiplication
     inline ExType& operator*=(const ExType &y) {return static_cast<ExType&>(*this) =
-            static_cast<ExType*>(this)->__mul__(y);}
+            static_cast<ExType*>(this)->zz_times(y);}
 
     /// In-place elementwise division
     inline ExType& operator/=(const ExType &y) {return static_cast<ExType&>(*this) =
-            static_cast<ExType*>(this)->__div__(y);}
+            static_cast<ExType*>(this)->zz_rdivide(y);}
 
     /// Logic less than
-    inline friend ExType operator<(const ExType &x, const ExType &y) { return x.__lt__(y); }
+    inline friend ExType operator<(const ExType &x, const ExType &y) { return x.zz_lt(y); }
 
     /// Logic less or equal to
-    inline friend ExType operator<=(const ExType &x, const ExType &y) { return x.__le__(y); }
+    inline friend ExType operator<=(const ExType &x, const ExType &y) { return x.zz_le(y); }
 
     /// Logic greater than
-    inline friend ExType operator>(const ExType &x, const ExType &y) { return x.__gt__(y); }
+    inline friend ExType operator>(const ExType &x, const ExType &y) { return x.zz_gt(y); }
 
     /// Logic greater or equal to
-    inline friend ExType operator>=(const ExType &x, const ExType &y) { return x.__ge__(y); }
+    inline friend ExType operator>=(const ExType &x, const ExType &y) { return x.zz_ge(y); }
 
     /// Logic equal to
-    inline friend ExType operator==(const ExType &x, const ExType &y) { return x.__eq__(y); }
+    inline friend ExType operator==(const ExType &x, const ExType &y) { return x.zz_eq(y); }
 
     /// Logic not equal to
-    inline friend ExType operator!=(const ExType &x, const ExType &y) { return x.__ne__(y); }
+    inline friend ExType operator!=(const ExType &x, const ExType &y) { return x.zz_ne(y); }
 
     /// Logic not
-    inline ExType operator!() const { return static_cast<const ExType &>(*this).logic_not(); }
+    inline ExType operator!() const { return static_cast<const ExType &>(*this).zz_not(); }
 
     /// Logic and
-    inline friend ExType operator&&(const ExType &x, const ExType &y) { return x.logic_and(y); }
+    inline friend ExType operator&&(const ExType &x, const ExType &y) { return x.zz_and(y); }
 
     /// Logic or
-    inline friend ExType operator||(const ExType &x, const ExType &y) { return x.logic_or(y); }
+    inline friend ExType operator||(const ExType &x, const ExType &y) { return x.zz_or(y); }
 
     #endif // SWIG
 
@@ -109,45 +109,16 @@ class CASADI_EXPORT GenericExpression {
     { return y.__mrdivide__(static_cast<const ExType&>(*this));}
 
     /// No need to have both < and >
-    inline ExType __gt__(const ExType& y) const
-    { return y.__lt__(static_cast<const ExType&>(*this));}
+    inline ExType zz_gt(const ExType& y) const
+    { return y.zz_lt(static_cast<const ExType&>(*this));}
 
     /// No need to have both <= and >=
-    inline ExType __ge__(const ExType& y) const
-    { return y.__le__(static_cast<const ExType&>(*this));}
+    inline ExType zz_ge(const ExType& y) const
+    { return y.zz_le(static_cast<const ExType&>(*this));}
 
     /// Division (with <tt>__future__.division</tt> in effect)
     inline ExType __truediv__(const ExType& y) const {return static_cast<const ExType&>(*this)/y;}
-
-    /** @name Operations from the left
-     *  For Python
-     */
-    ///@{
-    inline ExType __radd__(const ExType& y) const
-    { return y.__add__(static_cast<const ExType&>(*this));}
-    inline ExType __rsub__(const ExType& y) const
-    { return y.__sub__(static_cast<const ExType&>(*this));}
-    inline ExType __rmul__(const ExType& y) const
-    { return y.__mul__(static_cast<const ExType&>(*this));}
-    inline ExType __rdiv__(const ExType& y) const
-    { return y.__div__(static_cast<const ExType&>(*this));}
-    inline ExType __rlt__(const ExType& y) const
-    { return y.__lt__(static_cast<const ExType&>(*this));}
-    inline ExType __rle__(const ExType& y) const
-    { return y.__le__(static_cast<const ExType&>(*this));}
-    inline ExType __rgt__(const ExType& y) const
-    { return y.__gt__(static_cast<const ExType&>(*this));}
-    inline ExType __rge__(const ExType& y) const
-    { return y.__ge__(static_cast<const ExType&>(*this));}
-    inline ExType __req__(const ExType& y) const
-    { return y.__eq__(static_cast<const ExType&>(*this));}
-    inline ExType __rne__(const ExType& y) const
-    { return y.__ne__(static_cast<const ExType&>(*this));}
-    inline ExType __rtruediv__(const ExType& y) const
-    { return y.__truediv__(static_cast<const ExType&>(*this));}
-    ///@}
     /// \endcond
-
 };
 
 

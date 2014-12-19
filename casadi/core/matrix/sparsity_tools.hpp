@@ -39,44 +39,12 @@ namespace casadi {
    */
   CASADI_EXPORT Sparsity reshape(const Sparsity& a, int nrow, int ncol);
 
-  /** \brief Transpose the pattern */
-  inline Sparsity transpose(const Sparsity& a) { return a.transpose();}
-
   /** \brief Vectorize the pattern */
   CASADI_EXPORT Sparsity vec(const Sparsity& a);
-
-  /** \brief Get the sparsity resulting from a matrix multiplication
-   */
-  CASADI_EXPORT Sparsity mul(const Sparsity& a, const Sparsity &b);
-
-  /** \brief Get the sparsity resulting from a series of matrix multiplication
-   */
-  CASADI_EXPORT Sparsity mul(const std::vector<Sparsity>& s);
-
-  /** \brief Concatenate a list of sparsities vertically
-  * Alternative terminology: vertical stack, vstack, vertical append, [a;b]
-  */
-  CASADI_EXPORT Sparsity vertcat(const std::vector<Sparsity > &v);
-
-  /** \brief Concatenate a list of sparsities horizontally
-  * Alternative terminology: horizontal stack, hstack, horizontal append, [a b]
-  */
-  CASADI_EXPORT Sparsity horzcat(const std::vector<Sparsity > &v);
 
   /** \brief Construct a sparsity from a list of list of sparsities.
    */
   CASADI_EXPORT Sparsity blockcat(const std::vector< std::vector< Sparsity > > &v);
-
-  /** \brief   Construct a Sparsity with given blocks on the diagonal */
-  CASADI_EXPORT Sparsity blkdiag(const std::vector< Sparsity > &v);
-
-  #ifndef SWIG
-  CASADI_EXPORT Sparsity horzcat(const Sparsity &x, const Sparsity &y);
-
-  CASADI_EXPORT Sparsity vertcat(const Sparsity &x, const Sparsity &y);
-
-  CASADI_EXPORT Sparsity blkdiag(const Sparsity &x, const Sparsity &y);
-  #endif // SWIG
 
   /** \brief Split up a sparsity pattern horizontally */
   CASADI_EXPORT

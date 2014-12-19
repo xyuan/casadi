@@ -32,6 +32,7 @@
 #include "sparsity.hpp"
 #include "sparsity_tools.hpp"
 #include "../casadi_math.hpp"
+#include "sparsity_interface.hpp"
 
 namespace casadi {
 
@@ -67,7 +68,7 @@ namespace casadi {
       \date 2012
   */
   template<typename MatType>
-  class CASADI_EXPORT GenericMatrix {
+  class CASADI_EXPORT GenericMatrix : public SparsityInterface<MatType> {
   public:
 
     /** \brief Get the number of (structural) non-zero elements */
@@ -85,6 +86,9 @@ namespace casadi {
     /** \brief Get the number of elements */
     int numel() const;
 
+    /** \brief Get the number of elements in slice (cf. MATLAB) */
+    int numel(int i) const { return 1;}
+
     /** \brief Get the first dimension (i.e. number of rows) */
     int size1() const;
 
@@ -99,10 +103,8 @@ namespace casadi {
     */
     std::string dimString() const;
 
-#ifndef SWIG
     /** \brief  Get the shape */
     std::pair<int, int> shape() const;
-#endif
 
     /** \brief Check if the sparsity is empty, i.e. if one of the dimensions is zero
      * (or optionally both dimensions) */
@@ -243,13 +245,6 @@ namespace casadi {
     static MatType ones(const Sparsity& sp) { return MatType(sp, 1);}
     static MatType ones(const std::pair<int, int>& rc) { return ones(rc.first, rc.second);}
     ///@}
-
-    /** \brief Matrix-matrix multiplication.
-     * Attempts to identify quick returns on matrix-level and
-     * delegates to MatType::mul_full if no such quick returns are found.
-     */
-    MatType mul_smart(const MatType& y, const Sparsity& sp_z) const;
-
   };
 
 #ifndef SWIG
@@ -314,41 +309,6 @@ namespace casadi {
   template<typename MatType>
   bool GenericMatrix<MatType>::isScalar(bool scalar_and_dense) const {
     return sparsity().isScalar(scalar_and_dense);
-  }
-
-  template<typename MatType>
-  MatType GenericMatrix<MatType>::mul_smart(const MatType& y, const Sparsity &sp_z) const {
-    const MatType& x = *static_cast<const MatType*>(this);
-
-    if (!(x.isScalar() || y.isScalar())) {
-      casadi_assert_message(size2()==y.size1(),
-                            "Matrix product with incompatible dimensions. Lhs is "
-                            << dimString() << " and rhs is " << y.dimString() << ".");
-    }
-
-    // Check if we can simplify the product
-    if (x.isIdentity()) {
-      return y;
-    } else if (y.isIdentity()) {
-      return x;
-    } else if (x.isZero() || y.isZero()) {
-      // See if one of the arguments can be used as result
-      if (y.size()==0 && x.size2()==x.size1()) {
-        return y;
-      } else if (x.size()==0 && y.size2()==y.size1()) {
-        return x;
-      } else {
-        if (y.size()==0 || x.size()==0 || x.isEmpty() || y.isEmpty()) {
-          return MatType::sparse(x.size1(), y.size2());
-        } else {
-          return MatType::zeros(x.size1(), y.size2());
-        }
-      }
-    } else if (x.isScalar() || y.isScalar()) {
-      return x*y;
-    } else {
-      return x.mul_full(y, sp_z);
-    }
   }
 
   template<typename MatType>

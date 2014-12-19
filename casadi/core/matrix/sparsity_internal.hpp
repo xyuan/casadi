@@ -58,7 +58,7 @@ namespace casadi {
     int stronglyConnectedComponents(std::vector<int>& p, std::vector<int>& r) const;
 
     /// Transpose the matrix
-    Sparsity transpose() const;
+    Sparsity T() const;
 
     /** \brief Transpose the matrix and get the reordering of the non-zero entries,
      *
@@ -99,7 +99,7 @@ namespace casadi {
                           std::vector<int>& rowblock, std::vector<int>& colblock,
                           std::vector<int>& coarse_rowblock, std::vector<int>& coarse_colblock,
                           int seed) const {
-      return transpose()->dulmageMendelsohnUpper(colperm, rowperm, colblock, rowblock,
+      return T()->dulmageMendelsohnUpper(colperm, rowperm, colblock, rowblock,
                                                  coarse_colblock, coarse_rowblock, seed);
     }
 
@@ -312,13 +312,13 @@ namespace casadi {
                  std::vector<int>& mapping) const;
 
     /// Get the index of an existing non-zero element
-    int getNZ(int rr, int cc) const;
+    int elem(int rr, int cc) const;
 
     /// Get a set of non-zero element - does bounds checking
-    std::vector<int> getNZ(const std::vector<int>& rr, const std::vector<int>& cc) const;
+    std::vector<int> elem(const std::vector<int>& rr, const std::vector<int>& cc) const;
 
     /// Get the nonzero index for a set of elements (see description in public class)
-    void getNZInplace(std::vector<int>& indices) const;
+    void elem(std::vector<int>& indices) const;
 
     /// Does the rows appear sequentially on each col
     bool rowsSequential(bool strictly) const;

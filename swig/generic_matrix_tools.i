@@ -29,33 +29,66 @@
 
 %include <casadi/core/matrix/generic_matrix_tools.hpp>
 
+%define SPARSITY_INTERFACE_DECL(MatType...)
+MatType horzcat(const std::vector< MatType > &v);
+MatType vertcat(const std::vector< MatType > &v);
+MatType blkdiag(const std::vector< MatType > &v);
+MatType mul(const MatType &x, const MatType &y);
+MatType mul(const MatType &x, const MatType &y, const MatType &z);
+MatType mul(const std::vector< MatType > &args);
+MatType transpose(const MatType &X);
+%enddef
+
+#ifndef SWIGMATLAB
+SPARSITY_INTERFACE_DECL(casadi::Sparsity)
+#endif // SWIGMATLAB
+
 // map the template name to the instantiated name
-#define GMTT_INST(MatType, function_name) \
+%define GMTT_INST(MatType, function_name...)
 %template(function_name) casadi::function_name< MatType >;
+%enddef
 
 // Define template instantiations
-#define GENERIC_MATRIX_TOOLS_TEMPLATES(MatType) \
-GMTT_INST(MatType, cross) \
-GMTT_INST(MatType, quad_form) \
-GMTT_INST(MatType, sum_square) \
-GMTT_INST(MatType, tril2symm) \
-GMTT_INST(MatType, triu2symm) \
-GMTT_INST(MatType, triu) \
-GMTT_INST(MatType, tril) \
-GMTT_INST(MatType, isEqual) \
+%define GENERIC_MATRIX_TOOLS_TEMPLATES(MatType...)
+SPARSITY_INTERFACE_DECL(MatType)
+GMTT_INST(MatType, cross)
+GMTT_INST(MatType, quad_form)
+GMTT_INST(MatType, sum_square)
+GMTT_INST(MatType, tril2symm)
+GMTT_INST(MatType, triu2symm)
+GMTT_INST(MatType, triu)
+GMTT_INST(MatType, tril)
+GMTT_INST(MatType, isEqual)
 GMTT_INST(MatType, diagsplit)
+GMTT_INST(MatType, det)
+GMTT_INST(MatType, inv)
+GMTT_INST(MatType, reshape)
+GMTT_INST(MatType, vec)
+GMTT_INST(MatType, vecNZ)
+GMTT_INST(MatType, trace)
+%enddef
 
-// Define template instantiations
-#define GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(MatType) \
+%define GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(MatType...)
 GMTT_INST(MatType, linspace)
+%enddef
 
-GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<int>)
-GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<double>)
-GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<casadi::SXElement>)
+%define GENERIC_MATRIX_TOOLS_TEMPLATES_MATRIX(DataType...)
+GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::Matrix<DataType>)
+GMTT_INST(casadi::Matrix<DataType>, adj)
+GMTT_INST(casadi::Matrix<DataType>, getMinor)
+GMTT_INST(casadi::Matrix<DataType>, cofactor)
+%enddef
+
+#ifndef SWIGMATLAB
+GENERIC_MATRIX_TOOLS_TEMPLATES_MATRIX(int)
+GENERIC_MATRIX_TOOLS_TEMPLATES_MATRIX(double)
+GENERIC_MATRIX_TOOLS_TEMPLATES_MATRIX(casadi::SXElement)
 GENERIC_MATRIX_TOOLS_TEMPLATES(casadi::MX)
 
 GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(casadi::Matrix<double>)
 GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(casadi::Matrix<casadi::SXElement>)
 GENERIC_MATRIX_TOOLS_TEMPLATES_REAL_ONLY(casadi::MX)
+
+#endif // SWIGMATLAB
 
 #endif // CASADI_GENERIC_MATRIX_TOOLS_I
