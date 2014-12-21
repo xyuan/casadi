@@ -253,3 +253,5 @@ foo's
 csparse
 CSparse
 symmetrized
+linsol
+nlsol
