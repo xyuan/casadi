@@ -255,3 +255,4 @@ CSparse
 symmetrized
 linsol
 nlsol
+adaptor
