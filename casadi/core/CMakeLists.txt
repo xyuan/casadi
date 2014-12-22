@@ -13,11 +13,6 @@ add_subdirectory(runtime)
 
 set(CASADI_SRCS
 
-  # For a so/dll with default hidden visibility, we need to instantiate some templates
-  # Since this compilation takes some time, we put it up-front,
-  # So that a make -jn will not be blocked
-  casadi_instantiations.cpp
-  
   # MISC
   casadi_limits.hpp
   casadi_types.hpp
