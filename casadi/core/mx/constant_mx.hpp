@@ -146,7 +146,7 @@ namespace casadi {
     virtual Matrix<double> getMatrixValue() const { return x_;}
 
     /** \brief Check if two nodes are equivalent up to a given depth */
-    virtual bool isEqual(const MXNode* node, int depth) const;
+    virtual bool zz_isEqual(const MXNode* node, int depth) const;
 
     /** \brief  data member */
     Matrix<double> x_;
@@ -498,7 +498,7 @@ namespace casadi {
       return MX::create(new Constant<Value>(sp, v_));
     } else if (sp.isDense()) {
       DMatrix v = getMatrixValue();
-      v.densify();
+      v.makeDense();
       return v;
     } else {
       return MXNode::getSetSparse(sp);

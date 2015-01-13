@@ -143,10 +143,10 @@ namespace casadi {
     ///@}
 
     /** \brief Create a upper triangular square sparsity pattern **/
-    static Sparsity triu(int n);
+    static Sparsity upper(int n);
 
     /** \brief Create a lower triangular square sparsity pattern **/
-    static Sparsity tril(int n);
+    static Sparsity lower(int n);
 
     /** \brief Create diagonal sparsity pattern **/
     ///@{
@@ -325,9 +325,6 @@ namespace casadi {
     /// Resize
     void resize(int nrow, int ncol);
 
-    /// Reshape a sparsity, order of nonzeros remains the same
-    Sparsity reshape(int nrow, int ncol) const;
-
     /** \brief Get the index of a non-zero element
         Add the element if it does not exist and copy object if it's not unique */
     int addNZ(int rr, int cc);
@@ -446,7 +443,12 @@ namespace casadi {
     /** \brief Accessed by SparsityInterface */
     static Sparsity zz_horzcat(const std::vector<Sparsity> & sp);
     static Sparsity zz_vertcat(const std::vector<Sparsity> & sp);
-    static Sparsity zz_blkdiag(const std::vector< Sparsity > &v);
+    static Sparsity zz_blockcat(const std::vector< std::vector< Sparsity > > &v);
+    static Sparsity zz_diagcat(const std::vector< Sparsity > &v);
+    std::vector<Sparsity> zz_horzsplit(const std::vector<int>& output_offset) const;
+    std::vector<Sparsity> zz_vertsplit(const std::vector<int>& output_offset) const;
+    std::vector<Sparsity> zz_diagsplit(const std::vector<int>& offset1,
+                                       const std::vector<int>& offset2) const;
     Sparsity zz_mtimes(const Sparsity& y) const {
       if (isScalar()) {
         return isDense() ? y : Sparsity::sparse(y.shape());
@@ -461,6 +463,10 @@ namespace casadi {
       }
     }
     Sparsity zz_mtimes(const Sparsity& Y, const Sparsity& Z) const { return Z;}
+    Sparsity zz_vecNZ() const;
+    Sparsity zz_reshape(int nrow, int ncol) const;
+    Sparsity zz_reshape(const Sparsity& sp) const;
+    int zz_sprank() const;
     /// @}
 
     /** \brief Enlarge matrix
@@ -530,10 +536,10 @@ namespace casadi {
     bool isSingular() const;
 
     /// Get upper triangular part
-    Sparsity getTriu(bool includeDiagonal=true) const;
+    Sparsity zz_triu(bool includeDiagonal=true) const;
 
     /// Get lower triangular part
-    Sparsity getTril(bool includeDiagonal=true) const;
+    Sparsity zz_tril(bool includeDiagonal=true) const;
 
     /** \brief Do the rows appear sequentially on each column
     *

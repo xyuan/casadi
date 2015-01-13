@@ -31,7 +31,6 @@
 #include "../matrix/matrix_tools.hpp"
 #include "../sx/sx_tools.hpp"
 #include "../mx/mx_tools.hpp"
-#include "../matrix/sparsity_tools.hpp"
 #include "external_function.hpp"
 
 #include "../casadi_options.hpp"
@@ -684,7 +683,7 @@ namespace casadi {
             IMatrix duplicates =
                 IMatrix::triplet(lookup_row, lookup_col, lookup_value, bvec_size, coarse.size())
                 - lookup;
-            duplicates.sparsify();
+            duplicates.makeSparse();
             lookup(duplicates.sparsity()) = -bvec_size;
 
             // Propagate the dependencies
@@ -2019,7 +2018,7 @@ namespace casadi {
       // Append the sparsity patterns, keep track of col offsets
       vector<int> col_offset(1, 0);
       for (int i=0; i<getNumInputs(); ++i) {
-        sp_arg.appendColumns(input(i).sparsity().reshape(1, input(i).numel()));
+        sp_arg.appendColumns(reshape(input(i).sparsity(), 1, input(i).numel()));
         col_offset.push_back(sp_arg.numel());
       }
 

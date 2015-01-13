@@ -480,21 +480,15 @@ namespace casadi {
   }
 
   MX MX::repmat(const MX& x, const Sparsity& sp) {
-    casadi_assert_message(x.isScalar(), "repmat(MX x, Sparsity sp) only defined for scalar x");
-    return MX(sp, x);
+    return x.zz_repmat(sp);
   }
 
   MX MX::repmat(const MX& x, const std::pair<int, int> &rc) {
     return repmat(x, rc.first, rc.second);
   }
 
-  MX MX::repmat(const MX& x, int nrow, int ncol) {
-    if (x.isScalar()) {
-      return MX(Sparsity::dense(nrow, ncol), x);
-    } else {
-      casadi_assert_message(0, "not implemented");
-      return MX();
-    }
+  MX MX::repmat(const MX& x, int n, int m) {
+    return x.zz_repmat(n, m);
   }
 
   MX MX::inf(int nrow, int ncol) {
@@ -616,11 +610,11 @@ namespace casadi {
     }
   }
 
-  MX MX::inner_prod(const MX& y) const {
+  MX MX::zz_inner_prod(const MX& y) const {
     return (*this)->getInnerProd(y);
   }
 
-  MX MX::outer_prod(const MX& y) const {
+  MX MX::zz_outer_prod(const MX& y) const {
     return mul(*this, y.T());
   }
 
@@ -804,7 +798,7 @@ namespace casadi {
     return MX::binary(OP_OR, *this, y);
   }
 
-  MX MX::if_else_zero(const MX& y) const {
+  MX MX::zz_if_else_zero(const MX& y) const {
     return MX::binary(OP_IF_ELSE_ZERO, *this, y);
   }
 
@@ -866,15 +860,15 @@ namespace casadi {
     return (*this)->getOp();
   }
 
-  bool MX::isEqual(const MX& y, int depth) const {
-    return isEqual(static_cast<const MXNode*>(y.get()), depth);
+  bool MX::zz_isEqual(const MX& y, int depth) const {
+    return zz_isEqual(static_cast<const MXNode*>(y.get()), depth);
   }
 
-  bool MX::isEqual(const MXNode* y, int depth) const {
+  bool MX::zz_isEqual(const MXNode* y, int depth) const {
     if (get()==y)
       return true;
     else if (depth>0)
-      return (*this)->isEqual(y, depth);
+      return (*this)->zz_isEqual(y, depth);
     else
       return false;
   }
@@ -927,7 +921,7 @@ namespace casadi {
     }
   }
 
-  void MX::densify(const MX& val) {
+  void MX::makeDense(const MX& val) {
     casadi_assert(val.isScalar());
     if (isDense()) {
       return; // Already ok
@@ -1153,15 +1147,8 @@ namespace casadi {
     }
   }
 
-  std::vector<MX> MX::zz_horzsplit(int incr) const {
-    casadi_assert(incr>=1);
-    vector<int> offset2 = range(0, size2(), incr);
-    offset2.push_back(size2());
-    return horzsplit(*this, offset2);
-  }
-
-  std::vector<MX> MX::zz_diagsplitNative(const std::vector<int>& offset1,
-                                         const std::vector<int>& offset2) const {
+  std::vector<MX> MX::zz_diagsplit(const std::vector<int>& offset1,
+                                   const std::vector<int>& offset2) const {
     // Consistency check
     casadi_assert(offset1.size()>=1);
     casadi_assert(offset1.front()==0);
@@ -1200,49 +1187,6 @@ namespace casadi {
     }
   }
 
-  std::vector<MX> MX::zz_vertsplit(int incr) const {
-    casadi_assert(incr>=1);
-    vector<int> offset1 = range(0, size1(), incr);
-    offset1.push_back(size1());
-    return vertsplit(*this, offset1);
-  }
-
-  std::vector< std::vector<MX> > MX::zz_blocksplit(const std::vector<int>& vert_offset,
-                                                   const std::vector<int>& horz_offset) const {
-    std::vector<MX> rows = vertsplit(*this, vert_offset);
-    std::vector< std::vector<MX> > ret;
-    for (int i=0; i<rows.size(); ++i) {
-      ret.push_back(horzsplit(rows[i], horz_offset));
-    }
-    return ret;
-  }
-
-  std::vector< std::vector<MX > > MX::zz_blocksplit(int vert_incr, int horz_incr) const {
-    casadi_assert(horz_incr>=1);
-    casadi_assert(vert_incr>=1);
-    vector<int> offset1 = range(0, size1(), vert_incr);
-    offset1.push_back(size1());
-    vector<int> offset2 = range(0, size2(), horz_incr);
-    offset2.push_back(size2());
-    return blocksplit(*this, offset1, offset2);
-  }
-
-  MX MX::zz_veccat(const vector<MX>& comp) {
-    vector<MX> ret = comp;
-    for (vector<MX>::iterator i=ret.begin(); i!=ret.end(); ++i) {
-      *i = vec(*i);
-    }
-    return vertcat(ret);
-  }
-
-  MX MX::zz_vecNZcat(const vector<MX>& comp) {
-    vector<MX> ret = comp;
-    for (vector<MX>::iterator i=ret.begin(); i!=ret.end(); ++i) {
-      *i = vecNZ(*i);
-    }
-    return vertcat(ret);
-  }
-
   MX MX::zz_blockcat(const std::vector< std::vector<MX > > &v) {
     // Quick return if no block rows
     if (v.empty()) return MX::sparse(0, 0);
@@ -1262,10 +1206,6 @@ namespace casadi {
       rows.push_back(horzcat(*it));
     }
     return vertcat(rows);
-  }
-
-  MX MX::zz_blockcat(const MX &A, const MX &B, const MX &C, const MX &D) {
-    return vertcat(horzcat(A, B), horzcat(C, D));
   }
 
   MX MX::zz_norm_2() const {
@@ -1294,35 +1234,22 @@ namespace casadi {
     }
   }
 
-  MX MX::zz_reshape(std::pair<int, int> rc) const {
-    return reshape(*this, rc.first, rc.second);
-  }
-
   MX MX::zz_reshape(int nrow, int ncol) const {
     if (nrow==size1() && ncol==size2())
       return *this;
     else
-      return reshape(*this, sparsity().reshape(nrow, ncol));
+      return reshape(*this, reshape(sparsity(), nrow, ncol));
   }
 
   MX MX::zz_reshape(const Sparsity& sp) const {
     // quick return if already the right shape
-    if (sp==sparsity())
-      return *this;
+    if (sp==sparsity()) return *this;
 
     // make sure that the patterns match
     casadi_assert(sp.isReshape(sparsity()));
 
     // Create a reshape node
     return (*this)->getReshape(sp);
-  }
-
-  MX MX::zz_vec() const {
-    if (isVector()) {
-      return *this;
-    } else {
-      return reshape(*this, numel(), 1);
-    }
   }
 
   MX MX::zz_vecNZ() const {
@@ -1372,20 +1299,31 @@ namespace casadi {
     return res;
   }
 
+  MX MX::zz_repmat(const Sparsity& sp) const {
+    casadi_assert_message(isScalar(), "repmat(MX x, Sparsity sp) only defined for scalar x");
+    return MX(sp, *this);
+  }
+
   MX MX::zz_repmat(int n, int m) const {
-    // Quick return if possible
-    if (n==1 &&  m==1) return *this;
-
-    // First concatenate horizontally
-    MX col = horzcat(std::vector<MX >(m, *this));
-
-    // Then vertically
-    return vertcat(std::vector<MX >(n, col));
+    if (n==1 &&  m==1) {
+      // Quick return if possible
+      return *this;
+    } else if (isScalar()) {
+      if (isDense()) {
+        return MX(Sparsity::dense(n, m), *this);
+      } else {
+        return sparse(n, m);
+      }
+    } else {
+      std::vector<MX> v_hor(m, *this);
+      std::vector<MX> v_ver(n, horzcat(v_hor));
+      return vertcat(v_ver);
+    }
   }
 
   MX MX::zz_dense() const {
     MX ret = *this;
-    ret.densify();
+    ret.makeDense();
     return ret;
   }
 
@@ -1451,17 +1389,6 @@ namespace casadi {
 
     // Create a reference to the nonzeros
     return (*this)->getGetNonzeros(sp, mapping);
-  }
-
-  MX MX::zz_blkdiag(const std::vector<MX> &A) {
-    return diagcat(A);
-  }
-
-  MX MX::zz_blkdiag(const MX& B) const {
-    std::vector<MX> ret;
-    ret.push_back(*this);
-    ret.push_back(B);
-    return blkdiag(ret);
   }
 
   int MX::zz_countNodes() const {
@@ -1595,7 +1522,7 @@ namespace casadi {
     // Quick return if all equal
     bool all_equal = true;
     for (int k=0; k<v.size(); ++k) {
-      if (!v[k].isEqual(vdef[k])) {
+      if (v[k].shape()!=vdef[k].shape() || !isEqual(v[k], vdef[k])) {
         all_equal = false;
         break;
       }

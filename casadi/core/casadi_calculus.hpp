@@ -301,6 +301,9 @@ namespace casadi {
   /// Sign function, note that sign(nan) == nan
   inline double sign(double x) { return x<0 ? -1 : x>0 ? 1 : x;}
 
+  /// Compare if two values are equal, up to a depth
+  inline bool isEqual(double x, double y, int depth=0) { return x==y;}
+
   /// __copysign__ function
   template<class T> T copysign(const T &x, const T &y) {return x.__copysign__(y);}
 
@@ -312,7 +315,7 @@ namespace casadi {
   #endif //HAS_COPYSIGN
 
   /// Conditional assignment
-  template<class T> T if_else_zero(const T &x, const T &y) {return x.if_else_zero(y);}
+  template<class T> T if_else_zero(const T &x, const T &y) {return x.zz_if_else_zero(y);}
 
   /// Conditional assignment
   inline double if_else_zero(double x, double y) { return x ? y : 0;}

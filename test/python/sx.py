@@ -471,7 +471,7 @@ class SXtests(casadiTestCase):
       
   def test_sparseconstr(self):
     self.message("Check sparsity constructors")
-    self.checkarray(DMatrix(Sparsity.tril(3),1).toArray(),matrix([[1,0,0],[1,1,0],[1,1,1]]),"tril")
+    self.checkarray(DMatrix(Sparsity.lower(3),1).toArray(),matrix([[1,0,0],[1,1,0],[1,1,1]]),"tril")
     self.checkarray(DMatrix(Sparsity.diag(3),1).toArray(),matrix([[1,0,0],[0,1,0],[0,0,1]]),"diag")
     
   def test_subsassignment(self):
@@ -1016,7 +1016,7 @@ class SXtests(casadiTestCase):
     
     x = SX.sym("x",2,2)
     y = SX.sym("y",2)
-    f = SXFunction([x,y],[eig_symbolic(blkdiag([x,c.diag(y)]))])
+    f = SXFunction([x,y],[eig_symbolic(diagcat([x,c.diag(y)]))])
     f.init()
     f.setInput(DMatrix([[2,0.1],[0.3,0.7]]),0)
     f.setInput([3,7],1)
@@ -1055,7 +1055,7 @@ class SXtests(casadiTestCase):
     f.evaluate()
     self.checkarray(f.output(),DMatrix([1,3,6]),digits=5)
 
-    x = SX.sym("x",Sparsity.triu(5))
+    x = SX.sym("x",Sparsity.upper(5))
   
     f = SXFunction([x],[eig_symbolic(x)])
     f.init()

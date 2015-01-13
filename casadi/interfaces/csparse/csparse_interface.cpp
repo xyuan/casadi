@@ -133,14 +133,14 @@ namespace casadi {
     N_ = cs_lu(&A_, S_, tol) ;                 // numeric LU factorization
     if (N_==0) {
       DMatrix temp = input();
-      temp.sparsify();
+      temp.makeSparse();
       if (temp.sparsity().isSingular()) {
         stringstream ss;
         ss << "CsparseInterface::prepare: factorization failed due to matrix"
           " being singular. Matrix contains numerical zeros which are "
             "structurally non-zero. Promoting these zeros to be structural "
             "zeros, the matrix was found to be structurally rank deficient."
-            " sprank: " << rank(temp.sparsity()) << " <-> " << temp.size2() << endl;
+            " sprank: " << sprank(temp.sparsity()) << " <-> " << temp.size2() << endl;
         if (verbose()) {
           ss << "Sparsity of the linear system: " << endl;
           input(LINSOL_A).sparsity().print(ss); // print detailed

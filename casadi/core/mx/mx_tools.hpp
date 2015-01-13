@@ -28,7 +28,6 @@
 
 #include "mx.hpp"
 
-#include "../matrix/generic_matrix_tools.hpp"
 #include "../matrix/generic_expression_tools.hpp"
 #include "../function/linear_solver.hpp"
 
@@ -38,134 +37,7 @@ namespace casadi {
 \ingroup expression_tools
 @{
 */
-
-  /** \brief  split horizontally, retaining groups of cols
-  * \param output_offset List of all start cols for each group
-  *      the last col group will run to the end.
-  *
-  *   horzcat(horzsplit(x, ...)) = x
-  */
-  inline std::vector<MX> horzsplit(const MX& x, const std::vector<int>& output_offset) {
-    return x.zz_horzsplit(output_offset);
-  }
-
-  /** \brief  split horizontally, retaining fixed-sized groups of cols
-  * \param incr Size of each group of cols
-  *
-  *  horzcat(horzsplit(x, ...)) = x
-  */
-  inline std::vector<MX> horzsplit(const MX& x, int incr=1) { return x.zz_horzsplit(incr);}
-
-  /** \brief  split vertically, retaining groups of rows
-  * \param output_offset List of all start rows for each group
-  *      the last row group will run to the end.
-  *
-  *   vertcat(vertsplit(x, ...)) = x
-  */
-  inline std::vector<MX> vertsplit(const MX& x, const std::vector<int>& output_offset) {
-    return x.zz_vertsplit(output_offset);
-  }
-
-  /** \brief  split vertically, retaining fixed-sized groups of rows
-  * \param incr Size of each group of rows
-  *
-  *   vertcat(vertsplit(x, ...)) = x
-  */
-  inline std::vector<MX> vertsplit(const MX& x, int incr=1) { return x.zz_vertsplit(incr);}
-
-  /** \brief Construct a matrix from a list of list of blocks.
-  *
-  *   blockcat(blocksplit(x,..., ...)) = x
-  */
-  inline MX blockcat(const std::vector< std::vector<MX > > &v) { return MX::zz_blockcat(v);}
-
-  /** \brief  chop up into blocks
-  * \brief vert_offset Defines the boundaries of the block cols
-  * \brief horz_offset Defines the boundaries of the block rows
-  *
-  *   blockcat(blocksplit(x,..., ...)) = x
-  */
-  inline std::vector< std::vector<MX > >
-  blocksplit(const MX& x, const std::vector<int>& vert_offset,
-             const std::vector<int>& horz_offset) {
-    return x.zz_blocksplit(vert_offset, horz_offset);
-  }
-
-  /** \brief  chop up into blocks
-  * \brief vert_incr Defines the increment for block boundaries in col dimension
-  * \brief horz_incr Defines the increment for block boundaries in row dimension
-  *
-  *   blockcat(blocksplit(x,..., ...)) = x
-  */
-  inline std::vector< std::vector<MX > >
-  blocksplit(const MX& x, int vert_incr = 1, int horz_incr = 1) {
-    return x.zz_blocksplit(vert_incr, horz_incr);
-  }
-
-#ifndef SWIG
-  /** \brief Construct a matrix from a list of list of blocks.*/
-  inline MX blockcat(const MX &A, const MX &B, const MX &C, const MX &D) {
-    return MX::zz_blockcat(A, B, C, D);
-  }
-#endif // SWIG
-
-  /** \brief  concatenate diagonally
-  *
-  *  diagcat(diagsplit(x, ...)) = x
-  */
-  inline MX diagcat(const std::vector<MX>& x) { return MX::zz_diagcat(x);}
-
-/// \cond INTERNAL
-#ifndef SWIG
-  /** \brief  split diagonally, retaining matrices
-  * \param output_offset1 List of all start locations (row) for each matrix
-  * \param output_offset1 List of all start locations (column) for each matrix
-  *      the last matrix will run to the end.
-  *   diagcat(diagsplit(x, ...)) = x
-  */
-  inline std::vector<MX> diagsplitNative(const MX& x,
-                                         const std::vector<int>& output_offset1,
-                                         const std::vector<int>& output_offset2) {
-    return x.zz_diagsplitNative(output_offset1, output_offset2);
-  }
-#endif // SWIG
-/// \endcond
-
-  /** \brief Concatenate vertically while vectorizing all arguments */
-  inline MX veccat(const std::vector<MX>& comp) { return MX::zz_veccat(comp);}
-
-  /** \brief  concatenate vertically while vecing all arguments with vecNZ */
-  inline MX vecNZcat(const std::vector<MX>& comp) { return MX::zz_vecNZcat(comp);}
-
-  /** \brief  Frobenius norm  */
-  inline MX norm_F(const MX &x) { return x.zz_norm_F();}
-
-  /** \brief  2-norm  */
-  inline MX norm_2(const MX &x) { return x.zz_norm_2();}
-
-  /** \brief 1-norm  */
-  inline MX norm_1(const MX &x) { return x.zz_norm_1();}
-
-  /** \brief Infinity-norm */
-  inline MX norm_inf(const MX &x) { return x.zz_norm_inf();}
-
-  /** \brief  Take the inner product of two vectors
-      Equals
-      \code
-      trans(x)*y
-      \endcode
-      with x and y vectors
-  */
-  inline MX inner_prod(const MX &x, const MX &y) { return x.inner_prod(y);}
-
-  /** \brief  Take the outer product of two vectors
-      Equals
-      \code
-      x*trans(y)
-      \endcode
-      with x and y vectors
-  */
-  inline MX outer_prod(const MX &x, const MX &y) { return x.outer_prod(y);}
+#if !defined(SWIG) || !defined(SWIGMATLAB)
 
   /** \brief Branching on MX nodes
       Ternary operator, "cond ? if_true : if_false"
@@ -174,17 +46,8 @@ namespace casadi {
     return cond.zz_if_else(if_true, if_false);
   }
 
-  /** \brief  Unite two matrices no overlapping sparsity */
-  inline MX unite(const MX& A, const MX& B) { return A.zz_unite(B);}
-
   /** \brief  Simplify an expression */
   inline void simplify(MX& ex) { ex.zz_simplify();}
-
-  /** \brief Repeat matrix A n times vertically and m times horizontally */
-  inline MX repmat(const MX &A, int n, int m) { return A.zz_repmat(n, m);}
-
-  /** \brief  Make the matrix dense if not already */
-  inline MX dense(const MX& x) { return x.zz_dense();}
 
   /** \brief  Create a parent MX on which all given MX's will depend.
 
@@ -210,25 +73,6 @@ namespace casadi {
 
   /** Count number of nodes */
   inline int countNodes(const MX& A) { return A.zz_countNodes();}
-
-  /** \brief  Get the diagonal of a matrix or construct a diagonal
-
-      When the input is square, the diagonal elements are returned.
-      If the input is vector-like, a diagonal matrix is constructed with it.
-  */
-  inline MX diag(const MX& x) { return x.zz_diag();}
-
-  /** \brief Return a col-wise summation of elements */
-  inline MX sumCols(const MX &x) { return x.zz_sumCols();}
-
-  /** \brief Return a row-wise summation of elements */
-  inline MX sumRows(const MX &x) { return x.zz_sumRows();}
-
-  /// Return summation of all elements
-  inline MX sumAll(const MX &x) { return x.zz_sumAll();}
-
-  /** \brief  Evaluate a polynomial with coefficients p in x */
-  inline MX polyval(const MX& p, const MX& x) { return p.zz_polyval(x);}
 
   /** \brief Get a string representation for a binary MX, using custom arguments */
   inline std::string
@@ -303,17 +147,6 @@ namespace casadi {
   inline MX tangent(const MX &ex, const MX &arg) { return ex.zz_tangent(arg);}
   ///@}
 
-  /** \brief Computes the nullspace of a matrix A
-  *
-  * Finds Z m-by-(m-n) such that AZ = 0
-  * with A n-by-m with m > n
-  *
-  * Assumes A is full rank
-  *
-  * Inspired by Numerical Methods in Scientific Computing by Ake Bjorck
-  */
-  inline MX nullspace(const MX& A) { return A.zz_nullspace();}
-
   /** \brief Get all symbols contained in the supplied expression
   * Get all symbols on which the supplied expression depends
   * \see MXFunction::getFree()
@@ -355,12 +188,6 @@ namespace casadi {
     return MX::zz_matrix_expand(e, boundary);
   }
 
-  /** \brief Kronecker tensor product
-  *
-  * Creates a block matrix in which each element (i, j) is a_ij*b
-  */
-  inline MX kron(const MX& a, const MX& b) { return a.zz_kron(b);}
-
   /** \brief Solve a system of equations: A*x = b
   */
   inline MX
@@ -375,6 +202,9 @@ namespace casadi {
   */
   inline MX pinv(const MX& A, const std::string& lsolver,
                  const Dictionary& dict = Dictionary()) { return A.zz_pinv(lsolver, dict);}
+
+#endif // !defined(SWIG) || !defined(SWIGMATLAB)
+
 /** @}
 */
 

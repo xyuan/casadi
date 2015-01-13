@@ -32,7 +32,6 @@
 #include "mx_tools.hpp"
 #include "../sx/sx_tools.hpp"
 #include "../function/sx_function.hpp"
-#include "../matrix/sparsity_tools.hpp"
 
 /// \cond INTERNAL
 
@@ -528,7 +527,7 @@ namespace casadi {
   }
 
   template<bool Add>
-  bool SetNonzerosVector<Add>::isEqual(const MXNode* node, int depth) const {
+  bool SetNonzerosVector<Add>::zz_isEqual(const MXNode* node, int depth) const {
     // Check dependencies
     if (!this->sameOpAndDeps(node, depth)) return false;
 
@@ -547,7 +546,7 @@ namespace casadi {
   }
 
   template<bool Add>
-  bool SetNonzerosSlice<Add>::isEqual(const MXNode* node, int depth) const {
+  bool SetNonzerosSlice<Add>::zz_isEqual(const MXNode* node, int depth) const {
     // Check dependencies
     if (!this->sameOpAndDeps(node, depth)) return false;
 
@@ -565,7 +564,7 @@ namespace casadi {
   }
 
   template<bool Add>
-  bool SetNonzerosSlice2<Add>::isEqual(const MXNode* node, int depth) const {
+  bool SetNonzerosSlice2<Add>::zz_isEqual(const MXNode* node, int depth) const {
     // Check dependencies
     if (!this->sameOpAndDeps(node, depth)) return false;
 

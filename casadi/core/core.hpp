@@ -31,7 +31,6 @@
 
 // Generic tools
 #include "polynomial.hpp"
-#include "matrix/generic_matrix_tools.hpp"
 #include "matrix/generic_expression_tools.hpp"
 #include "std_vector_tools.hpp"
 #include "functor.hpp"
@@ -41,7 +40,6 @@
 // Matrices
 #include "matrix/matrix.hpp"
 #include "matrix/matrix_tools.hpp"
-#include "matrix/sparsity_tools.hpp"
 
 // Scalar expressions
 #include "sx/sx_tools.hpp"

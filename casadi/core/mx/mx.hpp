@@ -230,19 +230,6 @@ namespace casadi {
     /// Get operation type
     int getOp() const;
 
-    /** \brief Check if two nodes are equivalent up to a given depth.
-     *  Depth=0 checks if the expressions are identical, i.e. points to the same node.
-     *
-     *  a = x*x
-     *  b = x*x
-     *
-     *  a.isEqual(b, 0)  will return false, but a.isEqual(b, 1) will return true
-     */
-    bool isEqual(const MX& y, int depth=0) const;
-#ifndef SWIG
-    bool isEqual(const MXNode* y, int depth=0) const;
-#endif // SWIG
-
     /** \brief Returns a number that is unique for a given MXNode.
      * If the MX does not point to any node, 0 is returned.
      */
@@ -276,12 +263,14 @@ namespace casadi {
     static MX nan(const std::pair<int, int>& rc);
     ///@}
 
+#if !defined(SWIG) || !defined(SWIGMATLAB)
     ///@{
     /** \brief  create a matrix by repeating an existing matrix */
     static MX repmat(const MX& x, const Sparsity& sp);
-    static MX repmat(const MX& x, int nrow, int ncol=1);
+    static MX repmat(const MX& x, int n, int m=1);
     static MX repmat(const MX& x, const std::pair<int, int> &rc);
     ///@}
+#endif // !defined(SWIG) || !defined(SWIGMATLAB)
 
     /** \brief  Identity matrix */
     static MX eye(int ncol);
@@ -349,8 +338,8 @@ namespace casadi {
     MX __constpow__(const MX& b) const;
     MX __mrdivide__(const MX& b) const;
     MX zz_mpower(const MX& b) const;
-    MX inner_prod(const MX& y) const;
-    MX outer_prod(const MX& y) const;
+    MX zz_inner_prod(const MX& y) const;
+    MX zz_outer_prod(const MX& y) const;
     MX constpow(const MX& y) const;
     MX zz_min(const MX& y) const;
     MX zz_max(const MX& y) const;
@@ -359,7 +348,7 @@ namespace casadi {
     MX zz_atan2(const MX& y) const;
     MX zz_and(const MX& y) const;
     MX zz_or(const MX& y) const;
-    MX if_else_zero(const MX& y) const;
+    MX zz_if_else_zero(const MX& y) const;
     MX __copysign__(const MX& y) const;
 
     // all unary operations
@@ -390,17 +379,9 @@ namespace casadi {
     static MX zz_diagcat(const std::vector<MX>& x);
     static MX zz_vertcat(const std::vector<MX>& x);
     std::vector<MX> zz_horzsplit(const std::vector<int>& offset) const;
-    std::vector<MX> zz_horzsplit(int incr=1) const;
-    std::vector<MX> zz_diagsplitNative(const std::vector<int>& offset1,
-                                       const std::vector<int>& offset2) const;
+    std::vector<MX> zz_diagsplit(const std::vector<int>& offset1,
+                                 const std::vector<int>& offset2) const;
     std::vector<MX> zz_vertsplit(const std::vector<int>& offset) const;
-    std::vector<MX> zz_vertsplit(int incr=1) const;
-    std::vector< std::vector<MX> > zz_blocksplit(const std::vector<int>& vert_offset,
-                                                 const std::vector<int>& horz_offset) const;
-    std::vector< std::vector<MX > > zz_blocksplit(int vert_incr=1, int horz_incr=1) const;
-    static MX zz_veccat(const std::vector<MX>& comp);
-    static MX zz_vecNZcat(const std::vector<MX>& comp);
-    static MX zz_blockcat(const MX &A, const MX &B, const MX &C, const MX &D);
     static MX zz_blockcat(const std::vector< std::vector<MX > > &v);
     MX zz_norm_2() const;
     MX zz_norm_F() const;
@@ -409,22 +390,19 @@ namespace casadi {
     MX zz_mtimes(const MX& y) const;
     MX zz_mtimes(const MX& y, const MX& z) const;
     void zz_simplify();
-    MX zz_reshape(std::pair<int, int> rc) const;
     MX zz_reshape(int nrow, int ncol) const;
     MX zz_reshape(const Sparsity& sp) const;
-    MX zz_vec() const;
     MX zz_vecNZ() const;
     MX zz_if_else(const MX &if_true, const MX &if_false) const;
     MX zz_unite(const MX& B) const;
     MX zz_trace() const;
-    MX zz_repmat(int n, int m) const;
+    MX zz_repmat(const Sparsity& sp) const;
+    MX zz_repmat(int n, int m=1) const;
     MX zz_dense() const;
     static MX zz_createParent(std::vector<MX> &deps);
     static MX zz_createParent(const std::vector<Sparsity> &deps, std::vector<MX>& children);
     static MX zz_createParent(const std::vector<MX> &deps, std::vector<MX>& children);
     MX zz_diag() const;
-    static MX zz_blkdiag(const std::vector<MX> &A);
-    MX zz_blkdiag(const MX& B) const;
     int zz_countNodes() const;
     MX zz_sumCols() const;
     MX zz_sumRows() const;
@@ -463,6 +441,10 @@ namespace casadi {
                 const Dictionary& dict = Dictionary()) const;
     MX zz_pinv(const std::string& lsolver, const Dictionary& dict = Dictionary()) const;
     MX zz_nullspace() const;
+    bool zz_isEqual(const MX& y, int depth=0) const;
+#ifndef SWIG
+    bool zz_isEqual(const MXNode* y, int depth=0) const;
+#endif // SWIG
 
     /** \brief returns itself, but with an assertion attached
     *
@@ -474,7 +456,7 @@ namespace casadi {
     MX setSparse(const Sparsity& sp, bool intersect=false) const;
 
     /// Make the matrix dense
-    void densify(const MX& val = 0);
+    void makeDense(const MX& val = 0);
 
     /// Lift an expression
     void lift(const MX& x_guess);

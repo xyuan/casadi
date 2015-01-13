@@ -215,7 +215,7 @@ class Sparsitytests(casadiTestCase):
     
     
   def test_refcount(self):
-      x = DMatrix(Sparsity.tril(4),5)
+      x = DMatrix(Sparsity.lower(4),5)
       s = mul(x,x).sparsity()
       self.assertEqual(s.numel(),16)
       
@@ -350,13 +350,13 @@ class Sparsitytests(casadiTestCase):
     print A1, B1
     print A2, B2
     
-  def test_dm_blkdiag_dense(self):
+  def test_dm_diagcat_dense(self):
     self.message("Dulmage-Mendelsohn")
     random.seed(0)
     numpy.random.seed(0)
     for k in range(20):
       Ai = [self.randDMatrix(d,d,1) for i,d in enumerate ([random.randint(1,10) for j in range(10)])]
-      A = blkdiag(Ai)
+      A = diagcat(Ai)
       
       #A.sparsity().spy()
       perm =  numpy.random.permutation(range(A.size1()))
@@ -387,13 +387,13 @@ class Sparsitytests(casadiTestCase):
     
       self.checkarray(truth,tryme)
 
-  def test_scc_blkdiag_sparse(self):
+  def test_scc_diagcat_sparse(self):
     self.message("stronglyConnectedComponents")
     random.seed(0)
     numpy.random.seed(0)
     for k in range(20):
       Ai = [self.randDMatrix(d,d,0.6,symm=True) for i,d in enumerate ([random.randint(1,10) for j in range(10)])]
-      A = blkdiag(Ai)
+      A = diagcat(Ai)
       
       #A.sparsity().spy()
       perm =  numpy.random.permutation(range(A.size1()))
@@ -535,7 +535,7 @@ class Sparsitytests(casadiTestCase):
     d = self.randDMatrix(20,20,0.6,symm=True)
     sp = d.sparsity()
     
-    for sp in [sp,Sparsity.dense(4,4),Sparsity.sparse(4,4),Sparsity.tril(4),Sparsity.tril(4).T]:
+    for sp in [sp,Sparsity.dense(4,4),Sparsity.sparse(4,4),Sparsity.lower(4),Sparsity.lower(4).T]:
     
       d = IMatrix(sp,1)
       

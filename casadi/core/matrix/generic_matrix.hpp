@@ -30,7 +30,6 @@
 #include "submatrix.hpp"
 #include "nonzeros.hpp"
 #include "sparsity.hpp"
-#include "sparsity_tools.hpp"
 #include "../casadi_math.hpp"
 #include "sparsity_interface.hpp"
 
@@ -69,6 +68,7 @@ namespace casadi {
   */
   template<typename MatType>
   class CASADI_EXPORT GenericMatrix : public SparsityInterface<MatType> {
+    using SparsityInterface<MatType>::self;
   public:
 
     /** \brief Get the number of (structural) non-zero elements */
@@ -142,40 +142,196 @@ namespace casadi {
     /** \brief Access the sparsity, make a copy if there are multiple references to it */
     Sparsity& sparsityRef();
 
+    /// @{
+    /** \brief Accessed by friend functions */
+    int zz_sprank() const { return sprank(sparsity());}
+    MatType zz_tril(const MatType &a, bool includeDiagonal=true) const {
+      return a.setSparse(tril(a.sparsity(), includeDiagonal));
+    }
+    MatType zz_triu(const MatType &a, bool includeDiagonal=true) const {
+      return a.setSparse(triu(a.sparsity(), includeDiagonal));
+    }
+    MatType zz_quad_form(const MatType &A) const { return mul(self().T(), mul(A, self())); }
+    MatType zz_quad_form() const { return mul(self().T(), self()); }
+    MatType zz_sum_square() const { return sumAll(self()*self()); }
+    MatType zz_linspace(const MatType &b, int nsteps) const;
+    MatType zz_cross(const MatType &b, int dim=-1) const;
+    MatType zz_tril2symm() const;
+    MatType zz_triu2symm() const;
+    /// @}
+
 #ifndef SWIG
     /** \brief  Get vector nonzero or slice of nonzeros */
     template<typename K>
     const MatType operator[](const K& k) const {
-      return static_cast<const MatType*>(this)->getNZ(false, k);
+      return self().getNZ(false, k);
     }
 
     /** \brief  Access vector nonzero or slice of nonzeros */
     template<typename K>
     NonZeros<MatType, K> operator[](const K& k) {
-      return NonZeros<MatType, K>(static_cast<MatType&>(*this), k);
+      return NonZeros<MatType, K>(self(), k);
     }
 
     /** \brief  Get vector element or slice */
     template<typename RR>
     const MatType operator()(const RR& rr) const {
-      return static_cast<const MatType*>(this)->getSub(false, rr);
+      return self().getSub(false, rr);
     }
 
     /** \brief  Get Matrix element or slice */
     template<typename RR, typename CC>
     const MatType operator()(const RR& rr, const CC& cc) const
-    { return static_cast<const MatType*>(this)->getSub(false, rr, cc); }
+    { return self().getSub(false, rr, cc); }
 
     /** \brief Access Matrix elements (one argument) */
     template<typename RR>
     SubIndex<MatType, RR> operator()(const RR& rr) {
-      return SubIndex<MatType, RR>(static_cast<MatType&>(*this), rr);
+      return SubIndex<MatType, RR>(self(), rr);
     }
 
     /** \brief Access Matrix elements (two arguments) */
     template<typename RR, typename CC>
     SubMatrix<MatType, RR, CC> operator()(const RR& rr, const CC& cc) {
-      return SubMatrix<MatType, RR, CC>(static_cast<MatType&>(*this), rr, cc);
+      return SubMatrix<MatType, RR, CC>(self(), rr, cc);
+    }
+
+    /** \brief Calculate quadratic form X^T A X*/
+    inline friend MatType quad_form(const MatType &X, const MatType &A) {
+      return X.zz_quad_form(A);
+    }
+
+    /** \brief Calculate quadratic form X^T X*/
+    inline friend MatType quad_form(const MatType &X) {
+     return X.zz_quad_form();
+    }
+
+    /** \brief Calculate some of squares: sum_ij X_ij^2  */
+    inline friend MatType sum_square(const MatType &X) {
+     return X.zz_sum_square();
+    }
+
+    /** \brief Matlab's \c linspace command
+     */
+    inline friend MatType linspace(const MatType &a, const MatType &b, int nsteps) {
+      return a.zz_linspace(b, nsteps);
+    }
+
+    /** \brief Matlab's \c cross command
+     */
+    inline friend MatType cross(const MatType &a, const MatType &b, int dim = -1) {
+      return a.zz_cross(b, dim);
+    }
+
+    /** \brief Matrix determinant (experimental) */
+    inline friend MatType det(const MatType& A) { return A.zz_det();}
+
+    /** \brief Matrix inverse (experimental) */
+    inline friend MatType inv(const MatType& A) { return A.zz_inv();}
+
+    /** \brief Matrix trace */
+    inline friend MatType trace(const MatType& a) { return a.zz_trace();}
+
+    /** \brief Convert a lower triangular matrix to a symmetric one
+     */
+    inline friend MatType tril2symm(const MatType &a) { return a.zz_tril2symm();}
+
+    /** \brief Convert a upper triangular matrix to a symmetric one
+     */
+    inline friend MatType triu2symm(const MatType &a) { return a.zz_triu2symm();}
+
+    /** \brief Kronecker tensor product
+     *
+     * Creates a block matrix in which each element (i, j) is a_ij*b
+     */
+    inline friend MatType kron(const MatType& a, const MatType& b) { return a.zz_kron(b); }
+
+    /** \brief  Frobenius norm  */
+    inline friend MatType norm_F(const MatType &x) { return x.zz_norm_F();}
+
+    /** \brief  2-norm  */
+    inline friend MatType norm_2(const MatType &x) { return x.zz_norm_2();}
+
+    /** \brief 1-norm  */
+    inline friend MatType norm_1(const MatType &x) { return x.zz_norm_1();}
+
+    /** \brief Infinity-norm */
+    inline friend MatType norm_inf(const MatType &x) { return x.zz_norm_inf();}
+
+    /// Return summation of all elements
+    inline friend MatType sumAll(const MatType &x) { return x.zz_sumAll();}
+
+    /** \brief Return a col-wise summation of elements */
+    inline friend MatType sumCols(const MatType &x) { return x.zz_sumCols();}
+
+    /** \brief Return a row-wise summation of elements */
+    inline friend MatType sumRows(const MatType &x) { return x.zz_sumRows();}
+
+    /** \brief Inner product of two matrices
+        Equals
+        \code
+        sumAll(x*y)
+        \endcode
+        with x and y matrices of the same dimension
+    */
+    inline friend MatType inner_prod(const MatType &x, const MatType &y) {
+      return x.zz_inner_prod(y);
+    }
+
+    /** \brief  Take the outer product of two vectors
+        Equals
+        \code
+        x*y.T()
+        \endcode
+        with x and y vectors
+    */
+    inline friend MatType outer_prod(const MatType &x, const MatType &y) {
+      return x.zz_outer_prod(y);
+    }
+
+    /** \brief Computes the nullspace of a matrix A
+     *
+     * Finds Z m-by-(m-n) such that AZ = 0
+     * with A n-by-m with m > n
+     *
+     * Assumes A is full rank
+     *
+     * Inspired by Numerical Methods in Scientific Computing by Ake Bjorck
+     */
+    inline friend MatType nullspace(const MatType& A) { return A.zz_nullspace();}
+
+    /** \brief  Evaluate a polynomial with coefficients p in x */
+    inline friend MatType polyval(const MatType& p, const MatType& x) {
+      return p.zz_polyval(x);
+    }
+
+    /** \brief   Get the diagonal of a matrix or construct a diagonal
+        When the input is square, the diagonal elements are returned.
+        If the input is vector-like, a diagonal matrix is constructed with it. */
+    inline friend MatType diag(const MatType &A) { return A.zz_diag();}
+
+    /** \brief  Unite two matrices no overlapping sparsity */
+    inline friend MatType unite(const MatType& A, const MatType& B) {
+      return A.zz_unite(B);
+    }
+
+    /** \brief  Make the matrix dense if not already */
+    inline friend MatType dense(const MatType& x) { return x.zz_dense();}
+
+    ///@{
+    /** \brief Repeat matrix A n times vertically and m times horizontally */
+    inline friend MatType repmat(const MatType &A, int n, int m=1) {
+      return A.zz_repmat(n, m);
+    }
+
+    inline friend MatType repmat(const MatType &A, const std::pair<int, int>& rc) {
+      return A.zz_repmat(rc.first, rc.second);
+    }
+    ///@}
+
+    /** \brief Repeat a scalar to a new sparsity pattern */
+    inline friend MatType repmat(const MatType &A, const Sparsity& sp) {
+      return A.zz_repmat(sp);
     }
 #endif // SWIG
 
@@ -254,12 +410,12 @@ namespace casadi {
 
   template<typename MatType>
   const Sparsity& GenericMatrix<MatType>::sparsity() const {
-    return static_cast<const MatType*>(this)->sparsity();
+    return self().sparsity();
   }
 
   template<typename MatType>
   Sparsity& GenericMatrix<MatType>::sparsityRef() {
-    return static_cast<MatType*>(this)->sparsityRef();
+    return self().sparsityRef();
   }
 
   template<typename MatType>
@@ -359,6 +515,77 @@ namespace casadi {
   template<typename MatType>
   MatType GenericMatrix<MatType>::sym(const std::string& name, const Sparsity& sp) {
     throw CasadiException("\"sym\" not defined for instantiation");
+  }
+
+  template<typename MatType>
+  MatType GenericMatrix<MatType>::zz_linspace(const MatType &b, int nsteps) const {
+    std::vector<MatType> ret(nsteps);
+    ret[0] = self();
+    MatType step = (b-self())/(nsteps-1);
+
+    for (int i=1; i<nsteps-1; ++i)
+      ret[i] = ret[i-1] + step;
+
+    ret[nsteps-1] = b;
+    return vertcat(ret);
+  }
+
+  template<typename MatType>
+  MatType GenericMatrix<MatType>::zz_cross(const MatType &b, int dim) const {
+    const MatType &a = self();
+    casadi_assert_message(a.size1()==b.size1() && a.size2()==b.size2(),
+                          "cross(a, b): Inconsistent dimensions. Dimension of a ("
+                          << a.dimString() << " ) must equal that of b ("
+                          << b.dimString() << ").");
+
+    casadi_assert_message(a.size1()==3 || a.size2()==3,
+                          "cross(a, b): One of the dimensions of a should have length 3, but got "
+                          << a.dimString() << ".");
+    casadi_assert_message(dim==-1 || dim==1 || dim==2,
+                          "cross(a, b, dim): Dim must be 1, 2 or -1 (automatic).");
+
+    std::vector<MatType> ret(3);
+
+    bool t = a.size1()==3;
+
+    if (dim==1) t = true;
+    if (dim==2) t = false;
+
+    MatType a1 = t ? a(0, ALL) : a(ALL, 0);
+    MatType a2 = t ? a(1, ALL) : a(ALL, 1);
+    MatType a3 = t ? a(2, ALL) : a(ALL, 2);
+
+    MatType b1 = t ? b(0, ALL) : b(ALL, 0);
+    MatType b2 = t ? b(1, ALL) : b(ALL, 1);
+    MatType b3 = t ? b(2, ALL) : b(ALL, 2);
+
+    ret[0] = a2*b3-a3*b2;
+    ret[1] = a3*b1-a1*b3;
+    ret[2] = a1*b2-a2*b1;
+
+    return t ? vertcat(ret) : horzcat(ret);
+  }
+
+  template<typename MatType>
+  MatType GenericMatrix<MatType>::zz_tril2symm() const {
+    casadi_assert_message(self().isSquare(),
+                          "Shape error in tril2symm. Expecting square shape but got "
+                          << self().dimString());
+    casadi_assert_message(self().sizeU()-self().sizeD()==0,
+                          "Sparsity error in tril2symm. Found above-diagonal entries in argument: "
+                          << self().dimString());
+    return self() +  self().T() - diag(diag(self()));
+  }
+
+  template<typename MatType>
+  MatType GenericMatrix<MatType>::zz_triu2symm() const {
+    casadi_assert_message(self().isSquare(),
+                          "Shape error in triu2symm. Expecting square shape but got "
+                          << self().dimString());
+    casadi_assert_message(self().sizeL()-self().sizeD()==0,
+                          "Sparsity error in triu2symm. Found below-diagonal entries in argument: "
+                          << self().dimString());
+    return self() + self().T() - diag(diag(self()));
   }
 #endif
 

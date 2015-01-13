@@ -362,11 +362,11 @@ namespace casadi {
     Matrix<DataType> setSparse(const Sparsity& sp, bool intersect=false) const;
 
     /// Make the matrix dense
-    void densify(const DataType& val = 0);
+    void makeDense(const DataType& val = 0);
 
     /** \brief  Make a matrix sparse by removing numerical zeros smaller
      * in absolute value than a specified tolerance */
-    void sparsify(double tol=0);
+    void makeSparse(double tol=0);
 
     Matrix<DataType> operator+() const;
     Matrix<DataType> operator-() const;
@@ -401,6 +401,61 @@ namespace casadi {
     Matrix<DataType> __constpow__(const Matrix<DataType> &y) const;
     Matrix<DataType> zz_mpower(const Matrix<DataType> &y) const;
     Matrix<DataType> __mrdivide__(const Matrix<DataType> &y) const;
+    bool zz_isEqual(const Matrix<DataType> &ex2, int depth=0) const;
+    void zz_expand(Matrix<DataType> &weights, Matrix<DataType>& terms) const;
+    Matrix<DataType> zz_pw_const(const Matrix<DataType> &tval, const Matrix<DataType> &val) const;
+    Matrix<DataType> zz_pw_lin(const Matrix<DataType> &tval, const Matrix<DataType> &val) const;
+    Matrix<DataType> zz_if_else(const Matrix<DataType> &if_true,
+                                const Matrix<DataType> &if_false) const;
+    Matrix<DataType> zz_heaviside() const;
+    Matrix<DataType> zz_rectangle() const;
+    Matrix<DataType> zz_triangle() const;
+    Matrix<DataType> zz_ramp() const;
+    Matrix<DataType> zz_gauss_quadrature(const Matrix<DataType> &x, const Matrix<DataType> &a,
+                                         const Matrix<DataType> &b, int order=5) const {
+      return zz_gauss_quadrature(x, a, b, order, Matrix<DataType>());
+    }
+    Matrix<DataType> zz_gauss_quadrature(const Matrix<DataType> &x, const Matrix<DataType> &a,
+                                         const Matrix<DataType> &b, int order,
+                                         const Matrix<DataType>& w) const;
+    Matrix<DataType> zz_simplify() const;
+    Matrix<DataType> zz_substitute(const Matrix<DataType>& v, const Matrix<DataType>& vdef) const;
+    static std::vector<Matrix<DataType> > zz_substitute(const std::vector<Matrix<DataType> >& ex,
+                                                        const std::vector<Matrix<DataType> >& v,
+                                                        const std::vector<Matrix<DataType> >& vdef);
+    static void zz_substituteInPlace(const std::vector<Matrix<DataType> >& v,
+                                     std::vector<Matrix<DataType> >& vdef,
+                                     std::vector<Matrix<DataType> >& ex,
+                                     bool reverse=false);
+    Matrix<DataType> zz_spy() const;
+    bool zz_dependsOn(const Matrix<DataType> &arg) const;
+    std::vector<Matrix<DataType> > zz_getSymbols() const;
+    static std::vector<Matrix<DataType> > zz_getSymbols(const std::vector<Matrix<DataType> >& e);
+    Matrix<DataType> zz_jacobian(const Matrix<DataType> &arg) const;
+    Matrix<DataType> zz_gradient(const Matrix<DataType> &arg) const;
+    Matrix<DataType> zz_tangent(const Matrix<DataType> &arg) const;
+    Matrix<DataType> zz_hessian(const Matrix<DataType> &arg) const;
+    void zz_hessian(const Matrix<DataType> &arg, Matrix<DataType> &H, Matrix<DataType> &g) const;
+    Matrix<DataType> zz_jacobianTimesVector(const Matrix<DataType> &arg, const Matrix<DataType> &v,
+                                            bool transpose_jacobian=false) const;
+    Matrix<DataType> zz_taylor(const Matrix<DataType>& x,
+                               const Matrix<DataType>& a=0, int order=1) const;
+    Matrix<DataType> zz_mtaylor(const Matrix<DataType>& x,
+                                const Matrix<DataType>& a, int order=1) const;
+    Matrix<DataType> zz_mtaylor(const Matrix<DataType>& x, const Matrix<DataType>& a, int order,
+                                const std::vector<int>& order_contributions) const;
+    int zz_countNodes() const;
+    std::string zz_getOperatorRepresentation(const std::vector<std::string>& args) const;
+    static void zz_extractShared(std::vector<Matrix<DataType> >& ex,
+                                 std::vector<Matrix<DataType> >& v,
+                                 std::vector<Matrix<DataType> >& vdef,
+                                 const std::string& v_prefix="v_",
+                                 const std::string& v_suffix="");
+    void zz_printCompact(std::ostream &stream=CASADI_COUT) const;
+    Matrix<DataType> zz_poly_coeff(const Matrix<DataType>&x) const;
+    Matrix<DataType> zz_poly_roots() const;
+    Matrix<DataType> zz_eig_symbolic() const;
+    Matrix<DataType> zz_sparsify(double tol=0) const;
     ///@}
 
     /// Matrix-matrix product, no memory allocation: z += mul(x, y), with work vector
@@ -480,7 +535,7 @@ namespace casadi {
     Matrix<DataType> zz_not() const;
     Matrix<DataType> zz_and(const Matrix<DataType>& y) const;
     Matrix<DataType> zz_or(const Matrix<DataType>& y) const;
-    Matrix<DataType> if_else_zero(const Matrix<DataType>& y) const;
+    Matrix<DataType> zz_if_else_zero(const Matrix<DataType>& y) const;
     Matrix<DataType> zz_mtimes(const Matrix<DataType> &y) const;
     Matrix<DataType> zz_mtimes(const Matrix<DataType> &y, const Matrix<DataType> &z) const;
     Matrix<DataType> zz_det() const;
@@ -492,31 +547,16 @@ namespace casadi {
     Matrix<DataType> zz_cofactor(int i, int j) const;
     Matrix<DataType> zz_getMinor(int i, int j) const;
     Matrix<DataType> zz_reshape(int nrow, int ncol) const;
-    Matrix<DataType> zz_reshape(std::pair<int, int> rc) const;
     Matrix<DataType> zz_reshape(const Sparsity& sp) const;
     Matrix<DataType> zz_trace() const;
-    Matrix<DataType> zz_vec() const;
     Matrix<DataType> zz_vecNZ() const;
     static Matrix<DataType> zz_blockcat(const std::vector< std::vector<Matrix<DataType> > > &v);
-    static Matrix<DataType> zz_blockcat(const Matrix<DataType> &A,
-                                     const Matrix<DataType> &B,
-                                     const Matrix<DataType> &C,
-                                     const Matrix<DataType> &D);
     static Matrix<DataType> zz_horzcat(const std::vector<Matrix<DataType> > &v);
     std::vector<Matrix<DataType> > zz_horzsplit(const std::vector<int>& offset) const;
-    std::vector<Matrix<DataType> > zz_horzsplit(int incr) const;
     static Matrix<DataType> zz_vertcat(const std::vector<Matrix<DataType> > &v);
     std::vector< Matrix<DataType> > zz_vertsplit(const std::vector<int>& offset) const;
-    std::vector< Matrix<DataType> > zz_vertsplit(int incr=1) const;
-    std::vector< std::vector< Matrix<DataType> > >
-      zz_blocksplit(const std::vector<int>& vert_offset,
-                    const std::vector<int>& horz_offset) const;
-    std::vector< std::vector< Matrix<DataType> > >
-      zz_blocksplit(int vert_incr=1, int horz_incr=1) const;
-    std::vector< Matrix<DataType> > zz_diagsplitNative(const std::vector<int>& offset1,
-                                                       const std::vector<int>& offset2) const;
-    static Matrix<DataType> zz_veccat(const std::vector< Matrix<DataType> >& comp);
-    static Matrix<DataType> zz_vecNZcat(const std::vector< Matrix<DataType> >& comp);
+    std::vector< Matrix<DataType> > zz_diagsplit(const std::vector<int>& offset1,
+                                                 const std::vector<int>& offset2) const;
     Matrix<DataType> zz_inner_prod(const Matrix<DataType> &y) const;
     Matrix<DataType> zz_outer_prod(const Matrix<DataType> &y) const;
     Matrix<DataType> zz_all() const;
@@ -530,9 +570,10 @@ namespace casadi {
     Matrix<DataType> zz_solve(const Matrix<DataType>& b) const;
     Matrix<DataType> zz_pinv() const;
     Matrix<DataType> zz_kron(const Matrix<DataType>& b) const;
-    Matrix<DataType> zz_repmat(int n, int m) const;
+    Matrix<DataType> zz_repmat(int n, int m=1) const;
+    Matrix<DataType> zz_repmat(const Sparsity& sp) const;
     Matrix<DataType> zz_diag() const;
-    static Matrix<DataType> zz_blkdiag(const std::vector< Matrix<DataType> > &A);
+    static Matrix<DataType> zz_diagcat(const std::vector< Matrix<DataType> > &A);
     Matrix<DataType> zz_unite(const Matrix<DataType>& B) const;
     Matrix<DataType> zz_polyval(const Matrix<DataType>& x) const;
     void zz_addMultiple(const std::vector<DataType>& v,
@@ -542,7 +583,96 @@ namespace casadi {
     int zz_norm_0_mul_nn(const Matrix<DataType>& B,
                          std::vector<bool>& Bwork,
                          std::vector<int>& Iwork) const;
+    DataType zz_norm_inf_mul_nn(const Matrix<DataType> &y,
+                                std::vector<DataType>& Dwork,
+                                std::vector<int>& Iwork) const;
+    Matrix<DataType> zz_dense() const;
     ///@}
+
+#ifndef SWIG
+    /** \brief Matrix adjoint */
+    inline friend Matrix<DataType> adj(const Matrix<DataType>& A) { return A.zz_adj();}
+
+    /** \brief Get the (i,j) minor matrix */
+    inline friend Matrix<DataType> getMinor(const Matrix<DataType> &x, int i, int j) {
+      return x.zz_getMinor(i, j);
+    }
+
+    /** \brief Get the (i,j) cofactor matrix */
+    inline friend Matrix<DataType> cofactor(const Matrix<DataType> &x, int i, int j) {
+      return x.zz_cofactor(i, j);
+    }
+
+    /** \brief  QR factorization using the modified Gram-Schmidt algorithm
+     * More stable than the classical Gram-Schmidt, but may break down if the rows of A
+     * are nearly linearly dependent
+     * See J. Demmel: Applied Numerical Linear Algebra (algorithm 3.1.).
+     * Note that in SWIG, Q and R are returned by value. */
+    inline friend void qr(const Matrix<DataType>& A, Matrix<DataType>& Q, Matrix<DataType>& R) {
+      return A.zz_qr(Q, R);
+    }
+
+    /** \brief Create a new matrix with a given sparsity pattern but with the
+     * nonzeros taken from an existing matrix */
+    inline friend Matrix<DataType> project(const Matrix<DataType>& A, const Sparsity& sp) {
+      return A.zz_project(sp);
+    }
+
+    /// Returns true only if every element in the matrix is true
+    inline friend Matrix<DataType> all(const Matrix<DataType> &x) { return x.zz_all();}
+
+    /// Returns true if any element in the matrix is true
+    inline friend Matrix<DataType> any(const Matrix<DataType> &x) { return x.zz_any();}
+
+    /** Inf-norm of a Matrix-matrix product, no memory allocation
+     *   mul(x, y)
+     *
+     * \param Dwork  A double work vector that you must allocate
+     *               Minimum size: y.size1()
+     * \param Iwork  A integer work vector that you must allocate
+     *               Minimum size: y.size1()+x.size2()+1
+     */
+    inline friend DataType norm_inf_mul_nn(const Matrix<DataType> &x,
+                                           const Matrix<DataType> &y,
+                                           std::vector<DataType>& Dwork,
+                                           std::vector<int>& Iwork) {
+      return x.zz_norm_inf_mul_nn(y, Dwork, Iwork);
+    }
+
+    /** 0-norm (nonzero count) of a Matrix-matrix product, no memory allocation
+     *   mul(x, y)
+     *
+     * \param Bwork  A boolean work vector that you must allocate
+     *               Minimum size: y.size1()
+     * \param Iwork  A integer work vector that you must allocate
+     *               Minimum size: y.size1()+x.size2()+1
+     */
+    inline friend int norm_0_mul_nn(const Matrix<DataType> &x,
+                                    const Matrix<DataType> &y,
+                                    std::vector<bool>& Bwork,
+                                    std::vector<int>& Iwork) {
+      return x.zz_norm_0_mul_nn(y, Bwork, Iwork);
+    }
+
+    /// same as: res += mul(A, v)
+    inline friend void addMultiple(const Matrix<DataType>& A,
+                                   const std::vector<DataType>& v,
+                                   std::vector<DataType>& res,
+                                   bool trans_A=false) {
+      return A.zz_addMultiple(v, res, trans_A);
+    }
+
+    /** \brief  Make a matrix sparse by removing numerical zeros*/
+    inline friend Matrix<DataType> sparsify(const Matrix<DataType>& A, double tol=0) {
+      return A.zz_sparsify(tol);
+    }
+
+    /** \brief DEPRECATED: alias for sparsify */
+    inline friend Matrix<DataType> sparse(const Matrix<DataType>& A, double tol=0) {
+      return sparsify(A, tol);
+    }
+#endif // SWIG
+
 
     /** \brief Set or reset the maximum number of calls to the
      * printing function when printing an expression */
@@ -608,13 +738,17 @@ namespace casadi {
     /// Const access the non-zero elements
     const std::vector<DataType>& data() const;
 
+#ifndef SWIG
     /// \cond INTERNAL
     /// Get a pointer to the data
     DataType* ptr() { return isEmpty() ? static_cast<DataType*>(0) : &front();}
+    friend inline DataType* getPtr(Matrix<DataType>& v) { return v.ptr();}
 
     /// Get a const pointer to the data
     const DataType* ptr() const { return isEmpty() ? static_cast<const DataType*>(0) : &front();}
+    friend inline const DataType* getPtr(const Matrix<DataType>& v) { return v.ptr();}
     /// \endcond
+#endif // SWIG
 
     /// Const access the sparsity - reference to data member
     const Sparsity& sparsity() const { return sparsity_; }
@@ -726,13 +860,14 @@ namespace casadi {
     static Matrix<DataType> nan(const std::pair<int, int>& rc);
     ///@}
 
+#if !defined(SWIG) || !defined(SWIGMATLAB)
     ///@{
     /** \brief  create a matrix by repeating an existing matrix */
-    static Matrix<DataType> repmat(const DataType& x, const Sparsity& sp);
     static Matrix<DataType> repmat(const Matrix<DataType>& x, const Sparsity& sp);
     static Matrix<DataType> repmat(const Matrix<DataType>& x, int nrow, int ncol=1);
     static Matrix<DataType> repmat(const Matrix<DataType>& x, const std::pair<int, int>& rc);
     ///@}
+#endif // !defined(SWIG) || !defined(SWIGMATLAB)
 
     /** \brief  create an n-by-n identity matrix */
     static Matrix<DataType> eye(int ncol);
@@ -790,13 +925,6 @@ namespace casadi {
     /** \brief  check if the matrix is an identity matrix (note that false negative answers
      * are possible)*/
     bool isIdentity() const;
-
-    /** \brief Check if two expressions are equal
-     *  May give false negatives
-     *
-     *  Note: does not work when CasadiOptions.setSimplificationOnTheFly(False) was called
-     */
-    bool isEqual(const Matrix<DataType> &ex2) const;
 
     /** \brief  Check if the matrix has any zero entries which are not structural zeros */
     bool hasNonStructuralZeros() const;

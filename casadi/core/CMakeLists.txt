@@ -42,7 +42,6 @@ set(CASADI_SRCS
   matrix/generic_expression.hpp                         # Base class for SXElement MX and Matrix<>
   matrix/generic_expression_tools.hpp                   # Tools for SXElement MX and Matrix<>
   matrix/generic_matrix.hpp                             # Base class for Matrix<> and MX
-  matrix/generic_matrix_tools.hpp                       # Tools for both Matrix<> and MX
   matrix/matrix.hpp           matrix/matrix_impl.hpp   matrix/matrix.cpp    # The Matrix template class
   matrix/sparse_storage.hpp   matrix/sparse_storage_impl.hpp
   matrix/sparsity_interface.hpp
@@ -51,7 +50,6 @@ set(CASADI_SRCS
   matrix/submatrix.hpp                                  # A reference to a block of the matrix to allow operations such as A(:,3) = ...
   matrix/nonzeros.hpp                                   # A reference to a set of nonzeros of the matrix to allow operations such as A[3] = ...
   matrix/matrix_tools.hpp     matrix/matrix_tools.cpp   # Set of functions
-  matrix/sparsity_tools.hpp   matrix/sparsity_tools.cpp # Set of functions for sparsity
 
   # Directed, acyclic graph representation with scalar expressions
   sx/sx_element.hpp          sx/sx_element.cpp          # Symbolic expression class (scalar-valued atomics)

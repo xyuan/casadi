@@ -24,7 +24,6 @@
 
 
 #include "sparsity_internal.hpp"
-#include "sparsity_tools.hpp"
 #include "../std_vector_tools.hpp"
 #include <climits>
 #include <cstdlib>
@@ -2817,7 +2816,7 @@ namespace casadi {
     return -1;
   }
 
-  Sparsity SparsityInternal::reshape(int nrow, int ncol) const {
+  Sparsity SparsityInternal::zz_reshape(int nrow, int ncol) const {
     casadi_assert_message(numel() == nrow*ncol,
                           "reshape: number of elements must remain the same. Old shape is "
                           << dimString() << ". New shape is " << nrow << "x" << ncol
@@ -3767,7 +3766,7 @@ namespace casadi {
     return true;
   }
 
-  Sparsity SparsityInternal::getTril(bool includeDiagonal) const {
+  Sparsity SparsityInternal::zz_tril(bool includeDiagonal) const {
     vector<int> colind, row;
     colind.reserve(ncol_+1);
     colind.push_back(0);
@@ -3783,7 +3782,7 @@ namespace casadi {
     return Sparsity(nrow_, ncol_, colind, row);
   }
 
-  Sparsity SparsityInternal::getTriu(bool includeDiagonal) const {
+  Sparsity SparsityInternal::zz_triu(bool includeDiagonal) const {
     vector<int> colind, row;
     colind.reserve(ncol_+1);
     colind.push_back(0);
