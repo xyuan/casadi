@@ -385,7 +385,7 @@ namespace casadi {
     ///@}
     /// \endcond
 
-    /// \cond INTERNAL
+    /// \cond CLUTTER
     ///@{
     /// Functions called by the corresponding friend functions -- MATLAB naming
     Matrix<DataType> zz_plus(const Matrix<DataType> &y) const;
@@ -502,6 +502,8 @@ namespace casadi {
     Matrix<DataType> T() const;
     ///@{
 
+    /// \cond CLUTTER
+
     ///@{
     /// Operations called by the corresponding friend functions, MATLAB naming convention
     Matrix<DataType> zz_sin() const;
@@ -589,7 +591,13 @@ namespace casadi {
     Matrix<DataType> zz_dense() const;
     ///@}
 
-#ifndef SWIG
+    /// \endcond
+
+/**
+\ingroup expression_tools
+@{
+*/
+#if !defined(SWIG) || defined(DOXYGEN)
     /** \brief Matrix adjoint */
     inline friend Matrix<DataType> adj(const Matrix<DataType>& A) { return A.zz_adj();}
 
@@ -671,8 +679,8 @@ namespace casadi {
     inline friend Matrix<DataType> sparse(const Matrix<DataType>& A, double tol=0) {
       return sparsify(A, tol);
     }
-#endif // SWIG
-
+#endif // !SWIG || DOXYGEN
+/** @} */
 
     /** \brief Set or reset the maximum number of calls to the
      * printing function when printing an expression */
