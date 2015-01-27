@@ -355,8 +355,8 @@ class LinearSolverTests(casadiTestCase):
   def test_simple_solve_node(self):
     for A_,b_ in [
                      (DMatrix([[3,1],[7,2]]),DMatrix([[1,0.3],[0.5,0.7]])),    
-                     (sparse(DMatrix([[3,0],[7,2]])),DMatrix([[1,0.3],[0.5,0.7]])),
-                     (DMatrix([[3,1],[7,2]]),sparse(DMatrix([[1,0],[0,0.7]])))
+                     (sparsify(DMatrix([[3,0],[7,2]])),DMatrix([[1,0.3],[0.5,0.7]])),
+                     (DMatrix([[3,1],[7,2]]),sparsify(DMatrix([[1,0],[0,0.7]])))
                  ]:
                              
       A = MX.sym("A",A_.sparsity())
@@ -494,7 +494,7 @@ class LinearSolverTests(casadiTestCase):
       
       self.checkarray(mul(A,C),b)
       
-      for As_,A_ in [(As,A),(dense(As),dense(A)),(dense(As).T,dense(A).T),(dense(As.T),dense(A.T)),(As.T,A.T)]:
+      for As_,A_ in [(As,A),(densify(As),densify(A)),(densify(As).T,densify(A).T),(densify(As.T),densify(A.T)),(As.T,A.T)]:
         f = MXFunction([As,bs],[solve(As_,bs,Solver,options)])
         f.init()
         f.setInput(A,0)

@@ -270,7 +270,7 @@ class QpSolverTests(casadiTestCase):
     
     G = DMatrix([-2,-6,1,0,0])
     A =  DMatrix([[1, 0,0.1,0.7,-1],[0.1, 2,-0.3,4,0.1]])
-    A = sparse(A)
+    A = sparsify(A)
     
     LBA = DMatrix([-inf])
     UBA = DMatrix([2, 2])
@@ -427,7 +427,7 @@ class QpSolverTests(casadiTestCase):
     self.message("Degenerate hessian")
     
     H = DMatrix([[1,-1,0],[-1,2,0],[0,0,0]])
-    H = sparse(H)
+    H = sparsify(H)
     G = DMatrix([-2,-6,1])
     A =  DMatrix([[1, 1,1]])
 
@@ -526,10 +526,10 @@ class QpSolverTests(casadiTestCase):
     self.message("No A present")
     H = DMatrix([[1,-1],[-1,2]])
     G = DMatrix([-2,-6])
-    A =  DMatrix.sparse(0,2)
+    A =  DMatrix(0,2)
 
-    LBA = DMatrix.sparse(0,1)
-    UBA = DMatrix.sparse(0,1)
+    LBA = DMatrix(0,1)
+    UBA = DMatrix(0,1)
 
     LBX = DMatrix([-10])
     UBX = DMatrix([10])
@@ -619,7 +619,7 @@ class QpSolverTests(casadiTestCase):
     
     G = -1.0*mul(H,x0)
 
-    A =  DMatrix.sparse(0,N)
+    A =  DMatrix(0,N)
 
     LBX = DMatrix([-1000]*N)
     UBX = DMatrix([1000]*N)
@@ -694,7 +694,7 @@ class QpSolverTests(casadiTestCase):
         self.checkarray(mul(A.T,solver.getOutput("lam_a")),DMatrix([3.876923073076,2.4384615365384965,-1]),str(qpsolver),digits=6)
         
   def test_linear(self):
-    H = DMatrix.sparse(2,2)
+    H = DMatrix(2,2)
     A = DMatrix([ [-1,1],[1,1],[1,-2]])
     LBA = DMatrix([ -inf, 2, -inf ])
     UBA = DMatrix([ 1, inf, 4 ])
@@ -734,7 +734,7 @@ class QpSolverTests(casadiTestCase):
       self.assertAlmostEqual(solver.getOutput("cost")[0],2.5,5,str(qpsolver))
       
   def test_linear2(self):
-    H = DMatrix.sparse(2,2)
+    H = DMatrix(2,2)
     A = DMatrix([[-1,1],[1,1],[1,-2]])
     LBA = DMatrix([ -inf, 2, -inf ])
     UBA = DMatrix([ 1, inf, 4 ])

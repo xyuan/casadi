@@ -564,7 +564,7 @@ namespace casadi {
         hessLag_.evaluate();
 
         // Get results
-        hessLag_.output().get(values, SPARSESYM);
+        hessLag_.output().get(values, SP_SPARSESYM);
 
         if (monitored("eval_h")) {
           cout << "x = " << hessLag_.input(NL_X).data() << endl;
@@ -738,7 +738,7 @@ namespace casadi {
       gradF_.evaluate();
 
       // Get the result
-      gradF_.output().getArray(grad_f, n, DENSE);
+      gradF_.output().getArray(grad_f, n, SP_DENSE);
 
       // Printing
       if (monitored("eval_grad_f")) {
@@ -820,10 +820,10 @@ namespace casadi {
       m = ng_;               // number of constraints
 
       // Get Jacobian sparsity pattern
-      if (nlp_.output(NL_G).size()==0)
+      if (nlp_.output(NL_G).nnz()==0)
         nnz_jac_g = 0;
       else
-        nnz_jac_g = jacG().output().size();
+        nnz_jac_g = jacG().output().nnz();
 
       // Get Hessian sparsity pattern
       if (exact_hessian_)

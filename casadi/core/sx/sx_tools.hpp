@@ -41,11 +41,6 @@ namespace casadi {
 \ingroup expression_tools
 @{
 */
-  /// \cond INTERNAL
-  /** \brief  Simplify the expression: formulates the expression as and eliminates terms */
-  inline void simplify(SXElement& ex) { ex = ex.zz_simplify();}
-  /// \endcond
-
   /** \brief Evaluate an SX graph numerically
    * Note: this is not efficient. For critical parts (loops) of your code, always use SXFunction.
    */
@@ -83,9 +78,6 @@ namespace casadi {
   */
   inline SX pw_lin(const SX &t, const SX &tval, const SX &val) { return t.zz_pw_lin(tval, val);}
 
-  inline SX if_else(const SX &cond, const SX &if_true, const SX &if_false) {
-    return cond.zz_if_else(if_true, if_false);
-  }
   /**  \brief Heaviside function
    *
    * \f[
@@ -146,9 +138,6 @@ namespace casadi {
                              int order=5, const SX& w=SX()) {
     return f.zz_gauss_quadrature(x, a, b, order, w);
   }
-
-  /** \brief  Simplify an expression */
-  inline void simplify(SX &ex) { ex = ex.zz_simplify();}
 
   /** \brief  Substitute variable v with expression vdef in an expression ex */
   inline SX substitute(const SX& ex, const SX& v, const SX& vdef) {

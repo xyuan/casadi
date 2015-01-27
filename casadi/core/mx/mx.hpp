@@ -56,19 +56,28 @@ namespace casadi {
       \date 2010-2011
   */
   class CASADI_EXPORT MX : public GenericExpression<MX>,
-                                public GenericMatrix<MX>,
-                                public SharedObject {
+                           public GenericMatrix<MX>,
+                           public SharedObject {
   public:
 
     /** \brief  Default constructor */
     MX();
 
-    ///@{
-    /** \brief Construct constant matrix with a given sparsity */
-    MX(const Sparsity& sp, int val=0);
-    MX(const Sparsity& sp, double val);
+    /** \brief Create a sparse matrix with all structural zeros */
+    MX(int nrow, int ncol);
+
+#ifndef SWIG
+    /** \brief Create a sparse matrix with all structural zeros */
+    explicit MX(const std::pair<int, int>& rc);
+#endif // SWIG
+
+    /** \brief Sparse matrix with a given sparsity and zero entries
+        Same as MX::zeros(sparsity)
+     */
+    explicit MX(const Sparsity& sp);
+
+    /** \brief Construct matrix with a given sparsity and nonzeros */
     MX(const Sparsity& sp, const MX& val);
-    ///@}
 
     /** \brief  Create scalar constant (also implicit type conversion) */
     MX(double x);
@@ -133,12 +142,12 @@ namespace casadi {
 
     MX operator-() const;
 
+    /// Get the non-zero elements
+    MX nonzeros() const;
+
 #ifndef SWIG
     /// \cond INTERNAL
     ///@{
-    /// Const access the non-zero elements (dummy implementation)
-    const MX& data() const { return *this; }
-
     /** \brief  Access a member of the node */
     MXNode* operator->();
 
@@ -387,7 +396,7 @@ namespace casadi {
     MX zz_norm_inf() const;
     MX zz_mtimes(const MX& y) const;
     MX zz_mtimes(const MX& y, const MX& z) const;
-    void zz_simplify();
+    MX zz_simplify() const;
     MX zz_reshape(int nrow, int ncol) const;
     MX zz_reshape(const Sparsity& sp) const;
     MX zz_vecNZ() const;
@@ -396,7 +405,6 @@ namespace casadi {
     MX zz_trace() const;
     MX zz_repmat(const Sparsity& sp) const;
     MX zz_repmat(int n, int m=1) const;
-    MX zz_dense() const;
     static MX zz_createParent(std::vector<MX> &deps);
     static MX zz_createParent(const std::vector<Sparsity> &deps, std::vector<MX>& children);
     static MX zz_createParent(const std::vector<MX> &deps, std::vector<MX>& children);
@@ -488,6 +496,9 @@ namespace casadi {
     static bool testCast(const SharedObjectNode* ptr);
 
 #ifndef SWIG
+    /// Construct constant matrix with a given sparsity and all
+    MX(const Sparsity& sp, int val, bool dummy);
+    MX(const Sparsity& sp, double val, bool dummy);
   private:
 
     /// Create an expression from a node: extra dummy arguments to avoid ambiguity for 0/NULL

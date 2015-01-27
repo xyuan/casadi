@@ -193,7 +193,7 @@ class Functiontests(casadiTestCase):
 
     f = SXFunction([x],[x])
     f.init()
-    A = DMatrix.sparse(1,1)
+    A = DMatrix(1,1)
     #self.assertRaises(RuntimeError,lambda : f.getFwdSeed(A,0)) # This is now o.k. syntax
     B = repmat(DMatrix(2),1,2)
     #self.assertRaises(RuntimeError,lambda : f.getFwdSeed(A,0)) # This is now o.k. syntax
@@ -253,12 +253,12 @@ class Functiontests(casadiTestCase):
   
     x = SX.sym("x")
     
-    self.assertEqual(jacobian(5,x).size(),0)
+    self.assertEqual(jacobian(5,x).nnz(),0)
     
     
     def test(sp):
       x = SX.sym("x",sp.size2())
-      sp2 = jacobian(mul(DMatrix(sp,1),x),x).sparsity()
+      sp2 = jacobian(mul(DMatrix.ones(sp),x),x).sparsity()
       self.checkarray(sp.row(),sp2.row());
       self.checkarray(sp.colind(),sp2.colind());   
 
@@ -277,7 +277,7 @@ class Functiontests(casadiTestCase):
       b = Sparsity.band(i,-1) + Sparsity.band(i,1)
       test(b + Sparsity.rowcol([0],[5],i,i))
       
-    m = IMatrix(Sparsity.diag(129),1)
+    m = IMatrix.ones(Sparsity.diag(129))
     m[:50,0] = 1
     m[60:,0] = 1
     m[6:9,6] = 1
@@ -288,7 +288,7 @@ class Functiontests(casadiTestCase):
     test(sp)
     #test(sp.T)
     
-    m = IMatrix(Sparsity.diag(64),1)
+    m = IMatrix.ones(Sparsity.diag(64))
     m[:50,0] = 1
     m[60:,0] = 1
 
@@ -321,18 +321,18 @@ class Functiontests(casadiTestCase):
         
         random.seed(0)
         
-        I = IMatrix(sp,1)
+        I = IMatrix.ones(sp)
         for i in range(n):
           for j in range(m):
             if random.random()<0.5:
               I[i,j] = 0
-        I = sparse(I)
+        I = sparsify(I)
         
         sp_holes = I.sparsity()
         
         test(sp_holes)
         
-        z = IMatrix.sparse(sp_holes.shape)
+        z = IMatrix(sp_holes.size1(), sp_holes.size2())
         
         R = 5
         v = []
@@ -349,7 +349,7 @@ class Functiontests(casadiTestCase):
     def test(sp):
       x = SX.sym("x",sp.size2())
       self.assertTrue(sp==sp.T)
-      f = SXFunction([x],[mul([x.T,DMatrix(sp,1),x])])
+      f = SXFunction([x],[mul([x.T,DMatrix.ones(sp),x])])
       f.init()
       J = f.hessian()
       J.init()
@@ -358,31 +358,31 @@ class Functiontests(casadiTestCase):
       self.checkarray(sp.colind(),sp2.colind())
       
     A = IMatrix([[1,1,0,0,0,0],[1,1,1,0,1,1],[0,1,1,1,0,0],[0,0,1,1,0,1],[0,1,0,0,1,0],[0,1,0,1,0,1]])
-    A = sparse(A)
+    A = sparsify(A)
     C = A.sparsity()
     
     test(C)
     
     A = IMatrix([[1,0,0,0,0,0],[0,1,1,0,1,1],[0,1,1,1,0,0],[0,0,1,1,0,1],[0,1,0,0,1,0],[0,1,0,1,0,1]])
-    A = sparse(A)
+    A = sparsify(A)
     C = A.sparsity()
     
     test(C)
     
     A = IMatrix([[1,0,0,0,0,0],[0,1,0,0,1,1],[0,0,1,1,0,0],[0,0,1,1,0,1],[0,1,0,0,1,0],[0,1,0,1,0,1]])
-    A = sparse(A)
+    A = sparsify(A)
     C = A.sparsity()
       
     test(C)
 
     A = IMatrix([[0,0,0,0,0,0],[0,1,0,0,1,1],[0,0,1,1,0,0],[0,0,1,1,0,1],[0,1,0,0,1,0],[0,1,0,1,0,1]])
-    A = sparse(A)
+    A = sparsify(A)
     C = A.sparsity()
       
     test(C)
 
     A = IMatrix([[0,0,0,0,0,0],[0,1,0,0,1,0],[0,0,1,1,0,0],[0,0,1,1,0,1],[0,1,0,0,1,0],[0,0,0,1,0,1]])
-    A = sparse(A)
+    A = sparsify(A)
     C = A.sparsity()
       
     test(C)
@@ -409,19 +409,19 @@ class Functiontests(casadiTestCase):
         
       random.seed(0)
       
-      I = IMatrix(sp,1)
+      I = IMatrix.ones(sp)
       for ii in range(i):
         for jj in range(i):
           if random.random()<0.5:
             I[ii,jj] = 0
             I[jj,ii] = 0
-      I = sparse(I)
+      I = sparsify(I)
       
       sp_holes = I.sparsity()
       
       test(sp_holes)
       
-      z = IMatrix.sparse(sp_holes.shape)
+      z = IMatrix(sp_holes.size1(), sp_holes.size2())
       
       R = 5
       v = []
@@ -1020,7 +1020,7 @@ class Functiontests(casadiTestCase):
     J.init()
     J.evaluate()
     
-    self.assertEqual(J.output().size(),4)
+    self.assertEqual(J.output().nnz(),4)
     
     f = MXFunction([x],[x])
     f.init()
@@ -1030,7 +1030,7 @@ class Functiontests(casadiTestCase):
     J.init()
     J.evaluate()
     
-    self.assertEqual(J.output().size(),16)
+    self.assertEqual(J.output().nnz(),16)
       
   def test_setjacobian(self):
     x = MX.sym("x")
@@ -1117,7 +1117,7 @@ class Functiontests(casadiTestCase):
     def dummy_jac(f):
       f.setOutput(1,1)
 
-    foo_jac = CustomFunction(dummy_jac, [x.sparsity()], [Sparsity.sparse(1,1),Sparsity.dense(1,1)] )
+    foo_jac = CustomFunction(dummy_jac, [x.sparsity()], [Sparsity(1,1),Sparsity.dense(1,1)] )
     foo_jac.setOption("name","foo_jac")
     foo_jac.init()
     foo.setFullJacobian(foo_jac)

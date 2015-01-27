@@ -106,10 +106,12 @@ MatType nullspace(const MatType& A);
 MatType polyval(const MatType& p, const MatType& x);
 MatType diag(const MatType &A);
 MatType unite(const MatType& A, const MatType& B);
-MatType dense(const MatType& x); // TODO: rename to 'densify'
+MatType densify(const MatType& x);
 MatType repmat(const MatType &A, int n, int m=1);
 MatType repmat(const MatType &A, const std::pair<int, int>& rc);
 MatType repmat(const MatType &A, const Sparsity& sp);
+MatType simplify(const MatType &x);
+MatType if_else(const MatType &cond, const MatType &if_true, const MatType &if_false);
 %enddef
 
 %define MATRIX_DECL(MatType...)
@@ -121,7 +123,6 @@ void qr(const MatType& A, MatType& OUTPUT, MatType& OUTPUT);
 //MatType any(const MatType &x);
 MatType project(const MatType& A, const Sparsity& sp);
 MatType sparsify(const MatType& A, double tol=0);
-MatType sparse(const MatType& A, double tol=0); // TODO: Remove
 %enddef
 
 %define GENERIC_MATRIX_TOOLS_TEMPLATES(MatType...)

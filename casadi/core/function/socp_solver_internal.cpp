@@ -76,11 +76,11 @@ namespace casadi {
 
     // Input arguments
     setNumInputs(SOCP_SOLVER_NUM_IN);
-    input(SOCP_SOLVER_G) = DMatrix(G, 0);
+    input(SOCP_SOLVER_G) = DMatrix::zeros(G);
     input(SOCP_SOLVER_H) = DMatrix::zeros(N_, 1);
     input(SOCP_SOLVER_E) = DMatrix::zeros(n_*m_, 1);
     input(SOCP_SOLVER_F) = DMatrix::zeros(m_, 1);
-    input(SOCP_SOLVER_A) = DMatrix(A, 0);
+    input(SOCP_SOLVER_A) = DMatrix::zeros(A);
     input(SOCP_SOLVER_C) = DMatrix::zeros(n_);
     input(SOCP_SOLVER_LBX) = -DMatrix::inf(n_);
     input(SOCP_SOLVER_UBX) = DMatrix::inf(n_);
@@ -126,13 +126,13 @@ namespace casadi {
 
 
   void SocpSolverInternal::checkInputs() const {
-    for (int i=0;i<input(SOCP_SOLVER_LBX).size();++i) {
+    for (int i=0;i<input(SOCP_SOLVER_LBX).nnz();++i) {
       casadi_assert_message(input(SOCP_SOLVER_LBX).at(i)<=input(SOCP_SOLVER_UBX).at(i),
                             "LBX[i] <= UBX[i] was violated for i=" << i
                             << ". Got LBX[i]=" << input(SOCP_SOLVER_LBX).at(i)
                             << " and UBX[i]=" << input(SOCP_SOLVER_UBX).at(i));
     }
-    for (int i=0;i<input(SOCP_SOLVER_LBA).size();++i) {
+    for (int i=0;i<input(SOCP_SOLVER_LBA).nnz();++i) {
       casadi_assert_message(input(SOCP_SOLVER_LBA).at(i)<=input(SOCP_SOLVER_UBA).at(i),
                             "LBA[i] <= UBA[i] was violated for i=" << i
                             << ". Got LBA[i]=" << input(SOCP_SOLVER_LBA).at(i)

@@ -71,7 +71,7 @@ namespace casadi {
     // Call the init method of the base class
     LinearSolverInternal::init();
 
-    AT_.nzmax = input().size();  // maximum number of entries
+    AT_.nzmax = input().nnz();  // maximum number of entries
     AT_.m = input().size1(); // number of cols
     AT_.n = input().size2(); // number of rows
     AT_.p = const_cast<int*>(&input().colind().front()); // row pointers (size n+1)
@@ -138,7 +138,7 @@ namespace casadi {
     std::copy(L->i, L->i+nz, row.begin());
     std::vector< double > data(nz);
     std::copy(L->x, L->x+nz, data.begin());
-    DMatrix ret(Sparsity(n, m, colind, row), data);
+    DMatrix ret(Sparsity(n, m, colind, row), data, false);
 
     return transpose? ret.T() : ret;
   }

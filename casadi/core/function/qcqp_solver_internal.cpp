@@ -74,17 +74,17 @@ namespace casadi {
 
     // Input arguments
     setNumInputs(QCQP_SOLVER_NUM_IN);
-    input(QCQP_SOLVER_X0) = DMatrix(x_sparsity, 0);
-    input(QCQP_SOLVER_H) = DMatrix(H);
-    input(QCQP_SOLVER_G) = DMatrix(x_sparsity);
-    input(QCQP_SOLVER_A) = DMatrix(A);
-    input(QCQP_SOLVER_P) = DMatrix(P);
+    input(QCQP_SOLVER_X0) = DMatrix::zeros(x_sparsity);
+    input(QCQP_SOLVER_H) = DMatrix::zeros(H);
+    input(QCQP_SOLVER_G) = DMatrix::zeros(x_sparsity);
+    input(QCQP_SOLVER_A) = DMatrix::zeros(A);
+    input(QCQP_SOLVER_P) = DMatrix::zeros(P);
     input(QCQP_SOLVER_Q) = DMatrix::zeros(nq_*n_, 1);
     input(QCQP_SOLVER_R) = DMatrix::zeros(nq_, 1);
-    input(QCQP_SOLVER_LBA) = DMatrix(bounds_sparsity, -std::numeric_limits<double>::infinity());
-    input(QCQP_SOLVER_UBA) = DMatrix(bounds_sparsity,  std::numeric_limits<double>::infinity());
-    input(QCQP_SOLVER_LBX) = DMatrix(x_sparsity,      -std::numeric_limits<double>::infinity());
-    input(QCQP_SOLVER_UBX) = DMatrix(x_sparsity,       std::numeric_limits<double>::infinity());
+    input(QCQP_SOLVER_LBA) = -DMatrix::inf(bounds_sparsity);
+    input(QCQP_SOLVER_UBA) = DMatrix::inf(bounds_sparsity);
+    input(QCQP_SOLVER_LBX) = -DMatrix::inf(x_sparsity);
+    input(QCQP_SOLVER_UBX) = DMatrix::inf(x_sparsity);
 
     for (int i=0;i<nq_;++i) {
       DMatrix Pi = input(QCQP_SOLVER_P)(ALL, Slice(i*n_, (i+1)*n_));
@@ -121,13 +121,13 @@ namespace casadi {
   }
 
   void QcqpSolverInternal::checkInputs() const {
-    for (int i=0;i<input(QCQP_SOLVER_LBX).size();++i) {
+    for (int i=0;i<input(QCQP_SOLVER_LBX).nnz();++i) {
       casadi_assert_message(input(QCQP_SOLVER_LBX).at(i)<=input(QCQP_SOLVER_UBX).at(i),
                             "LBX[i] <= UBX[i] was violated for i=" << i
                             << ". Got LBX[i]=" << input(QCQP_SOLVER_LBX).at(i)
                             << " and UBX[i]=" << input(QCQP_SOLVER_UBX).at(i));
     }
-    for (int i=0;i<input(QCQP_SOLVER_LBA).size();++i) {
+    for (int i=0;i<input(QCQP_SOLVER_LBA).nnz();++i) {
       casadi_assert_message(input(QCQP_SOLVER_LBA).at(i)<=input(QCQP_SOLVER_UBA).at(i),
                             "LBA[i] <= UBA[i] was violated for i=" << i
                             << ". Got LBA[i]=" << input(QCQP_SOLVER_LBA).at(i)

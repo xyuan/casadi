@@ -123,7 +123,7 @@ namespace casadi {
     Sparsity H_sparsity = exact_hessian_ ? hessLag().output().sparsity()
         : Sparsity::dense(nx_, nx_);
     H_sparsity = H_sparsity + Sparsity::diag(nx_);
-    Sparsity A_sparsity = jacG().isNull() ? Sparsity::sparse(0, nx_)
+    Sparsity A_sparsity = jacG().isNull() ? Sparsity(0, nx_)
         : jacG().output().sparsity();
 
     std::string qp_solver_name = getOption("qp_solver");
@@ -223,8 +223,8 @@ namespace casadi {
       cout << endl;
       cout << "Number of variables:                       " << setw(9) << nx_ << endl;
       cout << "Number of constraints:                     " << setw(9) << ng_ << endl;
-      cout << "Number of nonzeros in constraint Jacobian: " << setw(9) << A_sparsity.size() << endl;
-      cout << "Number of nonzeros in Lagrangian Hessian:  " << setw(9) << H_sparsity.size() << endl;
+      cout << "Number of nonzeros in constraint Jacobian: " << setw(9) << A_sparsity.nnz() << endl;
+      cout << "Number of nonzeros in Lagrangian Hessian:  " << setw(9) << H_sparsity.nnz() << endl;
       cout << endl;
     }
   }
@@ -776,7 +776,7 @@ namespace casadi {
       nlp_.evaluate();
 
       // Ge the result
-      nlp_.output(NL_G).get(g, DENSE);
+      nlp_.output(NL_G).get(g, SP_DENSE);
 
       // Printing
       if (monitored("eval_g")) {
@@ -812,7 +812,7 @@ namespace casadi {
       jacG.evaluate();
 
       // Get the output
-      jacG.output(1+NL_G).get(g, DENSE);
+      jacG.output(1+NL_G).get(g, SP_DENSE);
       jacG.output().get(J);
 
       if (monitored("eval_jac_g")) {
@@ -848,7 +848,7 @@ namespace casadi {
       gradF.evaluate();
 
       // Get the result
-      gradF.output().get(grad_f, DENSE);
+      gradF.output().get(grad_f, SP_DENSE);
       gradF.output(1+NL_X).get(f);
 
       // Printing

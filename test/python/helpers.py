@@ -136,8 +136,8 @@ class casadiTestCase(unittest.TestCase):
     if sparsity < 1:
       spp = self.randDMatrix(n,m,sparsity=1,valuegenerator=lambda : random.uniform(0,1) ,symm=symm)
       spm = (spp < sparsity)
-      spm = sparse(spm)
-      ret = DMatrix(spm.sparsity(),[valuegenerator() for i in range(spm.size())])
+      spm = sparsify(spm)
+      ret = DMatrix(spm.sparsity(),array([valuegenerator() for i in range(spm.nnz())]))
       if symm:
         return (ret + ret.T)/2
       else:
@@ -416,15 +416,15 @@ class casadiTestCase(unittest.TestCase):
       def remove_first(x):
         ret = DMatrix(x)
         if ret.numel()>0:
-          ret[0,0] = DMatrix.sparse(1,1)
+          ret[0,0] = DMatrix(1,1)
           return ret
         else:
           return ret
 
       def remove_last(x):
         ret = DMatrix(x)
-        if ret.size()>0:
-          ret[ret.sparsity().row()[-1],ret.sparsity().getCol()[-1]] = DMatrix.sparse(1,1)
+        if ret.nnz()>0:
+          ret[ret.sparsity().row()[-1],ret.sparsity().getCol()[-1]] = DMatrix(1,1)
           return ret
         else:
           return x
@@ -469,7 +469,7 @@ class casadiTestCase(unittest.TestCase):
           # Complete random seeding
           random.seed(1)
           for i in range(f.getNumInputs(),vf.getNumInputs()):
-            vf.setInput(DMatrix(vf.getInput(i).sparsity(),random.random(vf.getInput(i).size())),i)
+            vf.setInput(DMatrix(vf.getInput(i).sparsity(),random.random(vf.getInput(i).nnz())),i)
           
           vf.evaluate()
           storagekey = (spmod,spmod2)
@@ -499,7 +499,7 @@ class casadiTestCase(unittest.TestCase):
             
               random.seed(1)
               for i in range(f.getNumInputs(),vf2.getNumInputs()):
-                vf2.setInput(DMatrix(vf2.getInput(i).sparsity(),random.random(vf2.getInput(i).size())),i)
+                vf2.setInput(DMatrix(vf2.getInput(i).sparsity(),random.random(vf2.getInput(i).nnz())),i)
               
               vf2.evaluate()
               storagekey = (spmod,spmod2)
@@ -512,8 +512,8 @@ class casadiTestCase(unittest.TestCase):
         for stk,st in store.items():
           for i in range(len(st)-1):
             for k,(a,b) in enumerate(zip(st[0],st[i+1])):
-              if b.numel()==0 and sparse(a).size()==0: continue
-              if a.numel()==0 and sparse(b).size()==0: continue
+              if b.numel()==0 and sparsify(a).nnz()==0: continue
+              if a.numel()==0 and sparsify(b).nnz()==0: continue
               #self.checkarray(IMatrix(a.sparsity(),1),IMatrix(b.sparsity(),1),("%s, output(%d)" % (order,k))+str(vf.getInput(0))+failmessage,digits=digits_sens)
               self.checkarray(a,b,("%s, output(%d)" % (order,k))+str(vf.getInput(0))+failmessage,digits=digits_sens)
               

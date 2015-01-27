@@ -83,14 +83,14 @@ void SymbolicNLP::parseNL(const std::string& filename, const Dictionary& options
   g = SX::zeros(n_con);
 
   // Allocate bounds for x and primal initial guess
-  x_lb = DMatrix(x.sparsity(), -numeric_limits<double>::infinity());
-  x_ub = DMatrix(x.sparsity(), numeric_limits<double>::infinity());
-  x_init = DMatrix(x.sparsity(), 0.0);
+  x_lb = -DMatrix::inf(x.sparsity());
+  x_ub = DMatrix::inf(x.sparsity());
+  x_init = DMatrix::zeros(x.sparsity());
 
   // Allocate bounds for g and dual initial guess
-  g_lb = DMatrix(g.sparsity(), -numeric_limits<double>::infinity());
-  g_ub = DMatrix(g.sparsity(), numeric_limits<double>::infinity());
-  lambda_init = DMatrix(g.sparsity(), 0.0);
+  g_lb = -DMatrix::inf(g.sparsity());
+  g_ub = DMatrix::inf(g.sparsity());
+  lambda_init = DMatrix::zeros(g.sparsity());
 
   // All variables, including dependent
   vector<SXElement> v = x.data();
@@ -592,13 +592,13 @@ SXElement SymbolicNLP::readExpressionNL(std::istream &stream, const std::vector<
 void SymbolicNLP::print(std::ostream &stream, bool trailing_newline) const {
   stream << "NLP:" << endl;
   stream << "x = " << x << endl;
-  stream << "#f=" << f.size() << endl;
-  stream << "#g=" << g.size() << endl;
+  stream << "#f=" << f.nnz() << endl;
+  stream << "#g=" << g.nnz() << endl;
   if (trailing_newline) stream << endl;
 }
 
 void SymbolicNLP::repr(std::ostream &stream, bool trailing_newline) const {
-  stream << "NLP(#f=" << f.size() << ",#g="<< g.size() << ")";
+  stream << "NLP(#f=" << f.nnz() << ",#g="<< g.nnz() << ")";
   if (trailing_newline) stream << endl;
 }
 

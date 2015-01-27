@@ -51,19 +51,19 @@ class SDPtests(casadiTestCase):
     self.message("memleak1")
     # Originates from http://sdpa.indsys.chuo-u.ac.jp/sdpa/files/sdpa-c.6.2.0.manual.pdf
     
-    A = DMatrix.sparse(0,3)
+    A = DMatrix(0,3)
     
     c = DMatrix([48,-8,20])
 
     F = -horzcat([DMatrix([[10,4],[4,0]]),DMatrix([[0,0],[0,-8]]),DMatrix([[0,-8],[-8,-2]])])
 
-    F = sparse(F)
+    F = sparsify(F)
 
     print F
 
     G = -DMatrix([[-11,0],[0,23]])
 
-    G = sparse(G)
+    G = sparsify(G)
     
     for sdpsolver, sdp_options in sdpsolvers:
       sdp = SdpSolver(sdpsolver,sdpStruct(a=A.sparsity(),g=G.sparsity(),f=F.sparsity()))
@@ -71,17 +71,17 @@ class SDPtests(casadiTestCase):
   def test_memleak2(self):
     # Originates from http://sdpa.indsys.chuo-u.ac.jp/sdpa/files/sdpa-c.6.2.0.manual.pdf
     
-    A = DMatrix.sparse(0,3)
+    A = DMatrix(0,3)
     
     c = DMatrix([48,-8,20])
 
     F = -horzcat([DMatrix([[10,4],[4,0]]),DMatrix([[0,0],[0,-8]]),DMatrix([[0,-8],[-8,-2]])])
-    F = sparse(F)
+    F = sparsify(F)
 
     print F
 
     G = -DMatrix([[-11,0],[0,23]])
-    G = sparse(G)
+    G = sparsify(G)
 
     for sdpsolver, sdp_options in sdpsolvers:
       sdp = SdpSolver(sdpsolver,sdpStruct(a=A.sparsity(),g=G.sparsity(),f=F.sparsity()))
@@ -110,7 +110,7 @@ class SDPtests(casadiTestCase):
   def test_simple_sdp_A(self):
     self.message("scalar")
     
-    A = DMatrix.sparse(0,1)
+    A = DMatrix(0,1)
      
     #
     # min  x
@@ -146,7 +146,7 @@ class SDPtests(casadiTestCase):
   def test_simple_sdp(self):
     self.message("scalar")
     
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
      
     #
     # min  2*x+y
@@ -188,7 +188,7 @@ class SDPtests(casadiTestCase):
   def test_scalar(self):
     self.message("scalar")
     
-    A = DMatrix.sparse(0,1)
+    A = DMatrix(0,1)
      
     #
     # min  n1*x
@@ -204,7 +204,7 @@ class SDPtests(casadiTestCase):
     c = DMatrix(n1)
     Fi = [DMatrix(n3)]
     F = -horzcat(Fi)
-    F = sparse(F)
+    F = sparsify(F)
     G = -DMatrix(n2)
     for sdpsolver, sdp_options in sdpsolvers:
       sdp = SdpSolver(sdpsolver,sdpStruct(a=A.sparsity(),g=G.sparsity(),f=F.sparsity()))
@@ -225,7 +225,7 @@ class SDPtests(casadiTestCase):
 
   def test_linear_equality(self):
   
-    A = DMatrix.sparse(0,1)
+    A = DMatrix(0,1)
     self.message("linear equality")
     
     #  min   n1*x
@@ -271,7 +271,7 @@ class SDPtests(casadiTestCase):
     #                 
     #  solution: x0=1, x1=0
     
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
     
     c = DMatrix([2,3])
     Fi = [ diagcat([1,1,0]), diagcat([1,0,1])]
@@ -306,7 +306,7 @@ class SDPtests(casadiTestCase):
     #                 
     #  solution: x0=1, x1=0
     
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
     
     c = DMatrix([2,3])
     Fi = [ diagcat([1]), diagcat([1])]
@@ -395,7 +395,7 @@ class SDPtests(casadiTestCase):
   def test_linear_interpolation2(self):
     self.message("linear interpolation2")
 
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
      
     #  min     2*x0 + 3*x1
     #   x0,x1
@@ -428,7 +428,7 @@ class SDPtests(casadiTestCase):
   def test_linear_interpolation(self):
     self.message("linear interpolation")
     
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
     
     #  min  2*a + (1-a)*4
     #   a
@@ -472,17 +472,17 @@ class SDPtests(casadiTestCase):
     # Originates from http://sdpa.indsys.chuo-u.ac.jp/sdpa/files/sdpa-c.6.2.0.manual.pdf
     c = DMatrix([48,-8,20])
     
-    A = DMatrix.sparse(0,3)
+    A = DMatrix(0,3)
     
     Fi = [-DMatrix([[10,4],[4,0]]),-DMatrix([[0,0],[0,-8]]),-DMatrix([[0,-8],[-8,-2]])]
 
     F = horzcat(Fi)
-    F = sparse(F)
+    F = sparsify(F)
 
     print F
 
     G = -DMatrix([[-11,0],[0,23]])
-    G = sparse(G)
+    G = sparsify(G)
 
     for sdpsolver, sdp_options in sdpsolvers:
       sdp = SdpSolver(sdpsolver,sdpStruct(a=A.sparsity(),g=G.sparsity(),f=F.sparsity()))
@@ -509,7 +509,7 @@ class SDPtests(casadiTestCase):
         
       V = struct_symSX([
             entry("L",shape=G.shape),
-            entry("x",shape=c.size())
+            entry("x",shape=c.nnz())
           ])
       L = V["L"]
       x = V["x"] 
@@ -541,7 +541,7 @@ class SDPtests(casadiTestCase):
     # Originates from http://sdpa.indsys.chuo-u.ac.jp/sdpa/files/sdpa-c.6.2.0.manual.pdf
     c = DMatrix([1.1, -10, 6.6 , 19 , 4.1])
 
-    A = DMatrix.sparse(0,5)
+    A = DMatrix(0,5)
 
     G = -diagcat([DMatrix([[-1.4,-3.2],[-3.2,-28]]),DMatrix([[15,-12,2.1],[-12,16,-3.8],[2.1,-3.8,15]]),1.8,-4.0]);
     
@@ -554,7 +554,7 @@ class SDPtests(casadiTestCase):
   [-6.5,-5.4,-5.4,-6.6,6.7,-7.2,-3.6,-7.2,7.3,-3.0,-3.6,-3.0,-1.4,6.1,-1.5]]
 
     F = -horzcat([DMatrix(sp,data) for data in flatdata])
-    F = sparse(F)
+    F = sparsify(F)
 
 
     for sdpsolver, sdp_options in sdpsolvers:
@@ -579,7 +579,7 @@ class SDPtests(casadiTestCase):
     self.message("Example2_permuted")
     # Originates from http://sdpa.indsys.chuo-u.ac.jp/sdpa/files/sdpa-c.6.2.0.manual.pdf
     
-    A = DMatrix.sparse(0,5)
+    A = DMatrix(0,5)
     c = DMatrix([1.1, -10, 6.6 , 19 , 4.1])
 
     perm = [5,2,1,0,6,3,4]
@@ -596,7 +596,7 @@ class SDPtests(casadiTestCase):
   [-6.5,-5.4,-5.4,-6.6,6.7,-7.2,-3.6,-7.2,7.3,-3.0,-3.6,-3.0,-1.4,6.1,-1.5]]
 
     F = -horzcat([DMatrix(sp,data)[perm,perm] for data in flatdata])
-    F = sparse(F)
+    F = sparsify(F)
     
     G = G[perm,perm]
     for sdpsolver, sdp_options in sdpsolvers:
@@ -620,7 +620,7 @@ class SDPtests(casadiTestCase):
   def test_simple_sdqp(self):
     self.message("scalar")
     
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
      
     #  active
     #
@@ -666,7 +666,7 @@ class SDPtests(casadiTestCase):
   def test_simple_sdqp_inactive(self):
     self.message("scalar")
     
-    A = DMatrix.sparse(0,2)
+    A = DMatrix(0,2)
      
     #  inactive
     #

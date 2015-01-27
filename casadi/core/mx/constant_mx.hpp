@@ -156,7 +156,7 @@ namespace casadi {
   class CASADI_EXPORT ZeroByZero : public ConstantMX {
   private:
     /** \brief Private constructor (singleton design pattern) */
-    explicit ZeroByZero() : ConstantMX(Sparsity::sparse(0, 0)) {
+    explicit ZeroByZero() : ConstantMX(Sparsity(0, 0)) {
       initSingleton();
     }
 
@@ -274,7 +274,7 @@ namespace casadi {
 
     /// Get the value (only for constant nodes)
     virtual Matrix<double> getMatrixValue() const {
-      return Matrix<double>(sparsity(), v_.value);
+      return Matrix<double>(sparsity(), v_.value, false);
     }
 
     /// Get densification
@@ -323,7 +323,7 @@ namespace casadi {
     for (std::vector<MX>::const_iterator i=x.begin()+1; i!=x.end(); ++i) {
       sp.appendColumns(i->sparsity());
     }
-    return MX(sp, v_.value);
+    return MX(sp, v_.value, false);
   }
 
   template<typename Value>
@@ -341,7 +341,7 @@ namespace casadi {
     for (std::vector<MX>::const_iterator i=x.begin()+1; i!=x.end(); ++i) {
       sp.append(i->sparsity());
     }
-    return MX(sp, v_.value);
+    return MX(sp, v_.value, false);
   }
 
   template<typename Value>
@@ -364,14 +364,15 @@ namespace casadi {
     } else {
       if (v_.value==0) {
         if (isZero() && operation_checker<F0XChecker>(op)) {
-          return MX(sparsity(), ret);
+          return MX(sparsity(), ret, false);
         } else {
           return repmat(MX(ret), size1(), size2());
         }
       }
       double ret2;
       casadi_math<double>::fun(op, 0, 0.0, ret2);
-      return DMatrix(sparsity(), ret)+DMatrix(sparsity().patternInverse(), ret2);
+      return DMatrix(sparsity(), ret, false)
+        + DMatrix(sparsity().patternInverse(), ret2, false);
     }
   }
 
@@ -381,7 +382,7 @@ namespace casadi {
 
     if (ScX && !operation_checker<Function0Checker>(op)) {
       double ret;
-      casadi_math<double>::fun(op, size()> 0 ? v_.value: 0, 0, ret);
+      casadi_math<double>::fun(op, nnz()> 0 ? v_.value: 0, 0, ret);
 
       if (ret!=0) {
         Sparsity f = Sparsity::dense(y.size1(), y.size2());
@@ -392,7 +393,7 @@ namespace casadi {
       bool grow = true;
       if (y->getOp()==OP_CONST && dynamic_cast<const ConstantDMatrix*>(y.get())==0) {
         double ret;
-        casadi_math<double>::fun(op, 0, y.size()>0 ? y->getValue() : 0, ret);
+        casadi_math<double>::fun(op, 0, y.nnz()>0 ? y->getValue() : 0, ret);
         grow = ret!=0;
       }
       if (grow) {
@@ -429,11 +430,11 @@ namespace casadi {
     // Constant folding
     // NOTE: ugly, should use a function instead of a cast
     if (y->getOp()==OP_CONST && dynamic_cast<const ConstantDMatrix*>(y.get())==0) {
-      double y_value = y.size()>0 ? y->getValue() : 0;
+      double y_value = y.nnz()>0 ? y->getValue() : 0;
       double ret;
-      casadi_math<double>::fun(op, size()> 0 ? v_.value: 0, y_value, ret);
+      casadi_math<double>::fun(op, nnz()> 0 ? v_.value: 0, y_value, ret);
 
-      return MX(y.sparsity(), ret);
+      return MX(y.sparsity(), ret, false);
     }
 
     // Fallback
@@ -459,7 +460,7 @@ namespace casadi {
                                           const std::vector<std::string>& res,
                                           CodeGenerator& gen) const {
     // Copy the constant to the work vector
-    stream << "  for (i=0; i<" << sparsity().size() << "; ++i) ";
+    stream << "  for (i=0; i<" << sparsity().nnz() << "; ++i) ";
     stream << res.at(0) << "[i]=";
     std::ios_base::fmtflags fmtfl = stream.flags(); // get current format flags
     // full precision NOTE: hex better?
@@ -509,7 +510,7 @@ namespace casadi {
   void Constant<Value>::printPart(std::ostream &stream, int part) const {
     if (sparsity().isScalar()) {
       // Print scalar
-      if (sparsity().size()==0) {
+      if (sparsity().nnz()==0) {
         stream << "00";
       } else {
         stream << v_.value;

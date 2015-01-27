@@ -113,7 +113,7 @@ namespace casadi {
     for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
         it!=output_sparsity_.end();
         ++it) {
-      offset_.push_back(offset_.back() + it->size());
+      offset_.push_back(offset_.back() + it->nnz());
     }
   }
 
@@ -166,7 +166,7 @@ namespace casadi {
             v.push_back(*x_i);
             *x_i = MX();
           } else {
-            v.push_back(MX::sparse(output_sparsity_[i].shape()));
+            v.push_back(MX(output_sparsity_[i].shape()));
           }
         }
         adjSens[d][0]->addToSum(horzcat(v));
@@ -186,10 +186,10 @@ namespace casadi {
     for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
         it!=output_sparsity_.end();
         ++it) {
-      offset_.push_back(offset_.back() + it->size());
+      offset_.push_back(offset_.back() + it->nnz());
     }
 
-    casadi_assert_message(offset_.back()==x.size(),
+    casadi_assert_message(offset_.back()==x.nnz(),
       "DiagSplit:: the presence of nonzeros outside the diagonal blocks in unsupported.");
   }
 
@@ -246,7 +246,7 @@ namespace casadi {
             v.push_back(*x_i);
             *x_i = MX();
           } else {
-            v.push_back(MX::sparse(output_sparsity_[i].shape()));
+            v.push_back(MX(output_sparsity_[i].shape()));
           }
         }
         adjSens[d][0]->addToSum(diagcat(v));
@@ -264,7 +264,7 @@ namespace casadi {
     for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
         it!=output_sparsity_.end();
         ++it) {
-      offset_.push_back(offset_.back() + it->size());
+      offset_.push_back(offset_.back() + it->nnz());
     }
   }
 
@@ -317,7 +317,7 @@ namespace casadi {
             v.push_back(*x_i);
             *x_i = MX();
           } else {
-            v.push_back(MX::sparse(output_sparsity_[i].shape()));
+            v.push_back(MX(output_sparsity_[i].shape()));
           }
         }
         adjSens[d][0]->addToSum(vertcat(v));

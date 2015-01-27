@@ -333,7 +333,7 @@ namespace casadi {
             nitmp = std::max(nitmp, ni);
             nrtmp = std::max(nrtmp, nr);
             if (work_[it->res[c]].first.isEmpty()) {
-              work_[it->res[c]].first = Matrix<double>(it->data->sparsity(c), 0);
+              work_[it->res[c]].first = Matrix<double>::zeros(it->data->sparsity(c));
             }
           }
         }
@@ -584,7 +584,7 @@ namespace casadi {
     for (vector<pair<DMatrix, int> >::iterator it=work_.begin(); it!=work_.end(); ++it) {
       //Get a pointer to the int array
       bvec_t *iwork = get_bvec_t(it->first.data());
-      fill_n(iwork, it->first.size(), bvec_t(0));
+      fill_n(iwork, it->first.nnz(), bvec_t(0));
     }
   }
 
@@ -714,7 +714,7 @@ namespace casadi {
     bool skip_fwd = true;
     for (vector<vector<MX> >::const_iterator i=fseed.begin(); i!=fseed.end() && skip_fwd; ++i) {
       for (vector<MX>::const_iterator j=i->begin(); j!=i->end() && skip_fwd; ++j) {
-        if (j->size()>0) {
+        if (j->nnz()>0) {
           skip_fwd = false;
         }
       }
@@ -724,7 +724,7 @@ namespace casadi {
     bool skip_adj = true;
     for (vector<vector<MX> >::const_iterator i=aseed.begin(); i!=aseed.end() && skip_adj; ++i) {
       for (vector<MX>::const_iterator j=i->begin(); j!=i->end() && skip_adj; ++j) {
-        if (j->size()>0) {
+        if (j->nnz()>0) {
           skip_adj = false;
         }
       }
@@ -748,7 +748,7 @@ namespace casadi {
       fsens[d].resize(outputv_.size());
       if (skip_fwd) {
         for (int i=0; i<fsens[d].size(); ++i) {
-          fsens[d][i] = MX::sparse(output(i).shape());
+          fsens[d][i] = MX(output(i).shape());
         }
       }
     }
@@ -762,7 +762,7 @@ namespace casadi {
       asens[d].resize(inputv_.size());
       if (skip_adj) {
         for (int i=0; i<asens[d].size(); ++i) {
-          asens[d][i] = MX::sparse(input(i).shape());
+          asens[d][i] = MX(input(i).shape());
         }
       }
     }
@@ -871,7 +871,7 @@ namespace casadi {
             // Give zero seed if null
             if (el>=0 && dwork[el][d].isEmpty(true)) {
               if (d==0) {
-                dwork[el][d] = MX::sparse(input_p[iind]->shape());
+                dwork[el][d] = MX(input_p[iind]->shape());
               } else {
                 dwork[el][d] = dwork[el][0];
               }
@@ -883,7 +883,7 @@ namespace casadi {
             int el = it->res[oind];
             fsens_p[d][oind] = el<0 ? 0 : &dwork[el][d];
             if (el>=0 && dwork[el][d].isEmpty(true)) {
-              dwork[el][d] = MX::sparse(output_p[oind]->shape());
+              dwork[el][d] = MX(output_p[oind]->shape());
             }
           }
         }
@@ -954,7 +954,7 @@ namespace casadi {
           // Collect the symbolic adjoint sensitivities
           for (int d=0; d<nadir; ++d) {
             if (dwork[it->res.front()][d].isEmpty(true)) {
-              asens[d][it->arg.front()] = MX::sparse(input(it->arg.front()).shape());
+              asens[d][it->arg.front()] = MX(input(it->arg.front()).shape());
             } else {
               asens[d][it->arg.front()] = dwork[it->res.front()][d];
             }
@@ -1001,7 +1001,7 @@ namespace casadi {
 
               // Provide a zero seed if no seed exists
               if (el>=0 && dwork[el][d].isEmpty(true)) {
-                dwork[el][d] = MX::sparse(swork[el].shape());
+                dwork[el][d] = MX(swork[el].shape());
               }
             }
 
@@ -1012,7 +1012,7 @@ namespace casadi {
 
               // Set sensitivities to zero if not yet used
               if (el>=0 && dwork[el][d].isEmpty(true)) {
-                dwork[el][d] = MX::sparse(swork[el].shape());
+                dwork[el][d] = MX(swork[el].shape());
               }
             }
           }
@@ -1221,7 +1221,7 @@ namespace casadi {
 
     // Declare all work variables
     for (int i=0; i<work_.size(); ++i) {
-      stream << "    d a" << i << "[" << work_[i].first.size() << "];" << endl;
+      stream << "    d a" << i << "[" << work_[i].first.nnz() << "];" << endl;
     }
 
     // Finalize work structure
@@ -1290,9 +1290,9 @@ namespace casadi {
 
       // Print the operation
       if (it->op==OP_OUTPUT) {
-        gen.copyVector(stream, arg.front(), output(it->res.front()).size(), res.front(), "i", true);
+        gen.copyVector(stream, arg.front(), output(it->res.front()).nnz(), res.front(), "i", true);
       } else if (it->op==OP_INPUT) {
-        gen.copyVector(stream, arg.front(), input(it->arg.front()).size(), res.front(), "i", false);
+        gen.copyVector(stream, arg.front(), input(it->arg.front()).nnz(), res.front(), "i", false);
       } else {
         it->data->generateOperation(stream, arg, res, gen);
       }

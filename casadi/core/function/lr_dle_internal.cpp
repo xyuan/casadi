@@ -86,7 +86,7 @@ namespace casadi {
     // Default H: unity
     if (H_.isNull() || H_.isEmpty()) {
       //H_ = Sparsity::diag(n);
-      H_ = Sparsity::sparse(0, 0);
+      H_ = Sparsity(0, 0);
       //casadi_assert(Hs_.size()==0);
       with_H_ = false;
     }
@@ -113,7 +113,7 @@ namespace casadi {
 
     with_C_ = true;
     if (C_.isNull()  || C_.isEmpty()) {
-      C_ = Sparsity::sparse(0, 0);
+      C_ = Sparsity(0, 0);
       //C_ = Sparsity::diag(n);
       //st_[Dle_STRUCT_C] = C_;
       with_C_ = false;
@@ -178,7 +178,7 @@ namespace casadi {
       std::vector<Sparsity> sp = diagsplit(Pnew, Hi_);
       for (int k=0;k<Hs_.size();++k) {
         Pv_[k] = DMatrix::zeros(sp[k]);
-        Pi_[k+1] = Pi_[k] + sp[k].size();
+        Pi_[k+1] = Pi_[k] + sp[k].nnz();
       }
     }
 
@@ -205,9 +205,9 @@ namespace casadi {
     }
 
     Sparsity P = mul(mul(C, V), C.T());
-    Sparsity Pprev = Sparsity::sparse(n, n);
+    Sparsity Pprev(n, n);
 
-    while (Pprev.size()!=P.size()) {
+    while (Pprev.nnz()!=P.nnz()) {
       // This can be much improved:
       //   * No need to make C and V grow
       //   * norm_0 instead of constructing P

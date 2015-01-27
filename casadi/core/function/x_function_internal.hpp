@@ -525,9 +525,9 @@ namespace casadi {
                           "Only gradients of scalar functions allowed. Use jacobian instead.");
 
     // Quick return if trivially empty
-    if (input(iind).size()==0 || output(oind).size()==0 ||
-       jacSparsity(iind, oind, true, false).size()==0) {
-      return MatType::sparse(input(iind).shape());
+    if (input(iind).nnz()==0 || output(oind).nnz()==0 ||
+       jacSparsity(iind, oind, true, false).nnz()==0) {
+      return MatType(input(iind).shape());
     }
 
     // Dummy forward seeds and sensitivities
@@ -536,7 +536,11 @@ namespace casadi {
     // Adjoint seeds
     typename std::vector<std::vector<MatType> > aseed(1, std::vector<MatType>(outputv_.size()));
     for (int i=0; i<outputv_.size(); ++i) {
-      aseed[0][i] = MatType(outputv_[i].sparsity(), i==oind ? 1 : 0);
+      if (i==oind) {
+        aseed[0][i] = MatType::ones(outputv_[i].sparsity());
+      } else {
+        aseed[0][i] = MatType::zeros(outputv_[i].sparsity());
+      }
     }
 
     // Adjoint sensitivities
@@ -568,7 +572,11 @@ namespace casadi {
     // Forward seeds
     typename std::vector<std::vector<MatType> > fseed(1, std::vector<MatType>(inputv_.size()));
     for (int i=0; i<inputv_.size(); ++i) {
-      fseed[0][i] = MatType(inputv_[i].sparsity(), i==iind ? 1 : 0);
+      if (i==iind) {
+        fseed[0][i] = MatType::ones(inputv_[i].sparsity());
+      } else {
+        fseed[0][i] = MatType::zeros(inputv_[i].sparsity());
+      }
     }
 
     // Dummy adjoint seeds and sensitivities
@@ -577,7 +585,7 @@ namespace casadi {
     // Forward sensitivities
     std::vector<std::vector<MatType> > fsens(1, std::vector<MatType>(outputv_.size()));
     for (int i=0; i<outputv_.size(); ++i) {
-      fsens[0][i] = MatType(outputv_[i].sparsity());
+      fsens[0][i] = MatType::zeros(outputv_[i].sparsity());
     }
 
     // Calculate with adjoint mode AD
@@ -598,11 +606,11 @@ namespace casadi {
     if (verbose()) std::cout << "XFunctionInternal::jac begin" << std::endl;
 
     // Quick return if trivially empty
-    if (input(iind).size()==0 || output(oind).size()==0) {
+    if (input(iind).nnz()==0 || output(oind).nnz()==0) {
       std::pair<int, int> jac_shape;
-      jac_shape.first = compact ? output(oind).size() : output(oind).numel();
-      jac_shape.second = compact ? input(iind).size() : input(iind).numel();
-      return MatType::sparse(jac_shape);
+      jac_shape.first = compact ? output(oind).nnz() : output(oind).numel();
+      jac_shape.second = compact ? input(iind).nnz() : input(iind).numel();
+      return MatType(jac_shape);
     }
 
     if (symmetric) {
@@ -614,7 +622,7 @@ namespace casadi {
     if (verbose()) std::cout << "XFunctionInternal::jac allocated return value" << std::endl;
 
     // Quick return if empty
-    if (ret.size()==0) {
+    if (ret.nnz()==0) {
       return ret.T();
     }
 
@@ -727,7 +735,7 @@ namespace casadi {
           if (ind==iind) {
             fseed[d][ind] = MatType::ones(Sparsity::triplet(nrow, ncol, seed_row, seed_col));
           } else {
-            fseed[d][ind] = MatType::sparse(nrow, ncol);
+            fseed[d][ind] = MatType(nrow, ncol);
           }
         }
       }
@@ -757,7 +765,7 @@ namespace casadi {
           if (ind==oind) {
             aseed[d][ind] = MatType::ones(Sparsity::triplet(nrow, ncol, seed_row, seed_col));
           } else {
-            aseed[d][ind] = MatType::sparse(nrow, ncol);
+            aseed[d][ind] = MatType(nrow, ncol);
           }
         }
       }
@@ -768,7 +776,7 @@ namespace casadi {
         // initialize to zero
         fsens[d].resize(getNumOutputs());
         for (int oind=0; oind<fsens[d].size(); ++oind) {
-          fsens[d][oind] = MatType(output(oind).sparsity(), 0);
+          fsens[d][oind] = MatType::zeros(output(oind).sparsity());
         }
       }
 
@@ -778,7 +786,7 @@ namespace casadi {
         // initialize to zero
         asens[d].resize(getNumInputs());
         for (int ind=0; ind<asens[d].size(); ++ind) {
-          asens[d][ind] = MatType(input(ind).sparsity(), 0);
+          asens[d][ind] = MatType::zeros(input(ind).sparsity());
         }
       }
 
@@ -792,7 +800,7 @@ namespace casadi {
         // If symmetric, see how many times each output appears
         if (symmetric) {
           // Initialize to zero
-          tmp.resize(output(oind).sparsity().size());
+          tmp.resize(output(oind).sparsity().nnz());
           fill(tmp.begin(), tmp.end(), 0);
 
           // "Multiply" Jacobian sparsity by seed vector
@@ -818,7 +826,7 @@ namespace casadi {
         }
 
         // Assignments to the Jacobian
-        adds.resize(fsens[d][oind].size());
+        adds.resize(fsens[d][oind].nnz());
         fill(adds.begin(), adds.end(), -1);
         if (symmetric) {
           adds2.resize(adds.size());
@@ -1100,7 +1108,7 @@ namespace casadi {
         if (forward) {
           for (int i=0;i<sens[d].size();++i) {
             if (sens[d][i]!=0 && !sens[d][i]->isEmpty(true)) {
-              *sens[d][i]=MatType(sens[d][i]->sparsity(), 0);
+              *sens[d][i]=MatType::zeros(sens[d][i]->sparsity());
             }
           }
         }

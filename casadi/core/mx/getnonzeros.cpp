@@ -262,7 +262,7 @@ namespace casadi {
 
       // Create a sparsity pattern from vectors
       if (r_nz.size()==0) {
-        res = MX::sparse(osp.shape());
+        res = MX(osp.shape());
       } else {
         Sparsity f_sp(osp.size1(), osp.size2(), r_colind, r_row);
         res = arg->getGetNonzeros(f_sp, r_nz);
@@ -333,7 +333,7 @@ namespace casadi {
 
   Matrix<int> GetNonzeros::mapping() const {
     vector<int> nz = getAll();
-    return Matrix<int>(sparsity(), nz);
+    return Matrix<int>(sparsity(), nz, false);
   }
 
   bool GetNonzerosSlice::isIdentity() const {
@@ -344,7 +344,7 @@ namespace casadi {
     // Check if the nonzeros follow in increasing order
     if (s_.start_ != 0) return false;
     if (s_.step_ != 1) return false;
-    if (s_.stop_ != size()) return false;
+    if (s_.stop_ != nnz()) return false;
 
     // True if reached this point
     return true;

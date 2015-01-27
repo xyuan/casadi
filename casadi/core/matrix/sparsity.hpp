@@ -83,7 +83,7 @@ namespace casadi {
    after the corresponding column. All the non-zero elements of a particular i are thus the elements
    with index el that fulfills: colind[i] <= el < colind[i+1].
 
-   2. "row" [same length as the number of non-zero elements, size()] The rows for each of the
+   2. "row" [same length as the number of non-zero elements, nnz()] The rows for each of the
    structural non-zeros.
 
    Note that with this format, it is cheap to loop over all the non-zero elements of a particular
@@ -110,6 +110,14 @@ namespace casadi {
     /// Default constructor
     explicit Sparsity(int dummy=0);
 
+    /** \brief Pattern with all structural zeros */
+    Sparsity(int nrow, int ncol);
+
+#ifndef SWIG
+    /** \brief Create a sparse matrix with all structural zeros */
+    explicit Sparsity(const std::pair<int, int>& rc);
+#endif // SWIG
+
     /// Construct from sparsity pattern vectors given in compressed column storage format
     Sparsity(int nrow, int ncol, const std::vector<int>& colind, const std::vector<int>& row);
 
@@ -121,7 +129,7 @@ namespace casadi {
     /** \brief Create a scalar sparsity pattern **/
     ///@{
     static Sparsity scalar(bool dense_scalar=true)
-    { return dense_scalar ? dense(1, 1) : sparse(1, 1); }
+    { return dense_scalar ? dense(1, 1) : Sparsity(1, 1); }
     ///@}
 
     /** \brief Create a dense rectangular sparsity pattern **/
@@ -130,11 +138,14 @@ namespace casadi {
     static Sparsity dense(const std::pair<int, int> &rc) { return dense(rc.first, rc.second);}
     ///@}
 
-    /** \brief Create a sparse (empty) rectangular sparsity pattern **/
+#if !defined(SWIG) || !defined(SWIGMATLAB)
+    /** \brief Create a sparse (empty) rectangular sparsity pattern
+        DEPRECATED: Use Sparse(nrow, ncol) instead **/
     ///@{
     static Sparsity sparse(int nrow, int ncol=1);
     static Sparsity sparse(const std::pair<int, int> &rc) { return sparse(rc.first, rc.second);}
     ///@}
+#endif // !defined(SWIG) || !defined(SWIGMATLAB)
 
     /** \brief Create the sparsity pattern for a unit vector of length n and a nonzero on
      * position el **/
@@ -261,7 +272,7 @@ namespace casadi {
     int size2() const;
 
     /** \brief The total number of elements, including structural zeros, i.e. size2()*size1()
-        \see size()  */
+        \see nnz()  */
     int numel() const;
 
     /** \brief Check if the sparsity is empty
@@ -273,7 +284,12 @@ namespace casadi {
 
     /** \brief Get the number of (structural) non-zeros
         \see numel() */
-    int size() const;
+    int nnz() const;
+
+    /** \brief DEPRECATED: Alias for nnz
+        \see nnz()
+    */
+    int size() const { return nnz();}
 
     /** \brief Number of non-zeros in the upper triangular half,
      * i.e. the number of elements (i, j) with j>=i */
@@ -452,9 +468,9 @@ namespace casadi {
                                        const std::vector<int>& offset2) const;
     Sparsity zz_mtimes(const Sparsity& y) const {
       if (isScalar()) {
-        return isDense() ? y : Sparsity::sparse(y.shape());
+        return isDense() ? y : Sparsity(y.shape());
       } else if (y.isScalar()) {
-        return y.isDense() ? *this : Sparsity::sparse(shape());
+        return y.isDense() ? *this : Sparsity(shape());
       } else {
         // Check dimensions
         casadi_assert_message(size2()==y.size1(),
@@ -750,13 +766,13 @@ namespace casadi {
   template<typename DataType>
   void Sparsity::set(DataType* data, const DataType* val_data, const Sparsity& val_sp) const {
     // Get dimensions of this
-    const int sz = size();
+    const int sz = nnz();
     const int sz1 = size1();
     const int sz2 = size2();
     const int nel = sz1*sz2;
 
     // Get dimensions of assigning matrix
-    const int val_sz = val_sp.size();
+    const int val_sz = val_sp.nnz();
     const int val_sz1 = val_sp.size1();
     const int val_sz2 = val_sp.size2();
     const int val_nel = val_sz1*val_sz2;
@@ -826,13 +842,13 @@ namespace casadi {
   template<typename DataType>
   void Sparsity::add(DataType* data, const DataType* val_data, const Sparsity& val_sp) const {
     // Get dimensions of this
-    const int sz = size();
+    const int sz = nnz();
     const int sz1 = size1();
     const int sz2 = size2();
     const int nel = sz1*sz2;
 
     // Get dimensions of assigning matrix
-    const int val_sz = val_sp.size();
+    const int val_sz = val_sp.nnz();
     const int val_sz1 = val_sp.size1();
     const int val_sz2 = val_sp.size2();
     const int val_nel = val_sz1*val_sz2;
@@ -907,13 +923,13 @@ namespace casadi {
   template<typename DataType>
   void Sparsity::bor(DataType* data, const DataType* val_data, const Sparsity& val_sp) const {
     // Get dimensions of this
-    const int sz = size();
+    const int sz = nnz();
     const int sz1 = size1();
     const int sz2 = size2();
     const int nel = sz1*sz2;
 
     // Get dimensions of assigning matrix
-    const int val_sz = val_sp.size();
+    const int val_sz = val_sp.nnz();
     const int val_sz1 = val_sp.size1();
     const int val_sz2 = val_sp.size2();
     const int val_nel = val_sz1*val_sz2;
@@ -985,6 +1001,9 @@ namespace casadi {
   }
 
 #endif //SWIG
+
+  /** Sparsity format for getting and setting inputs and outputs */
+  enum SparsityType {SP_SPARSE, SP_SPARSESYM, SP_DENSE, SP_DENSESYM, SP_DENSETRANS};
 
 } // namespace casadi
 

@@ -34,10 +34,6 @@
 #include "sparsity_interface.hpp"
 
 namespace casadi {
-
-  /** Sparsity format for getting and setting inputs and outputs */
-  enum SparsityType {SPARSE, SPARSESYM, DENSE, DENSESYM, DENSETRANS};
-
   /** \brief Matrix base class
 
       This is a common base class for MX and Matrix<>, introducing a uniform syntax and implementing
@@ -72,7 +68,12 @@ namespace casadi {
   public:
 
     /** \brief Get the number of (structural) non-zero elements */
-    int size() const;
+    int nnz() const;
+
+    /** \brief DEPRECATED: Alias for nnz
+        \see nnz()
+    */
+    int size() const { return nnz();}
 
     /** \brief Get the number of non-zeros in the lower triangular half */
     int sizeL() const;
@@ -161,6 +162,11 @@ namespace casadi {
     MatType zz_cross(const MatType &b, int dim=-1) const;
     MatType zz_tril2symm() const;
     MatType zz_triu2symm() const;
+    MatType zz_densify() const {
+      MatType ret = self();
+      ret.makeDense();
+      return ret;
+    }
     /** @}  */
     /// \endcond
 
@@ -327,7 +333,7 @@ namespace casadi {
     }
 
     /** \brief  Make the matrix dense if not already */
-    inline friend MatType dense(const MatType& x) { return x.zz_dense();}
+    inline friend MatType densify(const MatType& x) { return x.zz_densify();}
 
     /** \brief Repeat matrix A n times vertically and m times horizontally */
     inline friend MatType repmat(const MatType &A, int n, int m=1) {
@@ -344,6 +350,21 @@ namespace casadi {
       return A.zz_repmat(sp);
     }
 
+    /** \brief Check if expression depends on the argument
+        The argument must be symbolic
+    */
+    //inline friend bool dependsOn(const MatType& f, const MatType &arg) {
+    //return f.zz_dependsOn(arg);
+    //}
+
+    /** \brief Branching on MX nodes
+        Ternary operator, "cond ? if_true : if_false"
+    */
+    inline friend MatType if_else(const MatType &cond,
+                                  const MatType &if_true,
+                                  const MatType &if_false) {
+      return cond.zz_if_else(if_true, if_false);
+    }
     /** @} */
 
 #endif // !SWIG || DOXYGEN
@@ -390,29 +411,30 @@ namespace casadi {
     }
     ///@}
 
+#if !defined(SWIG) || !defined(SWIGMATLAB)
     ///@{
-    /** \brief Create a sparse matrix with all zeros */
-    static MatType sparse(int nrow=1, int ncol=1) { return MatType(Sparsity::sparse(nrow, ncol));}
-    static MatType sparse(const std::pair<int, int>& rc) { return sparse(rc.first, rc.second);}
+    /** \brief Create a sparse matrix with all zeros 
+        DEPRECATED: Use MatType(nrow, ncol) instead **/
+    static MatType sparse(int nrow=1, int ncol=1) { return MatType(nrow, ncol);}
+    static MatType sparse(const std::pair<int, int>& rc) { return MatType(rc);}
     ///@}
 
-    /** \brief Create a sparse matrix with nonzeros given as a (dense) vector */
-    static MatType sparse(const Sparsity& sp, const MatType& nz) {
-      casadi_assert_message(nz.isVector() && nz.isDense(), "Nonzeros not a dense vector");
-      return MatType(sp, nz.data());
-    }
+    /** \brief Create a sparse matrix with nonzeros given as a (dense) vector 
+        DEPRECATED: Use MatType(Sparsity, nz) instead **/
+    static MatType sparse(const Sparsity& sp, const MatType& nz) { return MatType(sp, nz); }
+#endif // !defined(SWIG) || !defined(SWIGMATLAB)
 
     ///@{
     /** \brief Create a dense matrix or a matrix with specified sparsity with all entries zero */
     static MatType zeros(int nrow=1, int ncol=1) { return zeros(Sparsity::dense(nrow, ncol)); }
-    static MatType zeros(const Sparsity& sp) { return MatType(sp, 0);}
+    static MatType zeros(const Sparsity& sp) { return MatType(sp, 0, false);}
     static MatType zeros(const std::pair<int, int>& rc) { return zeros(rc.first, rc.second);}
     ///@}
 
     ///@{
     /** \brief Create a dense matrix or a matrix with specified sparsity with all entries one */
     static MatType ones(int nrow=1, int ncol=1) { return ones(Sparsity::dense(nrow, ncol)); }
-    static MatType ones(const Sparsity& sp) { return MatType(sp, 1);}
+    static MatType ones(const Sparsity& sp) { return MatType(sp, 1, false);}
     static MatType ones(const std::pair<int, int>& rc) { return ones(rc.first, rc.second);}
     ///@}
   };
@@ -432,8 +454,8 @@ namespace casadi {
   }
 
   template<typename MatType>
-  int GenericMatrix<MatType>::size() const {
-    return sparsity().size();
+  int GenericMatrix<MatType>::nnz() const {
+    return sparsity().nnz();
   }
 
   template<typename MatType>
@@ -483,13 +505,13 @@ namespace casadi {
 
   template<typename MatType>
   int GenericMatrix<MatType>::size(SparsityType sp) const {
-    if (sp==SPARSE) {
-      return size();
-    } else if (sp==SPARSESYM) {
+    if (sp==SP_SPARSE) {
+      return nnz();
+    } else if (sp==SP_SPARSESYM) {
       return sizeU();
-    } else if (sp==DENSE) {
+    } else if (sp==SP_DENSE) {
       return numel();
-    } else if (sp==DENSESYM) {
+    } else if (sp==SP_DENSESYM) {
       return (numel()+size2())/2;
     } else {
       throw CasadiException("Matrix<T>::size(Sparsity): unknown sparsity");

@@ -124,13 +124,21 @@ namespace casadi {
     /// Dense matrix constructor with data given as vector of vectors
     explicit Matrix(const std::vector< std::vector<DataType> >& m);
 
-    ///@{
-    /// Sparse matrix with a given sparsity
-    explicit Matrix(const Sparsity& sparsity, const DataType& val=DataType(0));
-    ///@}
+    /** \brief Create a sparse matrix with all structural zeros */
+    Matrix(int nrow, int ncol);
 
-    /// Sparse matrix with a given sparsity and non-zero elements.
-    Matrix(const Sparsity& sparsity, const std::vector<DataType>& d);
+#ifndef SWIG
+    /** \brief Create a sparse matrix with all structural zeros */
+    explicit Matrix(const std::pair<int, int>& rc);
+#endif // SWIG
+
+    /** \brief Sparse matrix with a given sparsity and zero entries
+        Alias for Matrix::zeros(sparsity)
+     */
+    explicit Matrix(const Sparsity& sp);
+
+    /** \brief Construct matrix with a given sparsity and nonzeros */
+    Matrix(const Sparsity& sp, const Matrix<DataType>& d);
 
     /** \brief Check if the dimensions and colind, row vectors are compatible.
      * \param complete  set to true to also check elementwise
@@ -163,6 +171,7 @@ namespace casadi {
 
     /// Expose base class functions
     using B::size;
+    using B::nnz;
     using B::sizeL;
     using B::sizeU;
     using B::numel;
@@ -179,7 +188,7 @@ namespace casadi {
     using B::row;
     using B::dimString;
     using B::sym;
-    using B::sparse;
+    //using B::sparse;
     using B::zeros;
     using B::ones;
     using B::operator[];
@@ -217,7 +226,7 @@ namespace casadi {
     /** \brief  Create a matrix from a matrix with a different type of matrix entries
      * (assuming that the scalar conversion is valid) */
     template<typename A>
-    Matrix(const Matrix<A>& x) : sparsity_(x.sparsity()), data_(std::vector<DataType>(x.size())) {
+    Matrix(const Matrix<A>& x) : sparsity_(x.sparsity()), data_(std::vector<DataType>(x.nnz())) {
       copy(x.begin(), x.end(), begin());
     }
 
@@ -248,11 +257,11 @@ namespace casadi {
     /// Access a non-zero element
     inline DataType& at(int k) {
       try {
-        if (k<0) k+=size();
+        if (k<0) k+=nnz();
         return data().at(k);
       } catch(std::out_of_range& /* unnamed */) {
         std::stringstream ss;
-        ss << "Out of range error in Matrix<>::at: " << k << " not in range [0, " << size() << ")";
+        ss << "Out of range error in Matrix<>::at: " << k << " not in range [0, " << nnz() << ")";
         throw CasadiException(ss.str());
       }
     }
@@ -260,11 +269,11 @@ namespace casadi {
     /// Access a non-zero element
     DataType at(int k) {
       try {
-        if (k<0) k+=size();
+        if (k<0) k+=nnz();
         return data().at(k);
       } catch(std::out_of_range& /* unnamed */) {
         std::stringstream ss;
-        ss << "Out of range error in Matrix<>::at: " << k << " not in range [0, " << size() << ")";
+        ss << "Out of range error in Matrix<>::at: " << k << " not in range [0, " << nnz() << ")";
         throw CasadiException(ss.str());
       }
     }
@@ -588,7 +597,6 @@ namespace casadi {
     DataType zz_norm_inf_mul_nn(const Matrix<DataType> &y,
                                 std::vector<DataType>& Dwork,
                                 std::vector<int>& Iwork) const;
-    Matrix<DataType> zz_dense() const;
     ///@}
 
     /// \endcond
@@ -674,11 +682,6 @@ namespace casadi {
     inline friend Matrix<DataType> sparsify(const Matrix<DataType>& A, double tol=0) {
       return A.zz_sparsify(tol);
     }
-
-    /** \brief DEPRECATED: alias for sparsify */
-    inline friend Matrix<DataType> sparse(const Matrix<DataType>& A, double tol=0) {
-      return sparsify(A, tol);
-    }
 #endif // !SWIG || DOXYGEN
 /** @} */
 
@@ -758,6 +761,9 @@ namespace casadi {
     /// \endcond
 #endif // SWIG
 
+    /// Get the non-zero elements
+    Matrix<DataType> nonzeros() const { return data();}
+
     /// Const access the sparsity - reference to data member
     const Sparsity& sparsity() const { return sparsity_; }
 
@@ -766,22 +772,22 @@ namespace casadi {
 
     /// \cond INTERNAL
     /** \brief  Set the non-zero elements, scalar */
-    void set(DataType val, SparsityType sp=SPARSE);
+    void set(DataType val, SparsityType sp=SP_SPARSE);
 
     /** \brief  Get the non-zero elements, scalar */
-    void get(DataType& val, SparsityType sp=SPARSE) const;
+    void get(DataType& val, SparsityType sp=SP_SPARSE) const;
 
     /** \brief  Set the non-zero elements, vector */
-    void set(const std::vector<DataType>& val, SparsityType sp=SPARSE);
+    void set(const std::vector<DataType>& val, SparsityType sp=SP_SPARSE);
 
     /** \brief  Get the non-zero elements, vector */
-    void get(std::vector<DataType>& val, SparsityType sp=SPARSE) const;
+    void get(std::vector<DataType>& val, SparsityType sp=SP_SPARSE) const;
 
     /** \brief  Set the non-zero elements, Matrix */
-    void set(const Matrix<DataType>& val, SparsityType sp=SPARSE);
+    void set(const Matrix<DataType>& val, SparsityType sp=SP_SPARSE);
 
     /** \brief  Get the non-zero elements, Matrix */
-    void get(Matrix<DataType>& val, SparsityType sp=SPARSE) const;
+    void get(Matrix<DataType>& val, SparsityType sp=SP_SPARSE) const;
 
 #ifdef SWIG
     %rename(get) getStridedArray;
@@ -789,10 +795,10 @@ namespace casadi {
 #endif
 
     /** \brief  Get the non-zero elements, array */
-    void getArray(DataType* val, int len, SparsityType sp=SPARSE) const;
+    void getArray(DataType* val, int len, SparsityType sp=SP_SPARSE) const;
 
     /** \brief  Set the non-zero elements, array */
-    void setArray(const DataType* val, int len, SparsityType sp=SPARSE);
+    void setArray(const DataType* val, int len, SparsityType sp=SP_SPARSE);
 
     /** \brief  Get the non-zero elements, array, sparse and correct length */
     void getArray(DataType* val) const;
@@ -802,14 +808,14 @@ namespace casadi {
 
     /** \brief  Get the non-zero elements, strided array */
     void getStridedArray(DataType* val, int len, int stride1, int stride2,
-                         SparsityType sp=SPARSE) const;
+                         SparsityType sp=SP_SPARSE) const;
 
 #ifndef SWIG
     /** \brief  Legacy - use getArray instead */
-    void get(DataType* val, SparsityType sp=SPARSE) const;
+    void get(DataType* val, SparsityType sp=SP_SPARSE) const;
 
     /** \brief  Legacy - use setArray instead */
-    void set(const DataType* val, SparsityType sp=SPARSE);
+    void set(const DataType* val, SparsityType sp=SP_SPARSE);
 
     /** Bitwise set, reinterpreting the data as a bvec_t array */
     void setZeroBV();
@@ -952,6 +958,13 @@ namespace casadi {
     static void setScientific(bool scientific) { stream_scientific_ = scientific; }
     // @}
 
+#ifndef SWIG
+    /// Sparse matrix with a given sparsity with all values same
+    Matrix(const Sparsity& sp, const DataType& val, bool dummy);
+
+    /// Sparse matrix with a given sparsity and non-zero elements.
+    Matrix(const Sparsity& sp, const std::vector<DataType>& d, bool dummy);
+
   private:
     /// Sparsity of the matrix in a compressed column storage (CCS) format
     Sparsity sparsity_;
@@ -963,7 +976,7 @@ namespace casadi {
     static int stream_precision_;
     static int stream_width_;
     static bool stream_scientific_;
-
+#endif // SWIG
   };
 
   // Template specialization declarations
