@@ -30,17 +30,17 @@ import casadi.*
 x = SX.sym('x');
 y = SX.sym('y');
 z = SX.sym('z');
-v = SX.casadi_vertcat({x,y,z}); % workaround!
-f = x^2 + SX(100)*z^2;
-g = z + (SX(1)-x)^2 - y;
+v = [x;y;z]
+f = x^2 + 100*z^2;
+g = z + (1-x)^2 - y;
 nlp = SXFunction(nlpIn('x',v),nlpOut('f',f','g',g));
- 
+
 % Create IPOPT solver object
 solver = NlpSolver('ipopt', nlp);
 solver.init();
  
 % Pass solution guess
-solver.setInput([2.5 3.0 0.75]', 'x0');
+solver.setInput([2.5 3.0 0.75], 'x0');
  
 % Set variable bounds
 solver.setInput(0, 'lbg');
@@ -50,10 +50,10 @@ solver.setInput(0, 'ubg');
 solver.evaluate()
  
 % Print the solution
-f_opt = solver.getOutput('f')          % >> DMatrix(0)
-x_opt = solver.getOutput('x')          % >> DMatrix([0, 1, 0]) 
-lam_x_opt = solver.getOutput('lam_x')  % >> DMatrix([0, 0, 0])
-lam_g_opt = solver.getOutput('lam_g')  % >> DMatrix(0)
- 
+f_opt = full(solver.getOutput('f'))          % >> 0
+x_opt = full(solver.getOutput('x'))          % >> [0; 1; 0]
+lam_x_opt = full(solver.getOutput('lam_x'))  % >> [0; 0; 0]
+lam_g_opt = full(solver.getOutput('lam_g'))  % >> 0
+
 % Unload CasADi (important!)
 clear

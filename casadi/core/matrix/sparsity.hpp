@@ -312,9 +312,28 @@ namespace casadi {
     std::pair<int, int> shape() const;
     /// @}
 
+#ifndef SWIG
     /** \brief Get a reference to row-vector,
      * containing rows for all non-zero elements (see class description) */
-    const std::vector<int>& row() const;
+    const int* rowPtr() const;
+
+    /** \brief Get a reference to the colindex of all column element (see class description) */
+    const int* colindPtr() const;
+
+    /** \brief Get the row for each non-zero entry
+        Together with the column-vector, this vector gives the sparsity of the matrix in
+        sparse triplet format, and together with the colind vector, one obtains the sparsity
+        in column compressed format. */
+    std::vector<int> getRow() const;
+
+    /** \brief Get the column index for each column
+        Together with the row-vector, one obtains the sparsity pattern in the
+        column compressed format. */
+    std::vector<int> getColind() const;
+#endif
+
+    /** \brief  Get a reference to the colindex of column cc (see class description) */
+    int colind(int cc) const;
 
     /** \brief Get the row of a non-zero element */
     int row(int el) const;
@@ -322,16 +341,9 @@ namespace casadi {
     /** \brief Get a reference to the colindex of all column element (see class description) */
     const std::vector<int>& colind() const;
 
-    /** \brief  Get a reference to the colindex of col i (see class description) */
-    int colind(int i) const;
-
-#ifndef SWIG
-    /** \brief Get a reference to the rows of all non-zero element (copy if not unique!) */
-    std::vector<int>& rowRef();
-
-    /** \brief Get a reference to the colindex of all column element (copy if not unique!) */
-    std::vector<int>& colindRef();
-#endif
+    /** \brief Get a reference to row-vector,
+     * containing rows for all non-zero elements (see class description) */
+    const std::vector<int>& row() const;
 
     /** \brief Get the column for each non-zero entry
         Together with the row-vector, this vector gives the sparsity of the matrix in
@@ -769,7 +781,6 @@ namespace casadi {
     const int sz = nnz();
     const int sz1 = size1();
     const int sz2 = size2();
-    const int nel = sz1*sz2;
 
     // Get dimensions of assigning matrix
     const int val_sz = val_sp.nnz();
@@ -788,28 +799,21 @@ namespace casadi {
       return;
     } else if (val_nel==1) { // if scalar
       std::fill(data, data+sz, val_sz==0 ? DataType(0) : val_data[0]);
-    } else {
-      // Quick return if empty
-      if (nel==0 && val_nel==0) return;
-
-      // Make sure that dimension matches
-      casadi_assert_message(sz2==val_sz2 && sz1==val_sz1,
-                            "Sparsity::set<DataType>: shape mismatch. lhs is matrix of shape "
-                            << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
-
+    } else if (sz2==val_sz2 && sz1==val_sz1) {
+      // Matching dimensions
       // Sparsity
-      const std::vector<int>& c = row();
-      const std::vector<int>& rind = colind();
-      const std::vector<int>& v_c = val_sp.row();
-      const std::vector<int>& v_rind = val_sp.colind();
+      const int* c = rowPtr();
+      const int* rind = colindPtr();
+      const int* v_c = val_sp.rowPtr();
+      const int* v_rind = val_sp.colindPtr();
 
-      // For all cols
+      // For all columns
       for (int i=0; i<sz2; ++i) {
 
         // Nonzero of the assigning matrix
         int v_el = v_rind[i];
 
-        // First nonzero of the following col
+        // First nonzero of the following column
         int v_el_end = v_rind[i+1];
 
         // Next row of the assigning matrix
@@ -836,6 +840,29 @@ namespace casadi {
           }
         }
       }
+    } else if (sz1==val_sz2 && sz2==val_sz1 && sz2 == 1) {
+      // Assign transposed (this is column)
+      const int* v_cind = val_sp.colindPtr();
+      const int* r = rowPtr();
+      for (int el=0; el<sz; ++el) {
+        int rr=r[el];
+        data[el] = v_cind[rr]==v_cind[rr+1] ? 0 : val_data[v_cind[rr]];
+      }
+    } else if (sz1==val_sz2 && sz2==val_sz1 && sz1 == 1) {
+      // Assign transposed (this is row)
+      for (int el=0; el<sz; ++el) data[el] = 0;
+      const int* cind = colindPtr();
+      const int* v_r = val_sp.rowPtr();
+      for (int el=0; el<val_sz; ++el) {
+        int rr=v_r[el];
+        if (cind[rr]!=cind[rr+1]) {
+          data[cind[rr]] = val_data[el];
+        }
+      }
+    } else {
+      // Make sure that dimension matches
+      casadi_error("Sparsity::set<DataType>: shape mismatch. lhs is matrix of shape "
+                   << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
     }
   }
 
@@ -881,10 +908,10 @@ namespace casadi {
                             << val_sp.dimString() << ".");
 
       // Sparsity
-      const std::vector<int>& c = row();
-      const std::vector<int>& rind = colind();
-      const std::vector<int>& v_c = val_sp.row();
-      const std::vector<int>& v_rind = val_sp.colind();
+      const int* c = rowPtr();
+      const int* rind = colindPtr();
+      const int* v_c = val_sp.rowPtr();
+      const int* v_rind = val_sp.colindPtr();
 
       // For all cols
       for (int i=0; i<sz2; ++i) {
@@ -961,10 +988,10 @@ namespace casadi {
                             << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
 
       // Sparsity
-      const std::vector<int>& c = row();
-      const std::vector<int>& rind = colind();
-      const std::vector<int>& v_c = val_sp.row();
-      const std::vector<int>& v_rind = val_sp.colind();
+      const int* c = rowPtr();
+      const int* rind = colindPtr();
+      const int* v_c = val_sp.rowPtr();
+      const int* v_rind = val_sp.colindPtr();
 
       // For all columns
       for (int i=0; i<sz2; ++i) {

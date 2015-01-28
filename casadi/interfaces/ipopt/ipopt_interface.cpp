@@ -545,9 +545,10 @@ namespace casadi {
       double time1 = clock();
       if (values == NULL) {
         int nz=0;
-        const vector<int>& colind = hessLag_.output().colind();
-        const vector<int>& row = hessLag_.output().row();
-        for (int cc=0; cc<colind.size()-1; ++cc)
+        const int* colind = hessLag_.output().colindPtr();
+        int ncol = hessLag_.output().size2();
+        const int* row = hessLag_.output().rowPtr();
+        for (int cc=0; cc<ncol; ++cc)
           for (int el=colind[cc]; el<colind[cc+1] && row[el]<=cc; ++el) {
             iRow[nz] = row[el];
             jCol[nz] = cc;
@@ -605,9 +606,10 @@ namespace casadi {
       double time1 = clock();
       if (values == NULL) {
         int nz=0;
-        const vector<int>& colind = jacG.output().colind();
-        const vector<int>& row = jacG.output().row();
-        for (int cc=0; cc<colind.size()-1; ++cc)
+        const int* colind = jacG.output().colindPtr();
+        int ncol = jacG.output().size2();
+        const int* row = jacG.output().rowPtr();
+        for (int cc=0; cc<ncol; ++cc)
           for (int el=colind[cc]; el<colind[cc+1]; ++el) {
             int rr = row[el];
             iRow[nz] = rr;
@@ -846,8 +848,9 @@ namespace casadi {
 
         // Loop over the cols
         const Sparsity& spHessLag = this->spHessLag();
-        const vector<int>& colind = spHessLag.colind();
-        for (int i=0; i<colind.size()-1; ++i) {
+        const int* colind = spHessLag.colindPtr();
+        int ncol = spHessLag.size2();
+        for (int i=0; i<ncol; ++i) {
           // If the col contains any non-zeros, the corresponding variable appears nonlinearily
           if (colind[i]!=colind[i+1])
             nv++;
@@ -869,8 +872,9 @@ namespace casadi {
 
       // Loop over the cols
       const Sparsity& spHessLag = this->spHessLag();
-      const vector<int>& colind = spHessLag.colind();
-      for (int i=0; i<colind.size()-1; ++i) {
+      const int* colind = spHessLag.colindPtr();
+      int ncol = spHessLag.size2();
+      for (int i=0; i<ncol; ++i) {
         // If the col contains any non-zeros, the corresponding variable appears nonlinearily
         if (colind[i]!=colind[i+1]) {
           pos_nonlin_vars[el++] = i;
