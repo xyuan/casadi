@@ -256,6 +256,10 @@ namespace casadi {
     bool isEqual(const Sparsity& y) const;
     bool isEqual(int nrow, int ncol, const std::vector<int>& colind,
                  const std::vector<int>& row) const;
+#ifndef SWIG
+    bool isEqual(int nrow, int ncol, const int* colind, const int* row) const;
+#endif // SWIG
+
     bool operator==(const Sparsity& y) const { return isEqual(y);}
     /// @}
 
@@ -315,10 +319,11 @@ namespace casadi {
 #ifndef SWIG
     /** \brief Get a reference to row-vector,
      * containing rows for all non-zero elements (see class description) */
-    const int* rowPtr() const;
+    const int* row() const;
 
     /** \brief Get a reference to the colindex of all column element (see class description) */
-    const int* colindPtr() const;
+    const int* colind() const;
+#endif
 
     /** \brief Get the row for each non-zero entry
         Together with the column-vector, this vector gives the sparsity of the matrix in
@@ -330,20 +335,12 @@ namespace casadi {
         Together with the row-vector, one obtains the sparsity pattern in the
         column compressed format. */
     std::vector<int> getColind() const;
-#endif
 
     /** \brief  Get a reference to the colindex of column cc (see class description) */
     int colind(int cc) const;
 
     /** \brief Get the row of a non-zero element */
     int row(int el) const;
-
-    /** \brief Get a reference to the colindex of all column element (see class description) */
-    const std::vector<int>& colind() const;
-
-    /** \brief Get a reference to row-vector,
-     * containing rows for all non-zero elements (see class description) */
-    const std::vector<int>& row() const;
 
     /** \brief Get the column for each non-zero entry
         Together with the row-vector, this vector gives the sparsity of the matrix in
@@ -535,8 +532,10 @@ namespace casadi {
     /// Append another sparsity patten horizontally
     void appendColumns(const Sparsity& sp);
 
-    /// Reserve space
-    void reserve(int nnz, int ncol);
+    /// DEPRECATED: Reserve space
+    void reserve(int nnz, int ncol) {
+      casadi_warning("Sparsity::reserve: Deprecated function. Ignored.");
+    }
 
     /// Is scalar?
     bool isScalar(bool scalar_and_dense=false) const;
@@ -748,6 +747,9 @@ namespace casadi {
     void assignCached(int nrow, int ncol, const std::vector<int>& colind,
                       const std::vector<int>& row);
 
+    /// Construct a sparsity pattern from vectors, reuse cached pattern if possible
+    void assignCached(int nrow, int ncol, const int* colind, const int* row);
+
 #endif //SWIG
   };
 
@@ -762,15 +764,24 @@ namespace casadi {
     seed ^= hash_value(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
   }
 
+  /** \brief Generate a hash value incrementally, array */
+  inline void hash_combine(std::size_t& seed, const int* v, int sz) {
+    for (int i=0; i<sz; ++i) hash_combine(seed, v[i]);
+  }
+
   /** \brief Generate a hash value incrementally (function taken from boost) */
   inline void hash_combine(std::size_t& seed, const std::vector<int>& v) {
-    for (std::vector<int>::const_iterator i=v.begin(); i!=v.end(); ++i) hash_combine(seed, *i);
+    hash_combine(seed, getPtr(v), v.size());
   }
 
   /** \brief Hash a sparsity pattern */
   CASADI_EXPORT std::size_t hash_sparsity(int nrow, int ncol,
-                                                   const std::vector<int>& colind,
-                                                   const std::vector<int>& row);
+                                          const std::vector<int>& colind,
+                                          const std::vector<int>& row);
+
+  CASADI_EXPORT std::size_t hash_sparsity(int nrow, int ncol,
+                                          const int* colind,
+                                          const int* row);
   /// \endcond
 
 #ifndef SWIG
@@ -802,10 +813,10 @@ namespace casadi {
     } else if (sz2==val_sz2 && sz1==val_sz1) {
       // Matching dimensions
       // Sparsity
-      const int* c = rowPtr();
-      const int* rind = colindPtr();
-      const int* v_c = val_sp.rowPtr();
-      const int* v_rind = val_sp.colindPtr();
+      const int* c = row();
+      const int* rind = colind();
+      const int* v_c = val_sp.row();
+      const int* v_rind = val_sp.colind();
 
       // For all columns
       for (int i=0; i<sz2; ++i) {
@@ -842,8 +853,8 @@ namespace casadi {
       }
     } else if (sz1==val_sz2 && sz2==val_sz1 && sz2 == 1) {
       // Assign transposed (this is column)
-      const int* v_cind = val_sp.colindPtr();
-      const int* r = rowPtr();
+      const int* v_cind = val_sp.colind();
+      const int* r = row();
       for (int el=0; el<sz; ++el) {
         int rr=r[el];
         data[el] = v_cind[rr]==v_cind[rr+1] ? 0 : val_data[v_cind[rr]];
@@ -851,8 +862,8 @@ namespace casadi {
     } else if (sz1==val_sz2 && sz2==val_sz1 && sz1 == 1) {
       // Assign transposed (this is row)
       for (int el=0; el<sz; ++el) data[el] = 0;
-      const int* cind = colindPtr();
-      const int* v_r = val_sp.rowPtr();
+      const int* cind = colind();
+      const int* v_r = val_sp.row();
       for (int el=0; el<val_sz; ++el) {
         int rr=v_r[el];
         if (cind[rr]!=cind[rr+1]) {
@@ -908,10 +919,10 @@ namespace casadi {
                             << val_sp.dimString() << ".");
 
       // Sparsity
-      const int* c = rowPtr();
-      const int* rind = colindPtr();
-      const int* v_c = val_sp.rowPtr();
-      const int* v_rind = val_sp.colindPtr();
+      const int* c = row();
+      const int* rind = colind();
+      const int* v_c = val_sp.row();
+      const int* v_rind = val_sp.colind();
 
       // For all cols
       for (int i=0; i<sz2; ++i) {
@@ -988,10 +999,10 @@ namespace casadi {
                             << dimString() << ", while rhs is shape " << val_sp.dimString() << ".");
 
       // Sparsity
-      const int* c = rowPtr();
-      const int* rind = colindPtr();
-      const int* v_c = val_sp.rowPtr();
-      const int* v_rind = val_sp.colindPtr();
+      const int* c = row();
+      const int* rind = colind();
+      const int* v_c = val_sp.row();
+      const int* v_rind = val_sp.colind();
 
       // For all columns
       for (int i=0; i<sz2; ++i) {

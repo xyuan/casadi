@@ -32,11 +32,46 @@
 namespace casadi {
 
   class CASADI_EXPORT SparsityInternal : public SharedObjectNode {
+  private:
+    /// Number of rows
+    int nrow_;
+
+    /// Number of cols
+    int ncol_;
+
+    /// vector of length n+1 containing the index of the last non-zero element up till each col
+    std::vector<int> colind_;
+
+    /// vector of length nnz containing the rows for all the indices of the non-zero elements
+    std::vector<int> row_;
+
   public:
     /// Construct a sparsity pattern from vectors
     SparsityInternal(int nrow, int ncol, const std::vector<int>& colind,
                      const std::vector<int>& row) :
         nrow_(nrow), ncol_(ncol), colind_(colind), row_(row) { sanityCheck(false); }
+
+    /// Construct a sparsity pattern from arrays
+    SparsityInternal(int nrow, int ncol, const int* colind, const int* row) :
+      nrow_(nrow), ncol_(ncol),
+      colind_(colind, colind+ncol+1), row_(row, row+colind[ncol]) {
+        sanityCheck(false);
+      }
+
+    /** \brief Get number of rows (see public class) */
+    inline int size1() const { return nrow_;}
+
+    /** \brief Get number of columns (see public class) */
+    inline int size2() const { return ncol_;}
+
+    /** \brief Get column offsets (see public class) */
+    inline const int* colind() const { return colind_.empty() ? 0 : &colind_.front();}
+
+    /** \brief Get row indices (see public class) */
+    inline const int* row() const { return row_.empty() ? 0 : &row_.front();}
+
+    /// Number of structural non-zeros
+    inline int nnz() const { return row_.size();}
 
     /// Check if the dimensions and colind, row vectors are compatible
     void sanityCheck(bool complete=false) const;
@@ -92,7 +127,9 @@ namespace casadi {
     /** \brief drop entries for which fkeep(A(i, j)) is false; return nz if OK, else -1: :
      * see cs_fkeep in CSparse
      */
-    int drop(int (*fkeep)(int, int, double, void *), void *other);
+    static int drop(int (*fkeep)(int, int, double, void *), void *other,
+                    int nrow, int ncol,
+                    std::vector<int>& colind, std::vector<int>& row);
 
     /// Compute the Dulmage-Mendelsohn decomposition : see cs_dmperm in CSparse
     int dulmageMendelsohn(std::vector<int>& rowperm, std::vector<int>& colperm,
@@ -132,6 +169,12 @@ namespace casadi {
 
     /// C = A(p, q) where p and q are permutations of 0..m-1 and 0..n-1.: see cs_permute in CSparse
     Sparsity permute(const std::vector<int>& pinv, const std::vector<int>& q, int values) const;
+
+    /// C = A(p, q) where p and q are permutations of 0..m-1 and 0..n-1.: see cs_permute in CSparse
+    void permute(const std::vector<int>& pinv,
+                 const std::vector<int>& q, int values,
+                 std::vector<int>& colind_C,
+                 std::vector<int>& row_C) const;
 
     /// consider A(i, j), node j in ith col subtree and return lca(jprev, j): See cs_leaf in CSparse
     static int leaf(int i, int j, const int *first, int *maxfirst,
@@ -178,19 +221,22 @@ namespace casadi {
     /** x = x + beta * A(:, j), where x is a dense vector and A(:, j) is sparse:
      * See cs_scatter in CSparse
      */
-    int scatter(int j, std::vector<int>& w, int mark, Sparsity& C, int nz) const;
+    int scatter(int j, std::vector<int>& w, int mark, int* Ci, int nz) const;
+
+    /// Get row() as a vector
+    std::vector<int> getRow() const;
+
+    /// Get colind() as a vector
+    std::vector<int> getColind() const;
 
     /// Get the column for each nonzero
     std::vector<int> getCol() const;
 
     /// Resize
-    void resize(int nrow, int ncol);
+    Sparsity zz_resize(int nrow, int ncol) const;
 
     /// Reshape a sparsity, order of nonzeros remains the same
     Sparsity zz_reshape(int nrow, int ncol) const;
-
-    /// Number of structural non-zeros
-    int nnz() const;
 
     /// Number of elements
     int numel() const;
@@ -280,32 +326,34 @@ namespace casadi {
     bool isEqual(const Sparsity& y) const;
 
     /// Check if two sparsity patterns are the same
-    bool isEqual(int nrow, int ncol, const std::vector<int>& colind,
-                 const std::vector<int>& row) const;
+    bool isEqual(int y_nrow, int y_ncol, const std::vector<int>& y_colind,
+                 const std::vector<int>& y_row) const;
+
+    /// Check if two sparsity patterns are the same
+    bool isEqual(int y_nrow, int y_ncol, const int* y_colind, const int* y_row) const;
 
     /// Enlarge the matrix along the first dimension (i.e. insert rows)
-    void enlargeRows(int nrow, const std::vector<int>& rr, bool ind1);
+    Sparsity zz_enlargeRows(int nrow, const std::vector<int>& rr, bool ind1) const;
 
     /// Enlarge the matrix along the second dimension (i.e. insert columns)
-    void enlargeColumns(int ncol, const std::vector<int>& cc, bool ind1);
+    Sparsity zz_enlargeColumns(int ncol, const std::vector<int>& cc, bool ind1) const;
 
     /// Make a patten dense
     Sparsity makeDense(std::vector<int>& mapping) const;
 
     /// Erase rows and/or columns - does bounds checking
-    std::vector<int> erase(const std::vector<int>& rr, const std::vector<int>& cc, bool ind1);
+    Sparsity zz_erase(const std::vector<int>& rr, const std::vector<int>& cc,
+                      bool ind1, std::vector<int>& mapping) const;
 
     /// Erase elements
-    std::vector<int> erase(const std::vector<int>& rr, bool ind1);
+    Sparsity zz_erase(const std::vector<int>& rr, bool ind1,
+                      std::vector<int>& mapping) const;
 
     /// Append another sparsity patten vertically (vectors only)
-    void append(const SparsityInternal& sp);
+    Sparsity zz_appendVector(const SparsityInternal& sp) const;
 
     /// Append another sparsity patten horizontally
-    void appendColumns(const SparsityInternal& sp);
-
-    /// Reserve space
-    void reserve(int nnz, int ncol);
+    Sparsity zz_appendColumns(const SparsityInternal& sp) const;
 
     /** \brief Get a submatrix
     * Does bounds checking
@@ -354,18 +402,6 @@ namespace casadi {
 
     /// Print description
     virtual void print(std::ostream &stream) const;
-
-    /// Number of rows
-    int nrow_;
-
-    /// Number of cols
-    int ncol_;
-
-    /// vector of length n+1 containing the index of the last non-zero element up till each col
-    std::vector<int> colind_;
-
-    /// vector of length nnz containing the rows for all the indices of the non-zero elements
-    std::vector<int> row_;
 
     /** \brief Perform a unidirectional coloring
      *
