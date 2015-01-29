@@ -32,6 +32,7 @@
 #include "../printable_object.hpp"
 #include "../casadi_limits.hpp"
 #include "../std_vector_tools.hpp"
+#include "../runtime/runtime.hpp"
 #include "generic_matrix.hpp"
 #include "generic_expression.hpp"
 
@@ -467,35 +468,6 @@ namespace casadi {
     Matrix<DataType> zz_sparsify(double tol=0) const;
     ///@}
 
-    /// Matrix-matrix product, no memory allocation: z += mul(x, y), with work vector
-    static void mul_no_alloc(const Matrix<DataType> &x, const Matrix<DataType>& y,
-                             Matrix<DataType>& z, std::vector<DataType>& work,
-                             bool transpose_x=false);
-
-    /// Matrix-vector product, no memory allocation: z += mul(trans(x), y)
-    static void mul_no_alloc(const Matrix<DataType>& x, const std::vector<DataType> &y,
-                             std::vector<DataType>& z, bool transpose_x=false);
-
-    /// DEPRECATED: Matrix-matrix product, no memory allocation: z += mul(x, y)
-    static void mul_no_alloc_nn(const Matrix<DataType> &x, const Matrix<DataType>& y,
-                                Matrix<DataType>& z);
-
-    /// DEPRECATED: Matrix-matrix product, no memory allocation: z += mul(trans(x), y)
-    static void mul_no_alloc_tn(const Matrix<DataType> &trans_x, const Matrix<DataType> &y,
-                                Matrix<DataType>& z);
-
-    /// DEPRECATED: Matrix-matrix product, no memory allocation: z += mul(x, trans(y))
-    static void mul_no_alloc_nt(const Matrix<DataType>& x, const Matrix<DataType> &trans_y,
-                                Matrix<DataType>& z);
-
-    /// DEPRECATED: Matrix-vector product, no memory allocation: z += mul(trans(x), y)
-    static void mul_no_alloc_tn(const Matrix<DataType>& trans_x, const std::vector<DataType> &y,
-                                std::vector<DataType>& z);
-
-    /// DEPRECATED: vector-matrix product, no memory allocation: z += mul(x, y)
-    static void mul_no_alloc_nn(const Matrix<DataType>& x, const std::vector<DataType> &y,
-                                std::vector<DataType>& z);
-
     /** \brief Propagate sparsity using 0-1 logic through a matrix product,
      * no memory allocation: <tt>z = mul(x, y)</tt> with work vector
      */
@@ -594,9 +566,7 @@ namespace casadi {
     int zz_norm_0_mul_nn(const Matrix<DataType>& B,
                          std::vector<bool>& Bwork,
                          std::vector<int>& Iwork) const;
-    DataType zz_norm_inf_mul_nn(const Matrix<DataType> &y,
-                                std::vector<DataType>& Dwork,
-                                std::vector<int>& Iwork) const;
+    Matrix<DataType> zz_norm_inf_mul(const Matrix<DataType> &y) const;
     ///@}
 
     /// \endcond
@@ -640,19 +610,10 @@ namespace casadi {
     /// Returns true if any element in the matrix is true
     inline friend Matrix<DataType> any(const Matrix<DataType> &x) { return x.zz_any();}
 
-    /** Inf-norm of a Matrix-matrix product, no memory allocation
-     *   mul(x, y)
-     *
-     * \param Dwork  A double work vector that you must allocate
-     *               Minimum size: y.size1()
-     * \param Iwork  A integer work vector that you must allocate
-     *               Minimum size: y.size1()+x.size2()+1
-     */
-    inline friend DataType norm_inf_mul_nn(const Matrix<DataType> &x,
-                                           const Matrix<DataType> &y,
-                                           std::vector<DataType>& Dwork,
-                                           std::vector<int>& Iwork) {
-      return x.zz_norm_inf_mul_nn(y, Dwork, Iwork);
+    /** Inf-norm of a Matrix-Matrix product */
+    inline friend Matrix<DataType>
+      norm_inf_mul(const Matrix<DataType> &x, const Matrix<DataType> &y) {
+      return x.zz_norm_inf_mul(y);
     }
 
     /** 0-norm (nonzero count) of a Matrix-matrix product, no memory allocation
