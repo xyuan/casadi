@@ -50,14 +50,15 @@ namespace casadi {
     virtual void printPart(std::ostream &stream, int part) const;
 
     /// Evaluate the function (template)
-    template<typename T, typename Mat>
-    void evaluateGen(const Mat** input, Mat** output, int* itmp, T* rtmp);
+    template<typename T>
+    void evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp);
 
     /// Evaluate the function numerically
-    virtual void evaluateD(const DMatrix** input, DMatrix** output, int* itmp, double* rtmp);
+    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
 
     /// Evaluate the function symbolically (SX)
-    virtual void evaluateSX(const SX** input, SX** output, int* itmp, SXElement* rtmp);
+    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
+                            int* itmp, SXElement* rtmp);
 
     /** \brief  Evaluate the function symbolically (MX) */
     virtual void evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
@@ -69,7 +70,7 @@ namespace casadi {
                            const std::vector<std::string>& res, CodeGenerator& gen) const;
 
     /** \brief  Propagate sparsity */
-    virtual void propagateSparsity(DMatrixPtrV& input, DMatrixPtrV& output, bool fwd);
+    virtual void propagateSparsity(double** input, double** output, bool fwd);
 
     /** \brief Get the operation */
     virtual int getOp() const { return OP_SET_SPARSE;}

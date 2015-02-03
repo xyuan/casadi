@@ -120,15 +120,15 @@ namespace casadi {
     solve(getPtr(x), nrhs, transpose);
   }
 
-  void LinearSolverInternal::evaluateMXGen(const MXPtrV& input, MXPtrV& output,
-                                           const MXPtrVV& fwdSeed, MXPtrVV& fwdSens,
-                                           const MXPtrVV& adjSeed, MXPtrVV& adjSens,
+  void LinearSolverInternal::evaluateMXGen(const MXPtrV& arg, MXPtrV& res,
+                                           const MXPtrVV& fseed, MXPtrVV& fsens,
+                                           const MXPtrVV& aseed, MXPtrVV& asens,
                                            bool output_given, bool tr) {
-    int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
-    const MX& B = *input[0];
-    const MX& A = *input[1];
-    MX& X = *output[0];
+    int nfwd = fsens.size();
+    int nadj = aseed.size();
+    const MX& B = *arg[0];
+    const MX& A = *arg[1];
+    MX& X = *res[0];
 
     // Nondifferentiated output
     if (!output_given) {
@@ -144,8 +144,8 @@ namespace casadi {
     std::vector<MX> rhs;
     std::vector<int> col_offset(1, 0);
     for (int d=0; d<nfwd; ++d) {
-      const MX& B_hat = *fwdSeed[d][0];
-      const MX& A_hat = *fwdSeed[d][1];
+      const MX& B_hat = *fseed[d][0];
+      const MX& A_hat = *fseed[d][1];
 
       // Get right hand side
       MX rhs_d;
@@ -157,7 +157,7 @@ namespace casadi {
 
       // Simplifiy if zero
       if (rhs_d.isZero()) {
-        *fwdSens[d][0] = MX(rhs_d.shape());
+        *fsens[d][0] = MX(rhs_d.shape());
       } else {
         rhs.push_back(rhs_d);
         rhs_ind.push_back(d);
@@ -171,7 +171,7 @@ namespace casadi {
 
       // Save result
       for (int i=0; i<rhs.size(); ++i) {
-        *fwdSens[rhs_ind[i]][0] = rhs[i];
+        *fsens[rhs_ind[i]][0] = rhs[i];
       }
     }
 
@@ -180,12 +180,12 @@ namespace casadi {
     rhs_ind.resize(0);
     col_offset.resize(1);
     for (int d=0; d<nadj; ++d) {
-      MX& X_bar = *adjSeed[d][0];
+      MX& X_bar = *aseed[d][0];
 
       // Simplifiy if zero
       if (X_bar.isZero()) {
-        if (adjSeed[d][0]!=adjSens[d][0]) {
-          *adjSens[d][0] = X_bar;
+        if (aseed[d][0]!=asens[d][0]) {
+          *asens[d][0] = X_bar;
           X_bar = MX();
         }
       } else {
@@ -207,39 +207,35 @@ namespace casadi {
 
         // Propagate to A
         if (!tr) {
-          adjSens[d][1]->addToSum(-mul(rhs[i], X.T(), MX::zeros(A.sparsity())));
+          asens[d][1]->addToSum(-mul(rhs[i], X.T(), MX::zeros(A.sparsity())));
         } else {
-          adjSens[d][1]->addToSum(-mul(X, rhs[i].T(), MX::zeros(A.sparsity())));
+          asens[d][1]->addToSum(-mul(X, rhs[i].T(), MX::zeros(A.sparsity())));
         }
 
         // Propagate to B
-        if (adjSeed[d][0]==adjSens[d][0]) {
-          *adjSens[d][0] = rhs[i];
+        if (aseed[d][0]==asens[d][0]) {
+          *asens[d][0] = rhs[i];
         } else {
-          adjSens[d][0]->addToSum(rhs[i]);
+          asens[d][0]->addToSum(rhs[i]);
         }
       }
     }
   }
 
-  void LinearSolverInternal::propagateSparsityGen(DMatrixPtrV& input, DMatrixPtrV& output,
-                                                  std::vector<int>& itmp, std::vector<double>& rtmp,
-                                                  bool fwd, bool transpose) {
-
+  void LinearSolverInternal::propagateSparsityGen(double** arg, double** res,
+                                                  int* itmp, bvec_t* rtmp,
+                                                  bool fwd, bool tr, int nrhs) {
     // Sparsities
-    const Sparsity& r_sp = input[0]->sparsity();
-    const Sparsity& A_sp = input[1]->sparsity();
+    const Sparsity& A_sp = input(LINSOL_A).sparsity();
     const int* A_colind = A_sp.colind();
     const int* A_row = A_sp.row();
-    int nrhs = r_sp.size2();
-    int n = r_sp.size1();
-    //    int nnz = A_sp.size();
+    int n = A_sp.size1();
 
     // Get pointers to data
-    bvec_t* B_ptr = reinterpret_cast<bvec_t*>(input[0]->ptr());
-    bvec_t* A_ptr = reinterpret_cast<bvec_t*>(input[1]->ptr());
-    bvec_t* X_ptr = reinterpret_cast<bvec_t*>(output[0]->ptr());
-    bvec_t* tmp_ptr = reinterpret_cast<bvec_t*>(getPtr(rtmp));
+    bvec_t* B_ptr = reinterpret_cast<bvec_t*>(arg[0]);
+    bvec_t* A_ptr = reinterpret_cast<bvec_t*>(arg[1]);
+    bvec_t* X_ptr = reinterpret_cast<bvec_t*>(res[0]);
+    bvec_t* tmp_ptr = rtmp;
 
     // For all right-hand-sides
     for (int r=0; r<nrhs; ++r) {
@@ -253,19 +249,19 @@ namespace casadi {
         for (int cc=0; cc<n; ++cc) {
           for (int k=A_colind[cc]; k<A_colind[cc+1]; ++k) {
             int rr = A_row[k];
-            tmp_ptr[transpose ? cc : rr] |= A_ptr[k];
+            tmp_ptr[tr ? cc : rr] |= A_ptr[k];
           }
         }
 
         // Propagate to X_ptr
         std::fill(X_ptr, X_ptr+n, 0);
-        spSolve(X_ptr, tmp_ptr, transpose);
+        spSolve(X_ptr, tmp_ptr, tr);
 
       } else { // adjoint
 
         // Solve transposed
         std::fill(tmp_ptr, tmp_ptr+n, 0);
-        spSolve(tmp_ptr, B_ptr, !transpose);
+        spSolve(tmp_ptr, B_ptr, !tr);
 
         // Clear seeds
         std::fill(B_ptr, B_ptr+n, 0);
@@ -279,7 +275,7 @@ namespace casadi {
         for (int cc=0; cc<n; ++cc) {
           for (int k=A_colind[cc]; k<A_colind[cc+1]; ++k) {
             int rr = A_row[k];
-            A_ptr[k] |= tmp_ptr[transpose ? cc : rr];
+            A_ptr[k] |= tmp_ptr[tr ? cc : rr];
           }
         }
       }
@@ -361,21 +357,21 @@ namespace casadi {
     }
   }
 
-  void LinearSolverInternal::evaluateDGen(const DMatrix** arg, DMatrix** res,
+  void LinearSolverInternal::evaluateDGen(const double* const* arg, double** res,
                                           int* itmp, double* rtmp, bool tr, int nrhs) {
 
     // Factorize the matrix
-    setInput(arg[1]->ptr(), LINSOL_A);
+    setInput(arg[1], LINSOL_A);
     prepare();
 
     // Solve for nondifferentiated output
     if (arg[0]!=res[0]) {
-      copy(arg[0]->ptr(), arg[0]->ptr()+input(LINSOL_A).size2(), res[0]->ptr());
+      copy(arg[0], arg[0]+input(LINSOL_A).size2(), res[0]);
     }
-    solve(res[0]->ptr(), nrhs, tr);
+    solve(res[0], nrhs, tr);
   }
 
-  void LinearSolverInternal::evaluateSXGen(const SX** arg, SX** res,
+  void LinearSolverInternal::evaluateSXGen(const SXElement* const* arg, SXElement** res,
                                            int* itmp, SXElement* rtmp, bool tr, int nrhs) {
     casadi_error("LinearSolverInternal::evaluateSXGen not defined for class "
                  << typeid(*this).name());

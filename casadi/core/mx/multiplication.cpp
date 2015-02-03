@@ -59,24 +59,24 @@ namespace casadi {
     }
   }
 
-  void Multiplication::evaluateD(const DMatrix** input, DMatrix** output,
+  void Multiplication::evaluateD(const double* const* input, double** output,
                                  int* itmp, double* rtmp) {
-    evaluateGen<double, DMatrix>(input, output, itmp, rtmp);
+    evaluateGen<double>(input, output, itmp, rtmp);
   }
 
-  void Multiplication::evaluateSX(const SX** input, SX** output,
+  void Multiplication::evaluateSX(const SXElement* const* input, SXElement** output,
                                   int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement, SX>(input, output, itmp, rtmp);
+    evaluateGen<SXElement>(input, output, itmp, rtmp);
   }
 
-  template<typename T, typename Mat>
-  void Multiplication::evaluateGen(const Mat** input, Mat** output, int* itmp, T* rtmp) {
+  template<typename T>
+  void Multiplication::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
     if (input[0]!=output[0]) {
-      copy(input[0]->begin(), input[0]->end(), output[0]->begin());
+      copy(input[0], input[0]+dep(0).nnz(), output[0]);
     }
-    casadi_mm_sparse(input[1]->ptr(), dep(1).sparsity(),
-                     input[2]->ptr(), dep(2).sparsity(),
-                     output[0]->ptr(), sparsity(), rtmp);
+    casadi_mm_sparse(input[1], dep(1).sparsity(),
+                     input[2], dep(2).sparsity(),
+                     output[0], sparsity(), rtmp);
   }
 
   void Multiplication::evaluateMX(const MXPtrV& input, MXPtrV& output,
@@ -106,17 +106,26 @@ namespace casadi {
     }
   }
 
-  void Multiplication::propagateSparsity(DMatrixPtrV& input, DMatrixPtrV& output,
-                                         std::vector<int>& itmp, std::vector<double>& rtmp,
-                                         bool fwd) {
-    bvec_t *zd = get_bvec_t(input[0]->data());
-    bvec_t *rd = get_bvec_t(output[0]->data());
+  void Multiplication::propagateSparsity(double** input, double** output,
+                                         int* itmp, bvec_t* rtmp, bool fwd) {
+    bvec_t *zd = reinterpret_cast<bvec_t*>(input[0]);
+    bvec_t *rd = reinterpret_cast<bvec_t*>(output[0]);
     const size_t n = this->nnz();
     if (fwd) {
       if (zd!=rd) copy(zd, zd+n, rd);
-      DMatrix::mul_sparsity<true>(*input[1], *input[2], *input[0], rtmp);
+      Sparsity::mul_sparsityF(reinterpret_cast<bvec_t*>(input[1]),
+                              dep(1).sparsity(),
+                              reinterpret_cast<bvec_t*>(input[2]),
+                              dep(2).sparsity(),
+                              reinterpret_cast<bvec_t*>(input[0]),
+                              dep(0).sparsity(), rtmp);
     } else {
-      DMatrix::mul_sparsity<false>(*input[1], *input[2], *output[0], rtmp);
+      Sparsity::mul_sparsityR(reinterpret_cast<bvec_t*>(input[1]),
+                              dep(1).sparsity(),
+                              reinterpret_cast<bvec_t*>(input[2]),
+                              dep(2).sparsity(),
+                              reinterpret_cast<bvec_t*>(output[0]),
+                              sparsity(), rtmp);
       if (zd!=rd) {
         for (int i=0; i<n; ++i) {
           zd[i] |= rd[i];

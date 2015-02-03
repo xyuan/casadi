@@ -232,12 +232,13 @@ namespace casadi {
                           typeid(*this).name());
   }
 
-  void MXNode::evaluateD(const DMatrix** input, DMatrix** output, int* itmp, double* rtmp) {
+  void MXNode::evaluateD(const double* const* input, double** output, int* itmp, double* rtmp) {
     throw CasadiException(string("MXNode::evaluateD not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::evaluateSX(const SX** input, SX** output, int* itmp, SXElement* rtmp) {
+  void MXNode::evaluateSX(const SXElement* const* input, SXElement** output,
+                          int* itmp, SXElement* rtmp) {
     throw CasadiException(string("MXNode::evaluateSX not defined for class ")
                           + typeid(*this).name());
   }
@@ -254,46 +255,42 @@ namespace casadi {
                           + typeid(*this).name());
   }
 
-  void MXNode::propagateSparsity(DMatrixPtrV& input, DMatrixPtrV& output, bool fwd) {
+  void MXNode::propagateSparsity(double** input, double** output, bool fwd) {
     // By default, everything depends on everything
     bvec_t all_depend(0);
 
     if (fwd) {
 
       // Get dependencies of all inputs
-      for (DMatrixPtrV::const_iterator i=input.begin(); i!=input.end(); ++i) {
-        const DMatrix& m = **i;
-        const bvec_t* v = reinterpret_cast<const bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
+      for (int k=0; k<ndep(); ++k) {
+        const bvec_t* v = reinterpret_cast<const bvec_t*>(input[k]);
+        for (int i=0; i<dep(k).nnz(); ++i) {
           all_depend |= v[i];
         }
       }
 
       // Propagate to all outputs
-      for (DMatrixPtrV::iterator i=output.begin(); i!=output.end(); ++i) {
-        DMatrix& m = **i;
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
+      for (int k=0; k<getNumOutputs(); ++k) {
+        bvec_t* v = reinterpret_cast<bvec_t*>(output[k]);
+        for (int i=0; i<sparsity(k).nnz(); ++i) {
           v[i] = all_depend;
         }
       }
     } else {
 
       // Get dependencies of all outputs
-      for (DMatrixPtrV::iterator i=output.begin(); i!=output.end(); ++i) {
-        DMatrix& m = **i;
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
+      for (int k=0; k<getNumOutputs(); ++k) {
+        bvec_t* v = reinterpret_cast<bvec_t*>(output[k]);
+        for (int i=0; i<sparsity(k).nnz(); ++i) {
           all_depend |= v[i];
           v[i] = 0;
         }
       }
 
       // Propagate to all inputs
-      for (DMatrixPtrV::iterator i=input.begin(); i!=input.end(); ++i) {
-        DMatrix& m = **i;
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
+      for (int k=0; k<ndep(); ++k) {
+        bvec_t* v = reinterpret_cast<bvec_t*>(input[k]);
+        for (int i=0; i<dep(k).nnz(); ++i) {
           v[i] |= all_depend;
         }
       }
