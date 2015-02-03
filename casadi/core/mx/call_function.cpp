@@ -43,9 +43,26 @@ namespace casadi {
     // Add arguments if needed
     arg.resize(num_in);
 
-    // Replace nulls with zeros of the right dimension
+    // Assert argument of correct dimension and sparsity
     for (int i=0; i<arg.size(); ++i) {
-      if (arg[i].isEmpty(true)) arg[i] = MX::zeros(fcn_.input(i).sparsity());
+      if (arg[i].shape()==fcn_.input(i).shape()) {
+        // Insert sparsity projection nodes if needed
+        arg[i] = arg[i].setSparse(fcn_.input(i).sparsity());
+      } else {
+        // Different dimensions
+        if (arg[i].isEmpty() || fcn_.input(i).isEmpty()) { // NOTE: To permissive?
+          // Replace nulls with zeros of the right dimension
+          arg[i] = MX::zeros(fcn_.input(i).sparsity());
+        } else if (arg[i].isScalar()) {
+          // Scalar argument means set all
+          arg[i] = MX(fcn_.input(i).sparsity(), arg[i]);
+        } else {
+          // Mismatching dimensions
+          casadi_error("Cannot create function call node: Dimension mismatch for argument "
+                       << i << ". Argument has shape " << arg[i].shape()
+                       << " but function input is " << fcn_.input(i).shape());
+        }
+      }
     }
 
     setDependencies(arg);
@@ -60,9 +77,9 @@ namespace casadi {
     fcn_->printPart(this, stream, part);
   }
 
-  void CallFunction::evaluateD(const DMatrixPtrV& arg, DMatrixPtrV& res, std::vector<int>& itmp,
-                               std::vector<double>& rtmp) {
-    fcn_->evaluateD(this, arg, res, itmp, rtmp);
+  void CallFunction::evaluateD(const DMatrix** input, DMatrix** output,
+                               int* itmp, double* rtmp) {
+    fcn_->evaluateD(this, input, output, itmp, rtmp);
   }
 
   int CallFunction::getNumOutputs() const {
@@ -77,9 +94,9 @@ namespace casadi {
     return fcn_;
   }
 
-  void CallFunction::evaluateSX(const SXPtrV& arg, SXPtrV& res, std::vector<int>& itmp,
-                                std::vector<SXElement>& rtmp) {
-    fcn_->evaluateSX(this, arg, res, itmp, rtmp);
+  void CallFunction::evaluateSX(const SX** input, SX** output,
+                                int* itmp, SXElement* rtmp) {
+    fcn_->evaluateSX(this, input, output, itmp, rtmp);
   }
 
   void CallFunction::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
