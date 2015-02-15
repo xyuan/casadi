@@ -686,8 +686,8 @@ namespace casadi {
     vector<MX> swork(workloc_.size()-1);
     log("MXFunctionInternal::evalMX allocated work vector");
 
-    MXPtrV input_p, output_p;
-    MXPtrVV dummy_p;
+    vector<const MX*> input_p;
+    vector<MX*> output_p;
 
     // Loop over computational nodes in forward order
     int alg_counter = 0;
@@ -781,7 +781,8 @@ namespace casadi {
     log("MXFunctionInternal::evalFwd allocated derivative work vector (forward mode)");
 
     // Pointers to the arguments of the current operation
-    MXPtrVV fseed_p, fsens_p;
+    vector<cpv_MX> fseed_p;
+    vector<pv_MX> fsens_p;
     fseed_p.reserve(nfwd);
     fsens_p.reserve(nfwd);
 
@@ -811,7 +812,7 @@ namespace casadi {
         fsens_p.clear();
         for (int d=0; d<nfwd; ++d) {
           // Pointers to seeds
-          MXPtrV seed(it->arg.size());
+          cpv_MX seed(it->arg.size());
           bool can_skip = true;
           for (int iind=0; iind<it->arg.size(); ++iind) {
             int el = it->arg[iind];
@@ -827,7 +828,7 @@ namespace casadi {
             }
           }
           // Pointers to sensitivities
-          MXPtrV sens(it->res.size());
+          pv_MX sens(it->res.size());
           for (int oind=0; oind<it->res.size(); ++oind) {
             int el = it->res[oind];
             if (el>=0) {
@@ -909,7 +910,7 @@ namespace casadi {
     }
 
     // Pointers to the arguments of the current operation
-    MXPtrVV aseed_p, asens_p;
+    vector<pv_MX> aseed_p, asens_p;
     aseed_p.reserve(nadj);
     asens_p.reserve(nadj);
 
@@ -950,7 +951,7 @@ namespace casadi {
 
         for (int d=0; d<nadj; ++d) {
           // Pointers to seeds
-          MXPtrV seed(it->res.size());
+          pv_MX seed(it->res.size());
           bool can_skip = true;
           for (int oind=0; oind<it->res.size(); ++oind) {
             int el = it->res[oind];
@@ -967,7 +968,7 @@ namespace casadi {
           }
 
           // Pointers to sensitivities
-          MXPtrV sens(it->arg.size());
+          pv_MX sens(it->arg.size());
           for (int iind=0; iind<it->arg.size(); ++iind) {
             int el = it->arg[iind];
             if (el>=0) {
@@ -985,7 +986,7 @@ namespace casadi {
             aseed_p.push_back(seed);
             asens_p.push_back(sens);
           } else {
-            MXNode::clearVector(seed);
+            MXNode::clearVector(seed, seed.size());
           }
         }
 
@@ -1200,8 +1201,8 @@ namespace casadi {
 
     vector<MX> swork(workloc_.size()-1);
 
-    MXPtrV input_p, output_p;
-    MXPtrVV dummy_p;
+    vector<const MX*> input_p;
+    vector<MX*> output_p;
 
     // Definition of intermediate variables
     vector<MX> y;
