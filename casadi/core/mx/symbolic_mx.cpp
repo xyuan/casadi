@@ -46,27 +46,35 @@ namespace casadi {
     stream << name_;
   }
 
-  void SymbolicMX::evaluateD(const double* const* input, double** output,
+  void SymbolicMX::evalD(const cpv_double& input, const pv_double& output,
                              int* itmp, double* rtmp) {
   }
 
-  void SymbolicMX::evaluateSX(const SXElement* const* input, SXElement** output,
+  void SymbolicMX::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                               int* itmp, SXElement* rtmp) {
   }
 
-  void SymbolicMX::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                              MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                              bool output_given) {
+  void SymbolicMX::eval(const cpv_MX& input, const pv_MX& output) {
+  }
+
+  void SymbolicMX::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+  }
+
+  void SymbolicMX::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
   }
 
   const std::string& SymbolicMX::getName() const {
     return name_;
   }
 
-  void SymbolicMX::propagateSparsity(double** input, double** output, bool fwd) {
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    fill_n(outputd, nnz(), 0);
+  void SymbolicMX::spFwd(const cpv_bvec_t& arg,
+                         const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    fill_n(res[0], nnz(), 0);
   }
 
+  void SymbolicMX::spAdj(const pv_bvec_t& arg,
+                         const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    fill_n(res[0], nnz(), 0);
+  }
 
 } // namespace casadi

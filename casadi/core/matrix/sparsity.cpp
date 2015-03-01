@@ -255,6 +255,10 @@ namespace casadi {
     return (*this)->isDiagonal();
   }
 
+  bool Sparsity::isVector(bool row_or_col) const {
+    return (*this)->isVector(row_or_col);
+  }
+
   bool Sparsity::isSquare() const {
     return (*this)->isSquare();
   }
@@ -1432,8 +1436,8 @@ namespace casadi {
     return nnz;
   }
 
-  void Sparsity::mul_sparsityF(bvec_t* x, const Sparsity& x_sp,
-                               bvec_t* y, const Sparsity& y_sp,
+  void Sparsity::mul_sparsityF(const bvec_t* x, const Sparsity& x_sp,
+                               const bvec_t* y, const Sparsity& y_sp,
                                bvec_t* z, const Sparsity& z_sp,
                                bvec_t* w) {
     // Assert dimensions

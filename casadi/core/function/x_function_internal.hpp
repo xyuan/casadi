@@ -95,19 +95,17 @@ namespace casadi {
     /** \brief Return Jacobian function  */
     virtual Function getJacobian(int iind, int oind, bool compact, bool symmetric);
 
-    /** \brief Generate a function that calculates nfdir forward
-     * derivatives and nadir adjoint derivatives */
-    virtual Function getDerivative(int nfdir, int nadir);
+    ///@{
+    /** \brief Generate a function that calculates \a nfwd forward derivatives */
+    virtual Function getDerForward(int nfwd);
+    virtual bool hasDerForward() const { return true;}
+    ///@}
 
-    /** \brief Constructs and returns a function that calculates forward derivatives by
-     * creating the Jacobian then multiplying */
-    //virtual Function getDerivativeViaJac(int nfdir, int nadir);
-
-    /** \brief Symbolic expressions for the forward seeds */
-    std::vector<std::vector<MatType> > symbolicFwdSeed(int nfdir);
-
-    /** \brief Symbolic expressions for the adjoint seeds */
-    std::vector<std::vector<MatType> > symbolicAdjSeed(int nadir);
+    ///@{
+    /** \brief Generate a function that calculates \a nadj adjoint derivatives */
+    virtual Function getDerReverse(int nadj);
+    virtual bool hasDerReverse() const { return true;}
+    ///@}
 
     /** \brief Generate code for the declarations of the C function */
     virtual void generateDeclarations(std::ostream &stream, const std::string& type,
@@ -117,6 +115,21 @@ namespace casadi {
     virtual void generateBody(std::ostream &stream, const std::string& type,
                               CodeGenerator& gen) const = 0;
 
+    /** \brief Helper function: Check if a vector equals inputv */
+    virtual bool isInput(const std::vector<MatType>& arg) const;
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    virtual void callForward(const std::vector<MatType>& arg, const std::vector<MatType>& res,
+                         const std::vector<std::vector<MatType> >& fseed,
+                         std::vector<std::vector<MatType> >& fsens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    virtual void callReverse(const std::vector<MatType>& arg, const std::vector<MatType>& res,
+                         const std::vector<std::vector<MatType> >& aseed,
+                         std::vector<std::vector<MatType> >& asens,
+                         bool always_inline, bool never_inline);
+
     // Data members (all public)
 
     /** \brief  Inputs of the function (needed for symbolic calculations) */
@@ -124,23 +137,6 @@ namespace casadi {
 
     /** \brief  Outputs of the function (needed for symbolic calculations) */
     std::vector<MatType> outputv_;
-
-    /** \brief purge seeds from all-zeros
-    *
-    * If all seeds in one direction are zero, the corresponding sensitivities are set to zero
-    * and the direction is removed
-    * \param[in] seed -- original seeds
-    * \param[in] sens -- original sens
-    * \param[in] forward -- boolean indicating if we are using forward mode
-    * \param[out] seed_purged -- filled up with non-zero seed directions
-    * \param[out] sens_purged -- filled up with corresponding sens directions
-    *
-    */
-    void purgeSeeds(const std::vector<std::vector<MatType*> >& seed,
-                    const std::vector<std::vector<MatType*> >& sens,
-                    std::vector<std::vector<MatType*> >& seed_purged,
-                    std::vector<std::vector<MatType*> >& sens_purged, bool forward);
-
   };
 
 #ifdef casadi_implementation
@@ -530,9 +526,6 @@ namespace casadi {
       return MatType(input(iind).shape());
     }
 
-    // Dummy forward seeds and sensitivities
-    typename std::vector<std::vector<MatType> > fseed, fsens;
-
     // Adjoint seeds
     typename std::vector<std::vector<MatType> > aseed(1, std::vector<MatType>(outputv_.size()));
     for (int i=0; i<outputv_.size(); ++i) {
@@ -550,8 +543,7 @@ namespace casadi {
     }
 
     // Calculate with adjoint mode AD
-    std::vector<MatType> res(outputv_);
-    call(inputv_, res, fseed, fsens, aseed, asens, true, false);
+    static_cast<DerivedType*>(this)->callReverse(inputv_, outputv_, aseed, asens, true, false);
 
     int dir = 0;
     for (int i=0; i<getNumInputs(); ++i) { // Correct sparsities #1025
@@ -579,18 +571,14 @@ namespace casadi {
       }
     }
 
-    // Dummy adjoint seeds and sensitivities
-    typename std::vector<std::vector<MatType> > aseed, asens;
-
     // Forward sensitivities
     std::vector<std::vector<MatType> > fsens(1, std::vector<MatType>(outputv_.size()));
     for (int i=0; i<outputv_.size(); ++i) {
       fsens[0][i] = MatType::zeros(outputv_[i].sparsity());
     }
 
-    // Calculate with adjoint mode AD
-    std::vector<MatType> res(outputv_);
-    call(inputv_, res, fseed, fsens, aseed, asens, true, false);
+    // Calculate with forward mode AD
+    static_cast<DerivedType*>(this)->callForward(inputv_, outputv_, fseed, fsens, true, false);
 
     // Return adjoint directional derivative
     return fsens[0].at(oind);
@@ -792,7 +780,15 @@ namespace casadi {
 
       // Evaluate symbolically
       if (verbose()) std::cout << "XFunctionInternal::jac making function call" << std::endl;
-      call(inputv_, res, fseed, fsens, aseed, asens, always_inline, never_inline);
+      if (fseed.size()>0) {
+        casadi_assert(aseed.size()==0);
+        static_cast<DerivedType*>(this)->callForward(inputv_, outputv_,
+                                                 fseed, fsens, always_inline, never_inline);
+      } else if (aseed.size()>0) {
+        casadi_assert(fseed.size()==0);
+        static_cast<DerivedType*>(this)->callReverse(inputv_, outputv_,
+                                                 aseed, asens, always_inline, never_inline);
+      }
 
       // Carry out the forward sweeps
       for (int d=0; d<nfdir_batch; ++d) {
@@ -982,96 +978,38 @@ namespace casadi {
   }
 
   template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
-  std::vector<std::vector<MatType> >
-    XFunctionInternal<PublicType, DerivedType, MatType, NodeType>::symbolicFwdSeed(int nfdir) {
-    std::vector<std::vector<MatType> > fseed(nfdir, inputv_);
-    for (int dir=0; dir<nfdir; ++dir) {
-      // Replace symbolic inputs
-      int iind=0;
-      for (typename std::vector<MatType>::iterator i=fseed[dir].begin();
-          i!=fseed[dir].end();
-          ++i, ++iind) {
-        // Name of the forward seed
-        std::stringstream ss;
-        ss << "f";
-        if (nfdir>1) ss << dir;
-        ss << "_";
-        ss << iind;
-
-        // Save to matrix
-        *i = MatType::sym(ss.str(), i->sparsity());
-
-      }
-    }
-    return fseed;
-  }
-
-  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
-  std::vector<std::vector<MatType> >
-      XFunctionInternal<PublicType, DerivedType, MatType, NodeType>::symbolicAdjSeed(int nadir) {
-    std::vector<std::vector<MatType> > aseed(nadir, outputv_);
-    for (int dir=0; dir<nadir; ++dir) {
-      // Replace symbolic inputs
-      int oind=0;
-      for (typename std::vector<MatType>::iterator i=aseed[dir].begin();
-          i!=aseed[dir].end();
-          ++i, ++oind) {
-        // Name of the adjoint seed
-        std::stringstream ss;
-        ss << "a";
-        if (nadir>1) ss << dir << "_";
-        ss << oind;
-
-        // Save to matrix
-        *i = MatType::sym(ss.str(), i->sparsity());
-
-      }
-    }
-    return aseed;
-  }
-
-
-  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
-  Function XFunctionInternal<PublicType, DerivedType, MatType, NodeType>::getDerivative(int nfdir,
-                                                                                     int nadir) {
+  Function XFunctionInternal<PublicType, DerivedType,
+                             MatType, NodeType>::getDerForward(int nfwd) {
     // Seeds
-    std::vector<std::vector<MatType> > fseed = symbolicFwdSeed(nfdir);
-    std::vector<std::vector<MatType> > aseed = symbolicAdjSeed(nadir);
+    std::vector<std::vector<MatType> > fseed = symbolicFwdSeed(nfwd, inputv_), fsens;
 
     // Evaluate symbolically
-    std::vector<MatType> res(outputv_);
-    std::vector<std::vector<MatType> > fsens(nfdir, outputv_), asens(nadir, inputv_);
-    call(inputv_, res, fseed, fsens, aseed, asens, true, false);
+    static_cast<DerivedType*>(this)->evalFwd(fseed, fsens);
+    casadi_assert(fsens.size()==fseed.size());
+
+    // Number inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
 
     // All inputs of the return function
     std::vector<MatType> ret_in;
-    ret_in.reserve(inputv_.size()*(1+nfdir) + outputv_.size()*nadir);
+    ret_in.reserve(num_in + num_out + nfwd*num_in);
     ret_in.insert(ret_in.end(), inputv_.begin(), inputv_.end());
-    for (int dir=0; dir<nfdir; ++dir)
-      ret_in.insert(ret_in.end(), fseed[dir].begin(), fseed[dir].end());
-    for (int dir=0; dir<nadir; ++dir)
-      ret_in.insert(ret_in.end(), aseed[dir].begin(), aseed[dir].end());
+    for (int i=0; i<num_out; ++i) {
+      std::stringstream ss;
+      ss << "dummy_output_" << i;
+      ret_in.push_back(MatType::sym(ss.str(), Sparsity(outputv_.at(i).shape())));
+    }
+    for (int d=0; d<nfwd; ++d)
+      ret_in.insert(ret_in.end(), fseed[d].begin(), fseed[d].end());
 
     // All outputs of the return function
     std::vector<MatType> ret_out;
-    ret_out.reserve(outputv_.size()*(1+nfdir) + inputv_.size()*nadir);
-    ret_out.insert(ret_out.end(), outputv_.begin(), outputv_.end());
-    for (int dir=0; dir<nfdir; ++dir) {
-      for (int i=0; i<getNumOutputs(); ++i) { // Correct sparsities #1025
-        if (fsens[dir][i].sparsity()!=outputv_[i].sparsity()) {
-          fsens[dir][i] = fsens[dir][i].setSparse(outputv_[i].sparsity());
-        }
-      }
-      ret_out.insert(ret_out.end(), fsens[dir].begin(), fsens[dir].end());
+    ret_out.reserve(num_out*nfwd);
+    for (int d=0; d<nfwd; ++d) {
+      ret_out.insert(ret_out.end(), fsens[d].begin(), fsens[d].end());
     }
-    for (int dir=0; dir<nadir; ++dir) {
-      for (int i=0; i<getNumInputs(); ++i) { // Correct sparsities #1025
-        if (asens[dir][i].sparsity()!=inputv_[i].sparsity()) {
-          asens[dir][i] = asens[dir][i].setSparse(inputv_[i].sparsity());
-        }
-      }
-      ret_out.insert(ret_out.end(), asens[dir].begin(), asens[dir].end());
-    }
+
     // Assemble function and return
     PublicType ret(ret_in, ret_out);
     ret.init();
@@ -1079,46 +1017,117 @@ namespace casadi {
   }
 
   template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
-  void XFunctionInternal<PublicType, DerivedType, MatType, NodeType>::purgeSeeds(
-    const std::vector<std::vector<MatType*> >& seed,
-    const std::vector<std::vector<MatType*> >& sens,
-    std::vector<std::vector<MatType*> >& seed_purged,
-    std::vector<std::vector<MatType*> >& sens_purged, bool forward) {
+  Function XFunctionInternal<PublicType, DerivedType, MatType, NodeType>
+  ::getDerReverse(int nadj) {
+    // Seeds
+    std::vector<std::vector<MatType> > aseed = symbolicAdjSeed(nadj, outputv_), asens;
 
-    // This check out to be superfluous
-    casadi_assert(seed.size()==sens.size());
+    // Evaluate symbolically
+    static_cast<DerivedType*>(this)->evalAdj(aseed, asens);
 
-    // Clear the outputs, leaving capacity intact
-    seed_purged.clear();
-    sens_purged.clear();
+    // Number inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
 
-    // Loop over all seed directions
-    for (int d=0;d<seed.size();++d) {
+    // All inputs of the return function
+    std::vector<MatType> ret_in;
+    ret_in.reserve(num_in + num_out + nadj*num_out);
+    ret_in.insert(ret_in.end(), inputv_.begin(), inputv_.end());
+    for (int i=0; i<num_out; ++i) {
+      std::stringstream ss;
+      ss << "dummy_output_" << i;
+      ret_in.push_back(MatType::sym(ss.str(), Sparsity(outputv_.at(i).shape())));
+    }
+    for (int d=0; d<nadj; ++d)
+      ret_in.insert(ret_in.end(), aseed[d].begin(), aseed[d].end());
 
-      // Determine if this direction is empty
-      bool empty = true;
-      for (int i=0;i<seed[d].size();++i) {
-        if (!(seed[d][i]==0 || seed[d][i]->isEmpty(true) || (*seed[d][i])->isZero())) {
-          empty = false; break;
-        }
-      }
-
-      if (empty) {
-        // Empty directions are discarded, with forward sensitivities put to zero
-        if (forward) {
-          for (int i=0;i<sens[d].size();++i) {
-            if (sens[d][i]!=0 && !sens[d][i]->isEmpty(true)) {
-              *sens[d][i]=MatType::zeros(sens[d][i]->sparsity());
-            }
-          }
-        }
-      } else {
-        // Non-empty directions are added to the purged list
-        seed_purged.push_back(seed[d]);
-        sens_purged.push_back(sens[d]);
-      }
+    // All outputs of the return function
+    std::vector<MatType> ret_out;
+    ret_out.reserve(num_in*nadj);
+    for (int d=0; d<nadj; ++d) {
+      ret_out.insert(ret_out.end(), asens[d].begin(), asens[d].end());
     }
 
+    // Assemble function and return
+    PublicType ret(ret_in, ret_out);
+    ret.init();
+    return ret;
+  }
+
+  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  bool XFunctionInternal<PublicType, DerivedType, MatType, NodeType>
+  ::isInput(const std::vector<MatType>& arg) const {
+    // Check if arguments matches the input expressions, in which case
+    // the output is known to be the output expressions
+    const int checking_depth = 2;
+    for (int i=0; i<arg.size(); ++i) {
+      if (!isEqual(arg[i], inputv_[i], checking_depth)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  void XFunctionInternal<PublicType, DerivedType, MatType, NodeType>::
+  callForward(const std::vector<MatType>& arg, const std::vector<MatType>& res,
+          const std::vector<std::vector<MatType> >& fseed,
+          std::vector<std::vector<MatType> >& fsens,
+          bool always_inline, bool never_inline) {
+    casadi_assert_message(!(always_inline && never_inline), "Inconsistent options");
+    bool inline_function = always_inline;     // TODO(@jaeandersson): Add logic for inlining
+
+    // Quick return if no seeds
+    if (fseed.empty()) {
+      fsens.clear();
+      return;
+    }
+
+    // The non-inlining version is implemented in the base class
+    if (!inline_function) {
+      return FunctionInternal::callForward(arg, res, fseed, fsens, always_inline, never_inline);
+    }
+
+    if (isInput(arg)) {
+      // Argument agrees with inputv_, call evalFwd directly
+      static_cast<DerivedType*>(this)->evalFwd(fseed, fsens);
+    } else {
+      // Need to create a temporary function
+      PublicType f(arg, res);
+      f.init();
+      f->evalFwd(fseed, fsens);
+    }
+  }
+
+  template<typename PublicType, typename DerivedType, typename MatType, typename NodeType>
+  void XFunctionInternal<PublicType, DerivedType, MatType, NodeType>::
+  callReverse(const std::vector<MatType>& arg, const std::vector<MatType>& res,
+          const std::vector<std::vector<MatType> >& aseed,
+          std::vector<std::vector<MatType> >& asens,
+          bool always_inline, bool never_inline) {
+    casadi_assert_message(!(always_inline && never_inline), "Inconsistent options");
+    bool inline_function = always_inline;     // TODO(@jaeandersson): Add logic for inlining
+
+    // Quick return if no seeds
+    if (aseed.empty()) {
+      asens.clear();
+      return;
+    }
+
+    // The non-inlining version is implemented in the base class
+    if (!inline_function) {
+      return FunctionInternal::callReverse(arg, res, aseed, asens, always_inline, never_inline);
+    }
+
+    if (isInput(arg)) {
+      // Argument agrees with inputv_, call evalAdj directly
+      static_cast<DerivedType*>(this)->evalAdj(aseed, asens);
+    } else {
+      // Need to create a temporary function
+      PublicType f(arg, res);
+      f.init();
+      f->evalAdj(aseed, asens);
+    }
   }
 
 #endif

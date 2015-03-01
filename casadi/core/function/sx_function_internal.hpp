@@ -94,26 +94,29 @@ class CASADI_EXPORT SXFunctionInternal :
   /** \brief  Evaluate the function numerically */
   virtual void evaluate();
 
-  /** \brief  Helper class to be plugged into evaluateGen when working
-   * with a value known only at runtime */
-  struct int_runtime {
-    const int value;
-    int_runtime(int v) : value(v) {}
-  };
-
-  /** \brief  Helper class to be plugged into evaluateGen when working
-   * with a value known already at compiletime */
-  template<int v>
-  struct int_compiletime {
-    static const int value = v;
-  };
-
   /** \brief  evaluate symbolically while also propagating directional derivatives */
-  virtual void evalSXsparse(const std::vector<SX>& arg, std::vector<SX>& res,
-                      const std::vector<std::vector<SX> >& fseed,
-                            std::vector<std::vector<SX> >& fsens,
-                      const std::vector<std::vector<SX> >& aseed,
-                            std::vector<std::vector<SX> >& asens);
+  virtual void evalSX(const std::vector<SX>& arg, std::vector<SX>& res);
+
+  /** \brief Calculate forward mode directional derivatives */
+  virtual void evalFwd(const std::vector<std::vector<SX> >& fseed,
+                       std::vector<std::vector<SX> >& fsens);
+
+  /** \brief Calculate reverse mode directional derivatives */
+  virtual void evalAdj(const std::vector<std::vector<SX> >& aseed,
+                       std::vector<std::vector<SX> >& asens);
+
+  /** \brief Create call to (cached) derivative function, forward mode  */
+  virtual void callForward(const std::vector<SX>& arg, const std::vector<SX>& res,
+                       const std::vector<std::vector<SX> >& fseed,
+                       std::vector<std::vector<SX> >& fsens,
+                       bool always_inline, bool never_inline);
+
+  /** \brief Create call to (cached) derivative function, reverse mode  */
+  virtual void callReverse(const std::vector<SX>& arg, const std::vector<SX>& res,
+                       const std::vector<std::vector<SX> >& aseed,
+                       std::vector<std::vector<SX> >& asens,
+                       bool always_inline, bool never_inline);
+
 
   /** \brief  Check if smooth */
   bool isSmooth() const;

@@ -45,32 +45,24 @@ namespace casadi {
     }
   }
 
-  void Determinant::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                               MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                               bool output_given) {
-    int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
+  void Determinant::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = det(*input[0]);
+  }
 
-    // Non-differentiated output
-    const MX& X = *input[0];
-    MX& det_X = *output[0];
-    if (!output_given) {
-      det_X = det(X);
-    }
-
-    // Quick return
-    if (nfwd==0 && nadj==0) return;
-
-    // Create only once
+  void Determinant::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    const MX& X = dep();
+    MX det_X = shared_from_this<MX>();
     MX trans_inv_X = inv(X).T();
-
-    // Forward sensitivities
-    for (int d=0; d<nfwd; ++d) {
+    for (int d=0; d<fwdSens.size(); ++d) {
       *fwdSens[d][0] = det_X * inner_prod(trans_inv_X, *fwdSeed[d][0]);
     }
+  }
 
-    // Adjoint sensitivities
-    for (int d=0; d<nadj; ++d) {
+  void Determinant::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    const MX& X = dep();
+    MX det_X = shared_from_this<MX>();
+    MX trans_inv_X = inv(X).T();
+    for (int d=0; d<adjSeed.size(); ++d) {
       adjSens[d][0]->addToSum((*adjSeed[d][0]*det_X) * trans_inv_X);
       *adjSeed[d][0] = MX();
     }

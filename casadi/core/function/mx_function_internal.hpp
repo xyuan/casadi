@@ -54,24 +54,20 @@ namespace casadi {
     /** \brief  All the runtime elements in the order of evaluation */
     std::vector<AlgEl> algorithm_;
 
-    /** \brief  Working vector for numeric calculation */
-    std::vector<std::vector<double> > work_;
-
-    /** \brief  Temporary vectors needed for the evaluation (integer) */
+    /** \brief  Temporary vector needed for the evaluation (integer) */
     std::vector<int> itmp_;
 
-    /** \brief  Temporary vectors needed for the evaluation (real) */
+    /** \brief  Temporary vector needed for the evaluation (real) */
     std::vector<double> rtmp_;
 
-    /** \brief  Location in the tape vector for each variable */
-    std::vector<int> tapeloc_;
+    /** \brief Offsets for elements in the rtmp_ vector */
+    std::vector<int> workloc_;
+
+    // Length of pointer arrays needed during evaluation
+    std::size_t max_arg_, max_res_;
 
     /// Free variables
     std::vector<MX> free_vars_;
-
-    // Vectors to hold pointers during evaluation
-    std::vector<double*> mx_input_;
-    std::vector<double*> mx_output_;
 
     /** \brief  Multiple input, multiple output constructor, only to be accessed from MXFunction,
         therefore protected */
@@ -110,25 +106,22 @@ namespace casadi {
     /** \brief Generate a function that calculates a Jacobian function by operator overloading */
     virtual Function getNumericJacobian(int iind, int oind, bool compact, bool symmetric);
 
-    /** \brief Evaluate symbolically, SXElement type*/
-    virtual void evalSXsparse(const std::vector<SX>& input, std::vector<SX>& output,
-                              const std::vector<std::vector<SX> >& fwdSeed,
-                              std::vector<std::vector<SX> >& fwdSens,
-                              const std::vector<std::vector<SX> >& adjSeed,
-                              std::vector<std::vector<SX> >& adjSens);
+    /** \brief Evaluate symbolically, SX type*/
+    virtual void evalSX(const std::vector<SX>& input, std::vector<SX>& output);
 
     /** \brief Evaluate symbolically, MX type */
-    virtual void evalMX(const std::vector<MX>& input, std::vector<MX>& output,
-                        const std::vector<std::vector<MX> >& fwdSeed,
-                        std::vector<std::vector<MX> >& fwdSens,
-                        const std::vector<std::vector<MX> >& adjSeed,
+    virtual void evalMX(const std::vector<MX>& input, std::vector<MX>& output);
+
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<std::vector<MX> >& fwdSeed,
+                        std::vector<std::vector<MX> >& fwdSens);
+
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<std::vector<MX> >& adjSeed,
                         std::vector<std::vector<MX> >& adjSens);
 
     /** \brief Expand the matrix valued graph into a scalar valued graph */
     SXFunction expand(const std::vector<SX>& inputv);
-
-    // Update pointers to a particular element
-    void updatePointers(const AlgEl& el);
 
     /// Get a vector of symbolic variables with the same dimensions as the inputs
     virtual std::vector<MX> symbolicInput() const { return inputv_;}
@@ -147,9 +140,6 @@ namespace casadi {
 
     /// Print work vector
     void printWork(std::ostream &stream=std::cout);
-
-    /// Allocate tape
-    void allocTape(std::vector<std::pair<std::pair<int, int>, MX> >& tape);
 
     // print an element of an algorithm
     void print(std::ostream &stream, const AlgEl& el) const;

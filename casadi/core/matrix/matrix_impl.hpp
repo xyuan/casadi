@@ -333,7 +333,7 @@ namespace casadi {
       } else if (m.isScalar()) {
         // m scalar means "set all"
         if (m.isDense()) {
-          return setSub(repmat(m, rr.sparsity()), ind1, rr);
+          return setSub(Matrix<DataType>(rr.sparsity(), m), ind1, rr);
         } else {
           return setSub(Matrix<DataType>(rr.shape()), ind1, rr);
         }
@@ -470,7 +470,7 @@ namespace casadi {
       if (m.isScalar()) {
         // m scalar means "set all"
         if (!m.isDense()) return; // Nothing to set
-        return setNZ(repmat(m, kk.sparsity()), ind1, kk);
+        return setNZ(Matrix<DataType>(kk.sparsity(), m), ind1, kk);
       } else if (kk.shape() == m.shape()) {
         // Project sparsity if needed
         return setNZ(m.setSparse(kk.sparsity()), ind1, kk);
@@ -2646,31 +2646,6 @@ namespace casadi {
       }
     }
     return blockcat(blocks);
-  }
-
-  template<typename DataType>
-  Matrix<DataType> Matrix<DataType>::zz_repmat(const Sparsity& sp) const {
-    casadi_assert_message(isScalar(),
-                          "repmat(Matrix<DataType> x, Sparsity sp) only defined for scalar x");
-    return Matrix<DataType>(sp, toScalar(), false);
-  }
-
-  template<typename DataType>
-  Matrix<DataType> Matrix<DataType>::zz_repmat(int n, int m) const {
-    if (n==1 &&  m==1) {
-      // Quick return if possible
-      return *this;
-    } else if (isScalar()) {
-      if (isDense()) {
-        return Matrix<DataType>(Sparsity::dense(n, m), toScalar(), false);
-      } else {
-        return Matrix<DataType>(n, m);
-      }
-    } else {
-      std::vector< Matrix<DataType> > v_hor(m, *this);
-      std::vector< Matrix<DataType> > v_ver(n, horzcat(v_hor));
-      return vertcat(v_ver);
-    }
   }
 
   template<typename DataType>

@@ -126,13 +126,20 @@ namespace casadi {
     /** \brief  evaluate */
     virtual void evaluate();
 
+    ///@{
+    /** \brief Generate a function that calculates \a nfwd forward derivatives */
+    virtual Function getDerForward(int nfwd);
+    virtual bool hasDerForward() const { return true;}
+    ///@}
+
+    ///@{
+    /** \brief Generate a function that calculates \a nadj adjoint derivatives */
+    virtual Function getDerReverse(int nadj);
+    virtual bool hasDerReverse() const { return true;}
+    ///@}
+
     /** \brief  Initialize */
     virtual void init();
-
-    /** \brief Generate a function that calculates \a nfwd forward derivatives
-     and \a nadj adjoint derivatives
-    */
-    virtual Function getDerivative(int nfwd, int nadj);
 
     /// A documentation string
     static const std::string meta_doc;

@@ -151,10 +151,13 @@ namespace casadi {
     }
   }
 
-  Function SimpleIndefDleInternal::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function SimpleIndefDleInternal::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
   }
 
+  Function SimpleIndefDleInternal::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
+  }
 
   void SimpleIndefDleInternal::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

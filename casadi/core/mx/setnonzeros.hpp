@@ -55,10 +55,13 @@ namespace casadi {
     virtual SetNonzeros* clone() const = 0;
 
     /// Evaluate the function symbolically (MX)
-    void evaluateMX(const MXPtrV& input, MXPtrV& output,
-                    const MXPtrVV& fwdSeed, MXPtrVV& fwdSens,
-                    const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                    bool output_given);
+    void eval(const cpv_MX& input, const pv_MX& output);
+
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
 
     /** \brief Get the operation */
     virtual int getOp() const { return Add ? OP_ADDNONZEROS : OP_SETNONZEROS;}
@@ -93,24 +96,31 @@ namespace casadi {
 
     /// Evaluate the function (template)
     template<typename T>
-    void evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp);
+    void evalGen(const std::vector<const T*>& input,
+                 const std::vector<T*>& output, int* itmp, T* rtmp);
 
     /// Evaluate the function numerically
-    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
+    virtual void evalD(const cpv_double& input, const pv_double& output,
+                       int* itmp, double* rtmp);
 
     /// Evaluate the function symbolically (SX)
-    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
+    virtual void evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                             int* itmp, SXElement* rtmp);
 
-    /// Propagate sparsity
-    virtual void propagateSparsity(double** input, double** output, bool fwd);
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const cpv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const pv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
 
     /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                                   const std::vector<int>& res, CodeGenerator& gen) const;
 
     /** \brief Check if two nodes are equivalent up to a given depth */
     virtual bool zz_isEqual(const MXNode* node, int depth) const;
@@ -142,26 +152,33 @@ namespace casadi {
     /// Simplify
     virtual void simplifyMe(MX& ex);
 
-    /// Propagate sparsity
-    virtual void propagateSparsity(double** input, double** output, bool fwd);
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const cpv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const pv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
 
     /// Evaluate the function (template)
     template<typename T>
-    void evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp);
+    void evalGen(const std::vector<const T*>& input,
+                 const std::vector<T*>& output, int* itmp, T* rtmp);
 
     /// Evaluate the function numerically
-    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
+    virtual void evalD(const cpv_double& input, const pv_double& output,
+                       int* itmp, double* rtmp);
 
     /// Evaluate the function symbolically (SX)
-    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
-                            int* itmp, SXElement* rtmp);
+    virtual void evalSX(const cpv_SXElement& input, const pv_SXElement& output,
+                        int* itmp, SXElement* rtmp);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
 
     /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                                   const std::vector<int>& res, CodeGenerator& gen) const;
 
     /** \brief Check if two nodes are equivalent up to a given depth */
     virtual bool zz_isEqual(const MXNode* node, int depth) const;
@@ -188,26 +205,33 @@ namespace casadi {
     /// Get all the nonzeros
     virtual std::vector<int> getAll() const { return inner_.getAll(outer_, outer_.stop_);}
 
-    /// Propagate sparsity
-    virtual void propagateSparsity(double** input, double** output, bool fwd);
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const cpv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const pv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
 
     /// Evaluate the function (template)
     template<typename T>
-    void evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp);
+    void evalGen(const std::vector<const T*>& input,
+                 const std::vector<T*>& output, int* itmp, T* rtmp);
 
     /// Evaluate the function numerically
-    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
+    virtual void evalD(const cpv_double& input, const pv_double& output,
+                       int* itmp, double* rtmp);
 
     /// Evaluate the function symbolically (SX)
-    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
+    virtual void evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                             int* itmp, SXElement* rtmp);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
 
     /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                                   const std::vector<int>& res, CodeGenerator& gen) const;
 
     /** \brief Check if two nodes are equivalent up to a given depth */
     virtual bool zz_isEqual(const MXNode* node, int depth) const;

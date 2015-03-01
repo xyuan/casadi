@@ -160,7 +160,9 @@ class ADtests(casadiTestCase):
             fseeds = map(lambda x: DMatrix(f.input().sparsity(),x), seeds)
             aseeds = map(lambda x: DMatrix(f.output().sparsity(),x), seeds)
             with internalAPI():
-              res,fwdsens,adjsens = f.callDerivative([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
+              res = f.call([y])
+              fwdsens = f.callForward([y], res, map(lambda x: [x],fseeds))
+              adjsens = f.callReverse([y], res, map(lambda x: [x],aseeds))
             fwdsens = map(lambda x: x[0],fwdsens)
             adjsens = map(lambda x: x[0],adjsens)
             
@@ -207,7 +209,9 @@ class ADtests(casadiTestCase):
             fseeds = map(lambda x: DMatrix(f.input().sparsity(),x), seeds)
             aseeds = map(lambda x: DMatrix(f.output().sparsity(),x), seeds)
             with internalAPI():
-              res,fwdsens,adjsens = f.callDerivative([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds),True)
+              res = f.call([y])
+              fwdsens = f.callForward([y],res,map(lambda x: [x],fseeds))
+              adjsens = f.callReverse([y],res,map(lambda x: [x],aseeds))
             fwdsens = map(lambda x: x[0],fwdsens)
             adjsens = map(lambda x: x[0],adjsens)
             
@@ -255,7 +259,9 @@ class ADtests(casadiTestCase):
             fseeds = map(lambda x: DMatrix(f.input().sparsity(),x), seeds)
             aseeds = map(lambda x: DMatrix(f.output().sparsity(),x), seeds)
             with internalAPI():
-              res,fwdsens,adjsens = f.callDerivative([y],map(lambda x: [x],fseeds),map(lambda x: [x],aseeds))
+              res = f.call([y])
+              fwdsens = f.callForward([y],res,map(lambda x: [x],fseeds))
+              adjsens = f.callReverse([y],res,map(lambda x: [x],aseeds))
             fwdsens = map(lambda x: x[0],fwdsens)
             adjsens = map(lambda x: x[0],adjsens)
             
@@ -297,7 +303,9 @@ class ADtests(casadiTestCase):
             y = SX.sym("y",f.input().sparsity())
             
             with internalAPI():
-              res,fwdsens,adjsens = f.callDerivative([y],[],[])
+              res = f.call([y])
+              fwdsens = f.callForward([y],res,[])
+              adjsens = f.callReverse([y],res,[])
             
             fe = SXFunction([y],res)
             fe.init()
@@ -316,7 +324,8 @@ class ADtests(casadiTestCase):
             for mode in ["forward","reverse"]:
               self.message(" %s Jacobian on SX. Input %s %s, Output %s %s" % (mode,inputtype,inputshape,outputtype,outputshape) )
               f=SXFunction(self.sxinputs[inputshape][inputtype],self.sxoutputs[outputshape][outputtype])
-              f.setOption("ad_mode",mode)
+              f.setOption("ad_weight", 0 if mode=='forward' else 1)
+              f.setOption("ad_weight_sp", 0 if mode=='forward' else 1)
               f.init()
               Jf=f.jacobian(0,0)
               Jf.init()
@@ -368,7 +377,8 @@ class ADtests(casadiTestCase):
             for mode in ["forward","reverse"]:
               self.message("adj AD on MX. Input %s %s, Output %s %s" % (inputtype,inputshape,outputtype,outputshape) )
               f=MXFunction(self.mxinputs[inputshape][inputtype],self.mxoutputs[outputshape][outputtype](self.mxinputs[inputshape][inputtype][0]))
-              f.setOption("ad_mode",mode)
+              f.setOption("ad_weight", 0 if mode=='forward' else 1)
+              f.setOption("ad_weight_sp", 0 if mode=='forward' else 1)
               f.init()
               Jf=f.jacobian(0,0)
               Jf.init()
@@ -386,7 +396,8 @@ class ADtests(casadiTestCase):
             for mode in ["forward","reverse"]:
               self.message(" %s jacobian on MX (SCT). Input %s %s, Output %s %s" % (mode,inputtype,inputshape,outputtype,outputshape) )
               f=MXFunction(self.mxinputs[inputshape][inputtype],self.mxoutputs[outputshape][outputtype](self.mxinputs[inputshape][inputtype][0]))
-              f.setOption("ad_mode",mode)
+              f.setOption("ad_weight", 0 if mode=='forward' else 1)
+              f.setOption("ad_weight_sp", 0 if mode=='forward' else 1)
               f.init()
               Jf=f.jacobian(0,0)
               Jf.init()
@@ -432,7 +443,6 @@ class ADtests(casadiTestCase):
     inp[3,0]=y
 
     f=SXFunction([inp],[vertcat([x+y,x,y])])
-    #f.setOption("ad_mode","forward")
     f.init()
     J=f.jacobian(0,0)
     J.init()
@@ -453,7 +463,6 @@ class ADtests(casadiTestCase):
     inp[3,0]=y
 
     f=SXFunction([inp],[vertcat([x+y,x,y])])
-    #f.setOption("ad_mode","forward")
     f.init()
     J=f.jacobian(0,0)
     J.init()
@@ -647,8 +656,10 @@ class ADtests(casadiTestCase):
               
       for f in [fun,fun.expand()]:
         f.init()
-        d = f.derivative(ndir,ndir)
-        d.init()
+        d1 = f.derForward(ndir)
+        d1.init()
+        d2 = f.derReverse(ndir)
+        d2.init()
         
         num_in = f.getNumInputs()
         num_out = f.getNumOutputs()
@@ -689,7 +700,9 @@ class ADtests(casadiTestCase):
             inputss = [sym("i",f.input(i).sparsity()) for i in range(f.getNumInputs())]
         
             with internalAPI():
-              res,fwdsens,adjsens = f.callDerivative(inputss,fseeds,aseeds,True)
+              res = f.call(inputss,True)
+              fwdsens = f.callForward(inputss,res,fseeds,True)
+              adjsens = f.callReverse(inputss,res,aseeds,True)
             
             fseed = [DMatrix(fseeds[d][0].sparsity(),random.random(fseeds[d][0].nnz())) for d in range(ndir) ]
             aseed = [DMatrix(aseeds[d][0].sparsity(),random.random(aseeds[d][0].nnz())) for d in range(ndir) ]
@@ -760,7 +773,9 @@ class ADtests(casadiTestCase):
               inputss2 = [sym2("i",vf_mx.input(i).sparsity()) for i in range(vf.getNumInputs())]
            
               with internalAPI():
-                res2,fwdsens2,adjsens2 = vf.callDerivative(inputss2,fseeds2,aseeds2,True)
+                res2 = vf.call(inputss2,True)
+                fwdsens2 = vf.callForward(inputss2,res2,fseeds2,True)
+                adjsens2 = vf.callReverse(inputss2,res2,aseeds2,True)
 
               vf2 = Function2(inputss2+vec([fseeds2[i]+aseeds2[i] for i in range(ndir)]),list(res2) + vec([list(fwdsens2[i])+list(adjsens2[i]) for i in range(ndir)]))
               vf2.init()
@@ -787,7 +802,8 @@ class ADtests(casadiTestCase):
       for f in [fun.expand(),fun]:
         #  jacobian()
         for mode in ["forward","reverse"]:
-          f.setOption("ad_mode",mode)
+          f.setOption("ad_weight", 0 if mode=='forward' else 1)
+          f.setOption("ad_weight_sp", 0 if mode=='forward' else 1)
           f.init()
           Jf=f.jacobian(0,0)
           Jf.init()
@@ -816,7 +832,8 @@ class ADtests(casadiTestCase):
       for f in [fun,fun.expand()]:
         #  gradient()
         for mode in ["forward","reverse"]:
-          f.setOption("ad_mode",mode)
+          f.setOption("ad_weight", 0 if mode=='forward' else 1)
+          f.setOption("ad_weight_sp", 0 if mode=='forward' else 1)
           f.init()
           Gf=f.gradient(0,0)
           Gf.init()
@@ -831,7 +848,8 @@ class ADtests(casadiTestCase):
       for f in [fun,fun.expand()]:
         #  hessian()
         for mode in ["forward","reverse"]:
-          f.setOption("ad_mode",mode)
+          f.setOption("ad_weight", 0 if mode=='forward' else 1)
+          f.setOption("ad_weight_sp", 0 if mode=='forward' else 1)
           f.init()
           Hf=f.hessian(0,0)
           Hf.init()

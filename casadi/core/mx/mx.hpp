@@ -403,8 +403,6 @@ namespace casadi {
     MX zz_if_else(const MX &if_true, const MX &if_false) const;
     MX zz_unite(const MX& B) const;
     MX zz_trace() const;
-    MX zz_repmat(const Sparsity& sp) const;
-    MX zz_repmat(int n, int m=1) const;
     static MX zz_createParent(std::vector<MX> &deps);
     static MX zz_createParent(const std::vector<Sparsity> &deps, std::vector<MX>& children);
     static MX zz_createParent(const std::vector<MX> &deps, std::vector<MX>& children);
@@ -521,11 +519,6 @@ namespace casadi {
   /// Some typedefs
   typedef std::vector<MX> MXVector;
   typedef std::vector< std::vector<MX> > MXVectorVector;
-  /// \cond INTERNAL
-  typedef MX* MXPtr;
-  typedef std::vector<MXPtr> MXPtrV;
-  typedef std::vector<MXPtrV> MXPtrVV;
-  /// \endcond
   ///@}
 
 } // namespace casadi

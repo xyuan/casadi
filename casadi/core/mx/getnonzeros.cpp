@@ -39,18 +39,19 @@ namespace casadi {
     setDependencies(y);
   }
 
-  void GetNonzerosVector::evaluateD(const double* const* input, double** output,
+  void GetNonzerosVector::evalD(const cpv_double& input, const pv_double& output,
                                     int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void GetNonzerosVector::evaluateSX(const SXElement* const* input, SXElement** output,
+  void GetNonzerosVector::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                                      int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void GetNonzerosVector::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void GetNonzerosVector::evalGen(const std::vector<const T*>& input,
+                                  const std::vector<T*>& output, int* itmp, T* rtmp) {
     const T* idata = input[0];
     T* odata = output[0];
     for (vector<int>::const_iterator k=nz_.begin(); k!=nz_.end(); ++k) {
@@ -58,18 +59,19 @@ namespace casadi {
     }
   }
 
-  void GetNonzerosSlice::evaluateD(const double* const* input, double** output,
-                                   int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+  void GetNonzerosSlice::evalD(const cpv_double& input, const pv_double& output,
+                               int* itmp, double* rtmp) {
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void GetNonzerosSlice::evaluateSX(const SXElement* const* input, SXElement** output,
+  void GetNonzerosSlice::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                                     int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void GetNonzerosSlice::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void GetNonzerosSlice::evalGen(const std::vector<const T*>& input,
+                                 const std::vector<T*>& output, int* itmp, T* rtmp) {
     const T* idata = input[0] + s_.start_;
     const T* idata_stop = input[0] + s_.stop_;
     T* odata = output[0];
@@ -78,18 +80,19 @@ namespace casadi {
     }
   }
 
-  void GetNonzerosSlice2::evaluateD(const double* const* input, double** output,
-                                    int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+  void GetNonzerosSlice2::evalD(const cpv_double& input, const pv_double& output,
+                                int* itmp, double* rtmp) {
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void GetNonzerosSlice2::evaluateSX(const SXElement* const* input, SXElement** output,
-                                     int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+  void GetNonzerosSlice2::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
+                                 int* itmp, SXElement* rtmp) {
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void GetNonzerosSlice2::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void GetNonzerosSlice2::evalGen(const std::vector<const T*>& input,
+                                  const std::vector<T*>& output, int* itmp, T* rtmp) {
     const T* outer = input[0] + outer_.start_;
     const T* outer_stop = input[0] + outer_.stop_;
     T* odata = output[0];
@@ -102,60 +105,67 @@ namespace casadi {
     }
   }
 
-  void GetNonzerosVector::propagateSparsity(double** input, double** output, bool fwd) {
-    // Get references to the assignment operations and data
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    bvec_t *inputd = reinterpret_cast<bvec_t*>(input[0]);
+  void GetNonzerosVector::
+  spFwd(const cpv_bvec_t& arg,
+        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    const bvec_t *a = arg[0];
+    bvec_t *r = res[0];
+    for (vector<int>::const_iterator k=nz_.begin(); k!=nz_.end(); ++k) {
+      *r++ = *k>=0 ? a[*k] : 0;
+    }
+  }
 
-    // Propagate sparsity
-    if (fwd) {
-      for (vector<int>::const_iterator k=nz_.begin(); k!=nz_.end(); ++k) {
-        *outputd++ = *k>=0 ? inputd[*k] : 0;
-      }
-    } else {
-      for (vector<int>::const_iterator k=nz_.begin(); k!=nz_.end(); ++k) {
-        if (*k>=0) inputd[*k] |= *outputd;
-        *outputd++ = 0;
+  void GetNonzerosVector::
+  spAdj(const pv_bvec_t& arg,
+        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    bvec_t *a = arg[0];
+    bvec_t *r = res[0];
+    for (vector<int>::const_iterator k=nz_.begin(); k!=nz_.end(); ++k) {
+      if (*k>=0) a[*k] |= *r;
+      *r++ = 0;
+    }
+  }
+
+  void GetNonzerosSlice::
+  spFwd(const cpv_bvec_t& arg,
+        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    const bvec_t *a = arg[0];
+    bvec_t *r = res[0];
+    for (int k=s_.start_; k!=s_.stop_; k+=s_.step_) {
+      *r++ = a[k];
+    }
+  }
+
+  void GetNonzerosSlice::
+  spAdj(const pv_bvec_t& arg,
+        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    bvec_t *a = arg[0];
+    bvec_t *r = res[0];
+    for (int k=s_.start_; k!=s_.stop_; k+=s_.step_) {
+      a[k] |= *r;
+      *r++ = 0;
+    }
+  }
+
+  void GetNonzerosSlice2::spFwd(const cpv_bvec_t& arg,
+                                const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    const bvec_t *a = arg[0];
+    bvec_t *r = res[0];
+    for (int k1=outer_.start_; k1!=outer_.stop_; k1+=outer_.step_) {
+      for (int k2=k1+inner_.start_; k2!=k1+inner_.stop_; k2+=inner_.step_) {
+        *r++ = a[k2];
       }
     }
   }
 
-  void GetNonzerosSlice::propagateSparsity(double** input, double** output, bool fwd) {
-    // Get references to the assignment operations and data
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    bvec_t *inputd = reinterpret_cast<bvec_t*>(input[0]);
-
-    // Propagate sparsity
-    if (fwd) {
-      for (int k=s_.start_; k!=s_.stop_; k+=s_.step_) {
-        *outputd++ = inputd[k];
-      }
-    } else {
-      for (int k=s_.start_; k!=s_.stop_; k+=s_.step_) {
-        inputd[k] |= *outputd;
-        *outputd++ = 0;
-      }
-    }
-  }
-
-  void GetNonzerosSlice2::propagateSparsity(double** input, double** output, bool fwd) {
-    // Get references to the assignment operations and data
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    bvec_t *inputd = reinterpret_cast<bvec_t*>(input[0]);
-
-    // Propagate sparsity
-    if (fwd) {
-      for (int k1=outer_.start_; k1!=outer_.stop_; k1+=outer_.step_) {
-        for (int k2=k1+inner_.start_; k2!=k1+inner_.stop_; k2+=inner_.step_) {
-          *outputd++ = inputd[k2];
-        }
-      }
-    } else {
-      for (int k1=outer_.start_; k1!=outer_.stop_; k1+=outer_.step_) {
-        for (int k2=k1+inner_.start_; k2!=k1+inner_.stop_; k2+=inner_.step_) {
-          inputd[k2] |= *outputd;
-          *outputd++ = 0;
-        }
+  void GetNonzerosSlice2::spAdj(const pv_bvec_t& arg,
+                                const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    bvec_t *a = arg[0];
+    bvec_t *r = res[0];
+    for (int k1=outer_.start_; k1!=outer_.stop_; k1+=outer_.step_) {
+      for (int k2=k1+inner_.start_; k2!=k1+inner_.stop_; k2+=inner_.step_) {
+        a[k2] |= *r;
+        *r++ = 0;
       }
     }
   }
@@ -178,15 +188,86 @@ namespace casadi {
     }
   }
 
-  void GetNonzeros::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                               MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                               bool output_given) {
+  void GetNonzeros::eval(const cpv_MX& input, const pv_MX& output) {
+    // Get all the nonzeros
+    vector<int> nz = getAll();
+
+    // Output sparsity
+    const Sparsity& osp = sparsity();
+    const int* orow = osp.row();
+    vector<int> ocol = osp.getCol();
+
+    // Input sparsity
+    const Sparsity& isp = dep().sparsity();
+    //const vector<int>& irow = isp.row();
+    vector<int> icol = isp.getCol();
+
+    // Get all input elements
+    vector<int> el_input;
+    isp.find(el_input);
+
+    // Sparsity pattern being formed and corresponding nonzero mapping
+    vector<int> r_colind, r_row, r_nz, r_ind;
+
+    // Get references to arguments and results
+    const MX& arg = *input[0];
+    MX& res = *output[0];
+
+    // Get the matching nonzeros
+    r_ind.resize(el_input.size());
+    copy(el_input.begin(), el_input.end(), r_ind.begin());
+    arg.sparsity().getNZ(r_ind);
+
+    // Sparsity pattern for the result
+    r_colind.resize(osp.size2()+1); // Col count
+    fill(r_colind.begin(), r_colind.end(), 0);
+    r_row.clear();
+
+    // Perform the assignments
+    r_nz.clear();
+    for (int k=0; k<nz.size(); ++k) {
+
+      // Get the corresponding nonzero for the input
+      int el = nz[k];
+
+      // Skip if zero assignment
+      if (el==-1) continue;
+
+      // Get the corresponding nonzero in the argument
+      int el_arg = r_ind[el];
+
+      // Skip if no argument
+      if (el_arg==-1) continue;
+
+      // Save the assignment
+      r_nz.push_back(el_arg);
+
+      // Get the corresponding element
+      int i=ocol[k], j=orow[k];
+
+      // Add to sparsity pattern
+      r_row.push_back(j);
+      r_colind[1+i]++;
+    }
+
+    // col count -> col offset
+    for (int i=1; i<r_colind.size(); ++i) r_colind[i] += r_colind[i-1];
+
+    // Create a sparsity pattern from vectors
+    if (r_nz.size()==0) {
+      res = MX(osp.shape());
+    } else {
+      Sparsity f_sp(osp.size1(), osp.size2(), r_colind, r_row);
+      res = arg->getGetNonzeros(f_sp, r_nz);
+    }
+  }
+
+  void GetNonzeros::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     // Get all the nonzeros
     vector<int> nz = getAll();
 
     // Number of derivative directions
     int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
 
     // Output sparsity
     const Sparsity& osp = sparsity();
@@ -206,12 +287,11 @@ namespace casadi {
     vector<int> r_colind, r_row, r_nz, r_ind;
 
     // Nondifferentiated function and forward sensitivities
-    int first_d = output_given ? 0 : -1;
-    for (int d=first_d; d<nfwd; ++d) {
+    for (int d=0; d<nfwd; ++d) {
 
       // Get references to arguments and results
-      const MX& arg = d<0 ? *input[0] : *fwdSeed[d][0];
-      MX& res = d<0 ? *output[0] : *fwdSens[d][0];
+      const MX& arg = *fwdSeed[d][0];
+      MX& res = *fwdSens[d][0];
 
       // Get the matching nonzeros
       r_ind.resize(el_input.size());
@@ -261,6 +341,31 @@ namespace casadi {
         res = arg->getGetNonzeros(f_sp, r_nz);
       }
     }
+
+  }
+
+  void GetNonzeros::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    // Get all the nonzeros
+    vector<int> nz = getAll();
+
+    // Number of derivative directions
+    int nadj = adjSeed.size();
+
+    // Output sparsity
+    const Sparsity& osp = sparsity();
+    vector<int> ocol = osp.getCol();
+
+    // Input sparsity
+    const Sparsity& isp = dep().sparsity();
+    //const vector<int>& irow = isp.row();
+    vector<int> icol = isp.getCol();
+
+    // Get all input elements
+    vector<int> el_input;
+    isp.find(el_input);
+
+    // Sparsity pattern being formed and corresponding nonzero mapping
+    vector<int> r_colind, r_row, r_nz, r_ind;
 
     // Adjoint sensitivities
     for (int d=0; d<nadj; ++d) {
@@ -343,15 +448,15 @@ namespace casadi {
     return true;
   }
 
-  void GetNonzerosVector::generateOperation(std::ostream &stream,
-                                            const std::vector<std::string>& arg,
-                                            const std::vector<std::string>& res,
+  void GetNonzerosVector::generate(std::ostream &stream,
+                                            const std::vector<int>& arg,
+                                            const std::vector<int>& res,
                                             CodeGenerator& gen) const {
     // Condegen the indices
     int ind = gen.getConstant(nz_, true);
 
     // Codegen the assignments
-    stream << "  for (ii=s" << ind << ", rr=" << res.front() << ", ss=" << arg.front()
+    stream << "  for (ii=s" << ind << ", rr=" << gen.work(res[0]) << ", ss=" << gen.work(arg[0])
            << "; ii!=s" << ind << "+" << nz_.size()
            << "; ++ii) *rr++ = *ii>=0 ? ss[*ii] : 0;" << endl;
   }
@@ -376,21 +481,21 @@ namespace casadi {
     return dep()->getGetNonzeros(sp, nz_new);
   }
 
-  void GetNonzerosSlice::generateOperation(std::ostream &stream,
-                                           const std::vector<std::string>& arg,
-                                           const std::vector<std::string>& res,
+  void GetNonzerosSlice::generate(std::ostream &stream,
+                                           const std::vector<int>& arg,
+                                           const std::vector<int>& res,
                                            CodeGenerator& gen) const {
-    stream << "  for (rr=" << res.front() << ", ss=" << arg.front() << "+" << s_.start_
-           << "; ss!=" << arg.front() << "+" << s_.stop_ << "; ss+=" << s_.step_ << ") ";
+    stream << "  for (rr=" << gen.work(res[0]) << ", ss=" << gen.work(arg[0]+s_.start_)
+           << "; ss!=" << gen.work(arg[0]+s_.stop_) << "; ss+=" << s_.step_ << ") ";
     stream << "*rr++ = *ss;" << endl;
   }
 
-  void GetNonzerosSlice2::generateOperation(std::ostream &stream,
-                                            const std::vector<std::string>& arg,
-                                            const std::vector<std::string>& res,
+  void GetNonzerosSlice2::generate(std::ostream &stream,
+                                            const std::vector<int>& arg,
+                                            const std::vector<int>& res,
                                             CodeGenerator& gen) const {
-    stream << "  for (rr=" << res.front() << ", ss=" << arg.front() << "+" << outer_.start_
-           << "; ss!=" << arg.front() << "+" << outer_.stop_ << "; ss+="
+    stream << "  for (rr=" << gen.work(res[0]) << ", ss=" << gen.work(arg[0]+outer_.start_)
+           << "; ss!=" << gen.work(arg[0]+outer_.stop_) << "; ss+="
            << outer_.step_ << ") ";
     stream << "for (tt=ss+" << inner_.start_ << "; tt!=ss+" << inner_.stop_
            << "; tt+=" << inner_.step_ << ") ";

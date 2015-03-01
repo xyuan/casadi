@@ -93,7 +93,7 @@ namespace casadi {
     solver_.setOption(getOption(optionsname()));
     solver_.init();
 
-    std::vector<MX> Pr = solver_.call(
+    std::vector<MX> Pr = solver_(
       lrdpleIn("a", A, "v", V, "c", MX(repmat(C, 1, K)), "h", MX(repmat(H, 1, K))));
 
     f_ = MXFunction(dpleIn("a", A, "v", V),
@@ -109,10 +109,13 @@ namespace casadi {
     Wrapper::evaluate();
   }
 
-  Function DpleToLrDple::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function DpleToLrDple::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
   }
 
+  Function DpleToLrDple::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
+  }
 
   void DpleToLrDple::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

@@ -55,35 +55,33 @@ namespace casadi {
   }
 
   template<typename T>
-  void SetSparse::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void SetSparse::evalGen(const std::vector<const T*>& input,
+                          const std::vector<T*>& output, int* itmp, T* rtmp) {
     casadi_project(input[0], dep().sparsity(), output[0], sparsity(), rtmp);
   }
 
-  void SetSparse::evaluateD(const double* const* input, double** output,
+  void SetSparse::evalD(const cpv_double& input, const pv_double& output,
                             int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void SetSparse::evaluateSX(const SXElement* const* input, SXElement** output,
+  void SetSparse::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                              int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
-  void SetSparse::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                             MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                             bool output_given) {
-    // Evaluate function
-    if (!output_given) {
-      *output[0] = input[0]->setSparse(sparsity());
-    }
+  void SetSparse::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = input[0]->setSparse(sparsity());
+  }
 
-    // Propagate forward seeds
+  void SetSparse::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
     for (int d=0; d<nfwd; ++d) {
       *fwdSens[d][0] = fwdSeed[d][0]->setSparse(sparsity(), true);
     }
+  }
 
-    // Propagate adjoint seeds
+  void SetSparse::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
     int nadj = adjSeed.size();
     for (int d=0; d<nadj; ++d) {
       adjSens[d][0]->addToSum(adjSeed[d][0]->setSparse(dep().sparsity(), true));
@@ -91,27 +89,27 @@ namespace casadi {
     }
   }
 
-  void SetSparse::propagateSparsity(double** input, double** output, bool fwd) {
-    bvec_t *inputd = reinterpret_cast<bvec_t*>(input[0]);
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    if (fwd) {
-      sparsity().set(outputd, inputd, dep().sparsity());
-    } else {
-      dep().sparsity().bor(inputd, outputd, sparsity());
-      fill(outputd, outputd + nnz(), bvec_t(0));
-    }
+  void SetSparse::spFwd(const cpv_bvec_t& arg,
+                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    sparsity().set(res[0], arg[0], dep().sparsity());
   }
 
-  void SetSparse::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                    const std::vector<std::string>& res, CodeGenerator& gen) const {
+  void SetSparse::spAdj(const pv_bvec_t& arg,
+                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    dep().sparsity().bor(arg[0], res[0], sparsity());
+    fill(res[0], res[0]+nnz(), 0);
+  }
+
+  void SetSparse::generate(std::ostream &stream, const std::vector<int>& arg,
+                                    const std::vector<int>& res, CodeGenerator& gen) const {
     // Codegen "copy sparse"
     gen.addAuxiliary(CodeGenerator::AUX_PROJECT);
 
     // Codegen the operation
     int sp_arg = gen.addSparsity(dep(0).sparsity());
     int sp_res = gen.addSparsity(sparsity());
-    stream << "  casadi_project(" << arg.front() << ", s" << sp_arg << ", " << res.front()
-           << ", s" << sp_res << ", rrr);" << std::endl;
+    stream << "  casadi_project(" << gen.work(arg.front()) << ", s" << sp_arg << ", "
+           << gen.work(res.front()) << ", s" << sp_res << ", w);" << std::endl;
   }
 
 

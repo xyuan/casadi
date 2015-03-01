@@ -162,7 +162,7 @@ namespace casadi {
       v_in[LR_DLE_H] = Hs;
     }
 
-    std::vector<MX> Pr = solver_.call(lrdpleIn("a", A, "v", V, "c", C, "h", H));
+    std::vector<MX> Pr = solver_(lrdpleIn("a", A, "v", V, "c", C, "h", H));
 
     MX Pf = Pr[0];
 
@@ -187,10 +187,13 @@ namespace casadi {
     Wrapper::evaluate();
   }
 
-  Function LiftingLrDpleInternal::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function LiftingLrDpleInternal::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
   }
 
+  Function LiftingLrDpleInternal::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
+  }
 
   void LiftingLrDpleInternal::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

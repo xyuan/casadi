@@ -68,22 +68,29 @@ namespace casadi {
     /// Create a solve node
     MX solve(const MX& A, const MX& B, bool transpose);
 
-    /// Evaluate numerically, possibly transposed
-    virtual void evaluateDGen(const double* const* arg, double** res,
-                              int* itmp, double* rtmp, bool tr, int nrhs);
-
     /// Evaluate MX, possibly transposed
-    virtual void evaluateSXGen(const SXElement* const* arg, SXElement** res,
-                               int* itmp, SXElement* rtmp, bool tr, int nrhs);
+    virtual void evalSXLinsol(const cpv_SXElement& arg, const pv_SXElement& res,
+                              int* itmp, SXElement* rtmp, bool tr, int nrhs);
 
-    /// Evaluate MX, possibly transposed
-    virtual void evaluateMXGen(const MXPtrV& arg, MXPtrV& res, const MXPtrVV& fseed,
-                               MXPtrVV& fsens, const MXPtrVV& aseed, MXPtrVV& asens,
-                               bool output_given, bool tr);
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void callForwardLinsol(const std::vector<MX>& arg, const std::vector<MX>& res,
+                               const std::vector<std::vector<MX> >& fseed,
+                               std::vector<std::vector<MX> >& fsens, bool tr);
 
-    /// Propagate sparsity, possibly transposed
-    void propagateSparsityGen(double** arg, double** res,
-                              int* itmp, bvec_t* rtmp, bool fwd, bool tr, int nrhs);
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void callReverseLinsol(const std::vector<MX>& arg, const std::vector<MX>& res,
+                               const std::vector<std::vector<MX> >& aseed,
+                               std::vector<std::vector<MX> >& asens, bool tr);
+
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwdLinsol(const std::vector<const bvec_t*>& arg,
+                             const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp,
+                             bool tr, int nrhs);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdjLinsol(const std::vector<bvec_t*>& arg,
+                             const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp,
+                             bool tr, int nrhs);
 
     ///@{
     /// Propagate sparsity through a linear solve

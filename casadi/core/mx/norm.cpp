@@ -43,18 +43,19 @@ namespace casadi {
     }
   }
 
-  void NormF::evaluateD(const double* const* input, double** output,
-                        int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+  void NormF::evalD(const cpv_double& input, const pv_double& output,
+                    int* itmp, double* rtmp) {
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void NormF::evaluateSX(const SXElement* const* input, SXElement** output,
+  void NormF::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                          int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void NormF::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void NormF::evalGen(const std::vector<const T*>& input,
+                      const std::vector<T*>& output, int* itmp, T* rtmp) {
     // Get data
     T* res = output[0];
     const T* arg = input[0];
@@ -63,32 +64,30 @@ namespace casadi {
     *res = sqrt(casadi_dot(dep().nnz(), arg, 1, arg, 1));
   }
 
-  void NormF::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                         MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                         bool output_given) {
-    if (!output_given) {
-      *output[0] = (*input[0])->getNormF();
-    }
+  void NormF::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = (*input[0])->getNormF();
+  }
 
-    // Forward sensitivities
-    int nfwd = fwdSens.size();
-    for (int d=0; d<nfwd; ++d) {
-      *fwdSens[d][0] = (*input[0])->getInnerProd(*fwdSeed[d][0]) / (*output[0]);
+  void NormF::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    MX self = shared_from_this<MX>();
+    for (int d=0; d<fwdSens.size(); ++d) {
+      *fwdSens[d][0] = dep(0)->getInnerProd(*fwdSeed[d][0]) / self;
     }
+  }
 
-    // Adjoint sensitivities
-    int nadj = adjSeed.size();
-    for (int d=0; d<nadj; ++d) {
-      adjSens[d][0]->addToSum(((*adjSeed[d][0])/(*output[0])) * *input[0]);
+  void NormF::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    MX self = shared_from_this<MX>();
+    for (int d=0; d<adjSeed.size(); ++d) {
+      adjSens[d][0]->addToSum(((*adjSeed[d][0])/self) * dep(0));
       *adjSeed[d][0] = MX();
     }
   }
 
-  void NormF::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                const std::vector<std::string>& res, CodeGenerator& gen) const {
-    stream << "  *" << res.front() << " = sqrt(" << gen.casadi_dot(dep().nnz(),
-                                                                   arg.front(), 1,
-                                                                   arg.front(), 1) << ");" << endl;
+  void NormF::generate(std::ostream &stream, const std::vector<int>& arg,
+                                const std::vector<int>& res, CodeGenerator& gen) const {
+    gen.assign(stream, gen.workelement(res[0]),
+               "sqrt(" + gen.casadi_dot(dep().nnz(), gen.work(arg[0]), 1,
+                                        gen.work(arg[0]), 1) + ")");
   }
 
   void Norm2::printPart(std::ostream &stream, int part) const {

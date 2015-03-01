@@ -108,8 +108,12 @@ namespace casadi {
     Wrapper::evaluate();
   }
 
-  Function FixedSmithDleInternal::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function FixedSmithDleInternal::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
+  }
+
+  Function FixedSmithDleInternal::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
   }
 
   void FixedSmithDleInternal::deepCopyMembers(

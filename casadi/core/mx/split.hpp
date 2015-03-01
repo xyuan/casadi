@@ -47,28 +47,35 @@ namespace casadi {
     virtual ~Split() = 0;
 
     /** \brief  Number of outputs */
-    virtual int getNumOutputs() const { return output_sparsity_.size(); }
+    virtual int nout() const { return output_sparsity_.size(); }
 
     /** \brief  Get the sparsity of output oind */
     virtual const Sparsity& sparsity(int oind) const { return output_sparsity_.at(oind);}
 
     /// Evaluate the function (template)
     template<typename T>
-    void evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp);
+    void evalGen(const std::vector<const T*>& input,
+                 const std::vector<T*>& output, int* itmp, T* rtmp);
 
     /// Evaluate the function numerically
-    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
+    virtual void evalD(const cpv_double& input, const pv_double& output,
+                       int* itmp, double* rtmp);
 
     /// Evaluate the function symbolically (SX)
-    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
+    virtual void evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                             int* itmp, SXElement* rtmp);
 
-    /// Propagate sparsity
-    virtual void propagateSparsity(double** input, double** output, bool fwd);
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const cpv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const pv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
 
     /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                                   const std::vector<int>& res, CodeGenerator& gen) const;
 
     // Sparsity pattern of the outputs
     std::vector<int> offset_;
@@ -92,9 +99,13 @@ namespace casadi {
     virtual Horzsplit* clone() const { return new Horzsplit(*this);}
 
     /// Evaluate the function symbolically (MX)
-    virtual void evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                            MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                            bool output_given);
+    virtual void eval(const cpv_MX& input, const pv_MX& output);
+
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
@@ -123,9 +134,13 @@ namespace casadi {
     virtual Diagsplit* clone() const { return new Diagsplit(*this);}
 
     /// Evaluate the function symbolically (MX)
-    virtual void evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                            MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                            bool output_given);
+    virtual void eval(const cpv_MX& input, const pv_MX& output);
+
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
@@ -154,9 +169,13 @@ namespace casadi {
     virtual Vertsplit* clone() const { return new Vertsplit(*this);}
 
     /// Evaluate the function symbolically (MX)
-    virtual void evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                            MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                            bool output_given);
+    virtual void eval(const cpv_MX& input, const pv_MX& output);
+
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;

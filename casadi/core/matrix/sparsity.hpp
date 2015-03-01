@@ -477,8 +477,8 @@ namespace casadi {
      * no memory allocation: <tt>z = mul(x, y)</tt> with work vector
      * Forward mode.
      */
-    static void mul_sparsityF(bvec_t* x, const Sparsity& x_sp,
-                              bvec_t* y, const Sparsity& y_sp,
+    static void mul_sparsityF(const bvec_t* x, const Sparsity& x_sp,
+                              const bvec_t* y, const Sparsity& y_sp,
                               bvec_t* z, const Sparsity& z_sp,
                               bvec_t* w);
 
@@ -573,8 +573,10 @@ namespace casadi {
     /// Is dense?
     bool isDense() const;
 
-    /// Is vector (i.e. size2()==1)
-    bool isVector() const { return size2()==1; }
+    /** \brief Check if the pattern is a column vector (i.e. size2()==1)
+        Optionally, checks if either row or column vector.
+     */
+    bool isVector(bool row_or_col=false) const;
 
     /// Is diagonal?
     bool isDiagonal() const;

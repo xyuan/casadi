@@ -37,28 +37,29 @@ namespace casadi {
     setSparsity(x.sparsity().T());
   }
 
-  void Transpose::evaluateD(const double* const* input, double** output,
+  void Transpose::evalD(const cpv_double& input, const pv_double& output,
                             int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
- void DenseTranspose::evaluateD(const double* const* input, double** output,
+ void DenseTranspose::evalD(const cpv_double& input, const pv_double& output,
                                 int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void Transpose::evaluateSX(const SXElement* const* input, SXElement** output,
+  void Transpose::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                              int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
-  void DenseTranspose::evaluateSX(const SXElement* const* input, SXElement** output,
+  void DenseTranspose::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                                   int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void Transpose::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void Transpose::evalGen(const std::vector<const T*>& input,
+                          const std::vector<T*>& output, int* itmp, T* rtmp) {
 
     // Get sparsity patterns
     //const vector<int>& x_colind = input[0]->colind();
@@ -78,8 +79,8 @@ namespace casadi {
   }
 
   template<typename T>
-  void DenseTranspose::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
-
+  void DenseTranspose::evalGen(const std::vector<const T*>& input,
+                               const std::vector<T*>& output, int* itmp, T* rtmp) {
     // Get sparsity patterns
     int x_nrow = dep().size1();
     int x_ncol = dep().size2();
@@ -93,109 +94,121 @@ namespace casadi {
     }
   }
 
-  void Transpose::propagateSparsity(double** input, double** output, int* itmp,
-                                    bvec_t* rtmp, bool fwd) {
-    // Access the input
-    bvec_t *x = reinterpret_cast<bvec_t*>(input[0]);
-    //const int* x_colind = input[0]->colind();
-    const int* x_row = dep().row();
-    int x_sz = dep().nnz();
+  void Transpose::spFwd(const cpv_bvec_t& arg,
+                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    // Shortands
+    const bvec_t *x = arg[0];
+    bvec_t *xT = res[0];
 
-    // Access the output
-    bvec_t *xT = reinterpret_cast<bvec_t*>(output[0]);
+    // Get sparsity
+    int nz = nnz();
+    const int* x_row = dep().row();
     const int* xT_colind = sparsity().colind();
     int xT_ncol = sparsity().size2();
 
-    // Offset for each col of the result
+    // Loop over the nonzeros of the argument
     copy(xT_colind, xT_colind+xT_ncol+1, itmp);
+    for (int el=0; el<nz; ++el) {
+      xT[itmp[*x_row++]++] = *x++;
+    }
+  }
+
+  void Transpose::spAdj(const pv_bvec_t& arg,
+                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    // Shortands
+    bvec_t *x = arg[0];
+    bvec_t *xT = res[0];
+
+    // Get sparsity
+    int nz = nnz();
+    const int* x_row = dep().row();
+    const int* xT_colind = sparsity().colind();
+    int xT_ncol = sparsity().size2();
 
     // Loop over the nonzeros of the argument
-    for (int el=0; el<x_sz; ++el) {
+    copy(xT_colind, xT_colind+xT_ncol+1, itmp);
+    for (int el=0; el<nz; ++el) {
+      int elT = itmp[*x_row++]++;
+      *x++ |= xT[elT];
+      xT[elT] = 0;
+    }
+  }
 
-      // Get the row
-      int j = x_row[el];
+  void DenseTranspose::spFwd(const cpv_bvec_t& arg,
+                             const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    // Shorthands
+    const bvec_t *x = arg[0];
+    bvec_t *xT = res[0];
+    int x_nrow = dep().size1();
+    int x_ncol = dep().size2();
 
-      // Copy nonzero
-      if (fwd) {
-        xT[itmp[j]++] = x[el];
-      } else {
-        int elT = itmp[j]++;
-        x[el] |= xT[elT];
-        xT[elT] = 0;
+    // Loop over the elements
+    for (int rr=0; rr<x_nrow; ++rr) {
+      for (int cc=0; cc<x_ncol; ++cc) {
+        *xT++ = x[rr+cc*x_nrow];
       }
     }
   }
 
-  void DenseTranspose::propagateSparsity(double** input, double** output,
-                                         int* itmp, bvec_t* rtmp, bool fwd) {
-    // Access the input
-    bvec_t *x = reinterpret_cast<bvec_t*>(input[0]);
-    int x_ncol = dep(0).size2();
-    int x_nrow = dep(0).size1();
-
-    // Access the output
-    bvec_t *xT = reinterpret_cast<bvec_t*>(output[0]);
+  void DenseTranspose::spAdj(const pv_bvec_t& arg,
+                             const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    // Shorthands
+    bvec_t *x = arg[0];
+    bvec_t *xT = res[0];
+    int x_nrow = dep().size1();
+    int x_ncol = dep().size2();
 
     // Loop over the elements
-    for (int i=0; i<x_ncol; ++i) {
-      for (int j=0; j<x_nrow; ++j) {
-        int el = j+i*x_nrow;
-        int elT = i+j*x_ncol;
-        if (fwd) {
-          xT[elT] = x[el];
-        } else {
-          x[el] |= xT[elT];
-          xT[elT] = 0;
-        }
+    for (int rr=0; rr<x_nrow; ++rr) {
+      for (int cc=0; cc<x_ncol; ++cc) {
+        x[rr+cc*x_nrow] |= *xT;
+        *xT++ = 0;
       }
     }
   }
 
   void Transpose::printPart(std::ostream &stream, int part) const {
-    if (part==0) {
-    } else {
+    if (part!=0) {
       stream << "'";
     }
   }
 
-  void Transpose::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                             MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                             bool output_given) {
-    if (!output_given)
-      *output[0] = input[0]->T();
+  void Transpose::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = input[0]->T();
+  }
 
-    // Forward sensitivities
-    int nfwd = fwdSens.size();
-    for (int d=0; d<nfwd; ++d) {
+  void Transpose::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    for (int d=0; d<fwdSens.size(); ++d) {
       *fwdSens[d][0] = fwdSeed[d][0]->T();
     }
+  }
 
-    // Adjoint sensitivities
-    int nadj = adjSeed.size();
-    for (int d=0; d<nadj; ++d) {
+  void Transpose::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    for (int d=0; d<adjSeed.size(); ++d) {
       adjSens[d][0]->addToSum(adjSeed[d][0]->T());
       *adjSeed[d][0] = MX();
     }
   }
 
-  void Transpose::generateOperation(std::ostream &stream,
-                                    const std::vector<std::string>& arg,
-                                    const std::vector<std::string>& res,
+  void Transpose::generate(std::ostream &stream,
+                                    const std::vector<int>& arg,
+                                    const std::vector<int>& res,
                                     CodeGenerator& gen) const {
     gen.addAuxiliary(CodeGenerator::AUX_TRANS);
 
-    stream << "  casadi_trans(";
-    stream << arg.front() << ", s" << gen.addSparsity(dep().sparsity()) << ", ";
-    stream << res.front() << ", s" << gen.addSparsity(sparsity()) << ", iii);" << endl;
+    stream << "  casadi_trans("
+           << gen.work(arg[0]) << ", s" << gen.addSparsity(dep().sparsity()) << ", "
+           << gen.work(res[0]) << ", s" << gen.addSparsity(sparsity()) << ", iii);" << endl;
   }
 
-  void DenseTranspose::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                         const std::vector<std::string>& res,
+  void DenseTranspose::generate(std::ostream &stream,
+                                         const std::vector<int>& arg,
+                                         const std::vector<int>& res,
                                          CodeGenerator& gen) const {
-    stream << "  for (i=0; i<" << dep().size2() << "; ++i) ";
-    stream << "for (j=0; j<" << dep().size1() << "; ++j) ";
-    stream << res.front() << "[i+j*" << dep().size2() << "] = " << arg.front()
-           << "[j+i*" << dep().size1() << "];" << endl;
+    stream << "  for (i=0, rr=" << gen.work(res[0]) << ", "
+           << "cs=" << gen.work(arg[0]) << "; i<" << dep().size2() << "; ++i) "
+           << "for (j=0; j<" << dep().size1() << "; ++j) "
+           << "rr[i+j*" << dep().size2() << "] = *cs++;" << endl;
   }
 
 } // namespace casadi

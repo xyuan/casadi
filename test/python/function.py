@@ -42,7 +42,7 @@ class Functiontests(casadiTestCase):
       f.evaluate()
 
       X = MX.sym("X",2)
-      F = f.call([X,X])[0]
+      F = f.call([X,MX()])[0]
       g = MXFunction([X],[F])
       g.init()
 
@@ -505,7 +505,7 @@ class Functiontests(casadiTestCase):
     self.assertTrue(f.getOption("name")=="def")
     
   def test_CustomFunctionHard(self):
-  
+
     x = MX.sym("x")
     y = MX.sym("y")
     
@@ -528,19 +528,31 @@ class Functiontests(casadiTestCase):
           z2 = sin(z1)
           z.set(z2)
           
-        def getDerivative(self,f,nfwd,nadj):
+        def getDerForward(self,f,nfwd):
           inputs = [f.input(i).sparsity() for i in range(f.getNumInputs())]
           outputs = [f.output(i).sparsity() for i in range(f.getNumOutputs())]
           
           sself = self
 
           class Der:
-             def evaluate(self,xy_andseeds,z_andseeds):  sself.evaluateDer(xy_andseeds,z_andseeds,nfwd,nadj)
+             def evaluate(self,xy_andseeds,z_andseeds):  sself.evaluateDerFwd(xy_andseeds,z_andseeds,nfwd)
 
-          FunDer = PyFunction(Der(),inputs+inputs*nfwd+outputs*nadj,outputs*(nfwd+1)+inputs*nadj)
+          FunDer = PyFunction(Der(),inputs+outputs+inputs*nfwd,outputs*nfwd)
+          return FunDer
+
+        def getDerReverse(self,f,nadj):
+          inputs = [f.input(i).sparsity() for i in range(f.getNumInputs())]
+          outputs = [f.output(i).sparsity() for i in range(f.getNumOutputs())]
+          
+          sself = self
+
+          class Der:
+             def evaluate(self,xy_andseeds,z_andseeds):  sself.evaluateDerAdj(xy_andseeds,z_andseeds,nadj)
+
+          FunDer = PyFunction(Der(),inputs+outputs+outputs*nadj,inputs*nadj)
           return FunDer
           
-        def evaluateDer(self,inputs,outputs,nfwd,nadj):
+        def evaluateDerFwd(self,inputs,outputs,nfwd):
           # sin(x+3*y)
           
           num_in  =  2
@@ -552,17 +564,30 @@ class Functiontests(casadiTestCase):
           z0 = 3*y
           z1 = x+z0
           z2 = sin(z1)
-          outputs[0].set(z2)
           
           for i in range(nfwd):
-            dx = inputs[num_in + i*num_in+0]
-            dy = inputs[num_in + i*num_in+1]
+            dx = inputs[num_in + num_out + i*num_in+0]
+            dy = inputs[num_in + num_out + i*num_in+1]
             
             dz0 = 3*dy
             dz1 = dx+dz0
             dz2 = cos(z1)*dz1
             
-            outputs[num_out + i].set(dz2)
+            outputs[i].set(dz2)
+          
+        def evaluateDerAdj(self,inputs,outputs,nadj):
+          # sin(x+3*y)
+          
+          num_in  =  2
+          num_out =  1
+          
+          x = inputs[0]
+          y = inputs[1]
+          
+          z0 = 3*y
+          z1 = x+z0
+          z2 = sin(z1)
+
           
           for i in range(nadj):
             # Backwards sweep
@@ -571,21 +596,19 @@ class Functiontests(casadiTestCase):
             bz1 = 0
             bz0 = 0
             
-            bz2 = inputs[num_in + nfwd*num_in+i*num_out+0]
+            bz2 = inputs[num_in + num_out + i*num_out+0]
             bz1 += bz2*cos(z1)
             bx+= bz1;bz0+= bz1
             by+= 3*bz0
-            outputs[num_out + nfwd*num_out + num_in*i+0].set(bx)
-            outputs[num_out + nfwd*num_out + num_in*i+1].set(by)
+            outputs[num_in*i+0].set(bx)
+            outputs[num_in*i+1].set(by)
           
 
       Fun = PyFunction(Fun(),[Sparsity.dense(1,1),Sparsity.dense(1,1)], [Sparsity.dense(1,1)])
-      if max_fwd and max_adj:
-        Fun.setOption("ad_mode","automatic")
-      elif max_adj:
-        Fun.setOption("ad_mode","reverse")
-      elif max_fwd:
-        Fun.setOption("ad_mode","forward")
+      if max_adj and not max_fwd:
+        Fun.setOption("ad_weight", 1)
+      elif max_fwd and not max_adj:
+        Fun.setOption("ad_weight", 0)
       Fun.init()
       
       if not indirect: 
@@ -622,8 +645,6 @@ class Functiontests(casadiTestCase):
         
     g = MXFunction([x,y],[sin(x+3*y)])
     g.init()
-    
-
     g.setInput(0.2,0)
     g.setInput(0.7,1)
     
@@ -657,7 +678,7 @@ class Functiontests(casadiTestCase):
     for indirect in [True,False]:
       f = getP(indirect=indirect)
       self.checkfunction(f,g,sens_der=False,jacobian=False,gradient=False,hessian=False,evals=False)
-    
+
       with self.assertRaises(Exception):          
         f.gradient()
 
@@ -712,12 +733,10 @@ class Functiontests(casadiTestCase):
             y_bar.set(by)
 
       Fun = PyFunction(Fun(),[Sparsity.dense(1,1),Sparsity.dense(1,1)], [Sparsity.dense(1,1)])
-      if max_fwd and max_adj:
-        Fun.setOption("ad_mode","automatic")
-      elif max_adj:
-        Fun.setOption("ad_mode","reverse")
-      elif max_fwd:
-        Fun.setOption("ad_mode","forward")
+      if max_adj and not max_fwd:
+        Fun.setOption("ad_weight", 1)
+      elif max_fwd and not max_adj:
+        Fun.setOption("ad_weight", 0)
       Fun.init()
       
       if not indirect: 
@@ -902,12 +921,10 @@ class Functiontests(casadiTestCase):
             y_bar.set(by)
 
       Fun = PyFunction(Fun(),[Sparsity.dense(2,1),Sparsity.dense(1,1)], [Sparsity.dense(1,1)])
-      if max_fwd and max_adj:
-        Fun.setOption("ad_mode","automatic")
-      elif max_adj:
-        Fun.setOption("ad_mode","reverse")
-      elif max_fwd:
-        Fun.setOption("ad_mode","forward")
+      if max_adj and not max_fwd:
+        Fun.setOption("ad_weight", 1)
+      elif max_fwd and not max_adj:
+        Fun.setOption("ad_weight", 0)
       Fun.init()
 
       if not indirect: 
@@ -977,12 +994,10 @@ class Functiontests(casadiTestCase):
               X_bar.set([2*x*xb+y*yb,xb+x*yb])
           
       c = PyFunction(Squares(),[Sparsity.dense(2,1)], [Sparsity.dense(2,1)])
-      if max_fwd and max_adj:
-        c.setOption("ad_mode","automatic")
-      elif max_adj:
-        c.setOption("ad_mode","reverse")
-      elif max_fwd:
-        c.setOption("ad_mode","forward")
+      if max_adj and not max_fwd:
+        c.setOption("ad_weight", 1)
+      elif max_fwd and not max_adj:
+        c.setOption("ad_weight", 0)
       c.init()
 
       if not indirect: 

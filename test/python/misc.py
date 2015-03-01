@@ -80,7 +80,7 @@ class Misctests(casadiTestCase):
     self.assertRaises(RuntimeError,lambda : f.setOption("foobar",123))
     self.assertRaises(RuntimeError,lambda : f.setOption("name",123))
     
-    self.assertRaises(RuntimeError,lambda : f.setOption("ad_mode","foo"))
+    self.assertRaises(RuntimeError,lambda : f.setOption("ad_weight","foo"))
     
     x = SX.sym("x")
     nlp = SXFunction(nlpIn(x=x),nlpOut(f=x))
@@ -488,8 +488,8 @@ class Misctests(casadiTestCase):
         [f_,g_] = f(x=Sparsity.dense(2))
         self.assertTrue(False)
       except RuntimeError as e:
-        self.assertTrue("Function(scheme(SX))" in e.message)
-        self.assertTrue("Function([SX] )" in e.message)
+        self.assertTrue("Function(scheme(SX)" in e.message)
+        self.assertTrue("Function([SX]" in e.message)
         self.assertTrue("You have: Function(scheme(Sparsity))" in e.message)
 
       with self.assertRaises(RuntimeError):

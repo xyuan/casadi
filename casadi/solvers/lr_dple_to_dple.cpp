@@ -104,7 +104,7 @@ namespace casadi {
     if (hasSetOption(optionsname())) solver_.setOption(getOption(optionsname()));
     solver_.init();
 
-    std::vector<MX> Pr = solver_.call(dpleIn("a", horzcat(As_), "v", horzcat(V_)));
+    std::vector<MX> Pr = solver_(dpleIn("a", horzcat(As_), "v", horzcat(V_)));
     std::vector<MX> Ps_ = horzsplit(Pr[DPLE_P], n_);
 
     std::vector<MX> HPH(K_);
@@ -132,10 +132,13 @@ namespace casadi {
     Wrapper::evaluate();
   }
 
-  Function LrDpleToDple::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function LrDpleToDple::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
   }
 
+  Function LrDpleToDple::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
+  }
 
   void LrDpleToDple::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

@@ -74,13 +74,29 @@ namespace casadi {
     /// Solve the nonlinear system of equations
     virtual void solveNonLinear() = 0;
 
-    // The following functions are called internally from EvaluateMX.
-    // For documentation, see the MXNode class
     ///@{
-    virtual void evaluateMX(MXNode* node, const MXPtrV& arg, MXPtrV& res, const MXPtrVV& fseed,
-                            MXPtrVV& fsens, const MXPtrVV& aseed, MXPtrVV& asens,
-                            bool output_given);
+    /** \brief Generate a function that calculates \a nfwd forward derivatives */
+    virtual Function getDerForward(int nfwd);
+    virtual bool hasDerForward() const { return true;}
     ///@}
+
+    ///@{
+    /** \brief Generate a function that calculates \a nadj adjoint derivatives */
+    virtual Function getDerReverse(int nadj);
+    virtual bool hasDerReverse() const { return true;}
+    ///@}
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    virtual void callForward(const std::vector<MX>& arg, const std::vector<MX>& res,
+                         const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    virtual void callReverse(const std::vector<MX>& arg, const std::vector<MX>& res,
+                         const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens,
+                         bool always_inline, bool never_inline);
 
     /// Number of equations
     int n_;

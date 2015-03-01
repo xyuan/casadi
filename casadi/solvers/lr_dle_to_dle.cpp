@@ -87,7 +87,7 @@ namespace casadi {
     if (hasSetOption(optionsname())) solver_.setOption(getOption(optionsname()));
     solver_.init();
 
-    std::vector<MX> Pr = solver_.call(dleIn("a", A, "v", CVC));
+    std::vector<MX> Pr = solver_(dleIn("a", A, "v", CVC));
     MX P = Pr[DLE_P];
 
     std::vector<MX> HPH(Hs_.size(), 0);
@@ -110,10 +110,13 @@ namespace casadi {
     Wrapper::evaluate();
   }
 
-  Function LrDleToDle::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function LrDleToDle::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
   }
 
+  Function LrDleToDle::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
+  }
 
   void LrDleToDle::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

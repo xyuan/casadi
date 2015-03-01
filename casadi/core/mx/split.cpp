@@ -43,18 +43,19 @@ namespace casadi {
   Split::~Split() {
   }
 
-  void Split::evaluateD(const double* const* input, double** output,
+  void Split::evalD(const cpv_double& input, const pv_double& output,
                         int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void Split::evaluateSX(const SXElement* const* input, SXElement** output,
+  void Split::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                          int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void Split::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void Split::evalGen(const std::vector<const T*>& input,
+                      const std::vector<T*>& output, int* itmp, T* rtmp) {
     // Number of derivatives
     int nx = offset_.size()-1;
 
@@ -67,35 +68,48 @@ namespace casadi {
     }
   }
 
-  void Split::propagateSparsity(double** input, double** output, bool fwd) {
+  void Split::spFwd(const cpv_bvec_t& arg,
+                    const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
     int nx = offset_.size()-1;
     for (int i=0; i<nx; ++i) {
-      if (output[i]!=0) {
-        bvec_t *arg_ptr = reinterpret_cast<bvec_t*>(input[0]) + offset_[i];
+      if (res[i]!=0) {
+        const bvec_t *arg_ptr = arg[0] + offset_[i];
         int n_i = sparsity(i).nnz();
-        bvec_t *res_i_ptr = reinterpret_cast<bvec_t*>(output[i]);
+        bvec_t *res_i_ptr = res[i];
         for (int k=0; k<n_i; ++k) {
-          if (fwd) {
-            *res_i_ptr++ = *arg_ptr++;
-          } else {
-            *arg_ptr++ |= *res_i_ptr;
-            *res_i_ptr++ = 0;
-          }
+          *res_i_ptr++ = *arg_ptr++;
         }
       }
     }
   }
 
-  void Split::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                const std::vector<std::string>& res, CodeGenerator& gen) const {
-    int nx = res.size();
+  void Split::spAdj(const pv_bvec_t& arg,
+                    const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    int nx = offset_.size()-1;
+    for (int i=0; i<nx; ++i) {
+      if (res[i]!=0) {
+        bvec_t *arg_ptr = arg[0] + offset_[i];
+        int n_i = sparsity(i).nnz();
+        bvec_t *res_i_ptr = res[i];
+        for (int k=0; k<n_i; ++k) {
+          *arg_ptr++ |= *res_i_ptr;
+          *res_i_ptr++ = 0;
+        }
+      }
+    }
+  }
+
+  void Split::generate(std::ostream &stream, const std::vector<int>& arg,
+                       const std::vector<int>& res, CodeGenerator& gen) const {
+    int nx = nout();
     for (int i=0; i<nx; ++i) {
       int nz_first = offset_[i];
       int nz_last = offset_[i+1];
       int nz = nz_last-nz_first;
-      if (res.at(i).compare("0")!=0) {
-        stream << "  for (i=0; i<" << nz << "; ++i) " << res.at(i) << "[i] = " << arg.at(0)
-               << "[i+" << nz_first << "];" << endl;
+      if (res[i]>=0) {
+        stream << "  for (i=0, rr=" <<  gen.work(res[i]) << ", "
+               << "cr=" << gen.work(arg[0]+nz_first) << "; i<" << nz << "; ++i) "
+               << "*rr++ = *cr++;" << endl;
       }
     }
   }
@@ -122,11 +136,30 @@ namespace casadi {
     }
   }
 
-  void Horzsplit::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                             MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                             bool output_given) {
+  void Horzsplit::eval(const cpv_MX& arg, const pv_MX& res) {
+    int nx = offset_.size()-1;
+
+    // Get column offsets
+    vector<int> col_offset;
+    col_offset.reserve(offset_.size());
+    col_offset.push_back(0);
+    for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
+        it!=output_sparsity_.end();
+        ++it) {
+      col_offset.push_back(col_offset.back() + it->size2());
+    }
+
+    const MX& x = *arg[0];
+    vector<MX> y = horzsplit(x, col_offset);
+    for (int i=0; i<nx; ++i) {
+      if (res[i]!=0) {
+        *res[i] = y[i];
+      }
+    }
+  }
+
+  void Horzsplit::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
     int nx = offset_.size()-1;
 
     // Get column offsets
@@ -140,11 +173,10 @@ namespace casadi {
     }
 
     // Non-differentiated output and forward sensitivities
-    int first_d = output_given ? 0 : -1;
-    for (int d=first_d; d<nfwd; ++d) {
-      const MXPtrV& arg = d<0 ? input : fwdSeed[d];
-      MXPtrV& res = d<0 ? output : fwdSens[d];
-      MX& x = *arg[0];
+    for (int d=0; d<nfwd; ++d) {
+      const cpv_MX& arg = fwdSeed[d];
+      const pv_MX& res = fwdSens[d];
+      const MX& x = *arg[0];
       vector<MX> y = horzsplit(x, col_offset);
       for (int i=0; i<nx; ++i) {
         if (res[i]!=0) {
@@ -152,8 +184,22 @@ namespace casadi {
         }
       }
     }
+  }
 
-    // Adjoint sensitivities
+  void Horzsplit::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    int nadj = adjSeed.size();
+    int nx = offset_.size()-1;
+
+    // Get column offsets
+    vector<int> col_offset;
+    col_offset.reserve(offset_.size());
+    col_offset.push_back(0);
+    for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
+        it!=output_sparsity_.end();
+        ++it) {
+      col_offset.push_back(col_offset.back() + it->size2());
+    }
+
     for (int d=0; d<nadj; ++d) {
       if (adjSens[d][0]!=0) {
         vector<MX> v;
@@ -198,11 +244,34 @@ namespace casadi {
     }
   }
 
-  void Diagsplit::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                             MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                             bool output_given) {
+  void Diagsplit::eval(const cpv_MX& arg, const pv_MX& res) {
+    int nx = offset_.size()-1;
+
+    // Get offsets
+    vector<int> offset1;
+    offset1.reserve(offset_.size());
+    offset1.push_back(0);
+    vector<int> offset2;
+    offset2.reserve(offset_.size());
+    offset2.push_back(0);
+    for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
+        it!=output_sparsity_.end();
+        ++it) {
+      offset1.push_back(offset1.back() + it->size1());
+      offset2.push_back(offset2.back() + it->size2());
+    }
+
+    const MX& x = *arg[0];
+    vector<MX> y = diagsplit(x, offset1, offset2);
+    for (int i=0; i<nx; ++i) {
+      if (res[i]!=0) {
+        *res[i] = y[i];
+      }
+    }
+  }
+
+  void Diagsplit::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
     int nx = offset_.size()-1;
 
     // Get offsets
@@ -220,11 +289,10 @@ namespace casadi {
     }
 
     // Non-differentiated output and forward sensitivities
-    int first_d = output_given ? 0 : -1;
-    for (int d=first_d; d<nfwd; ++d) {
-      const MXPtrV& arg = d<0 ? input : fwdSeed[d];
-      MXPtrV& res = d<0 ? output : fwdSens[d];
-      MX& x = *arg[0];
+    for (int d=0; d<nfwd; ++d) {
+      const cpv_MX& arg = fwdSeed[d];
+      const pv_MX& res = fwdSens[d];
+      const MX& x = *arg[0];
       vector<MX> y = diagsplit(x, offset1, offset2);
       for (int i=0; i<nx; ++i) {
         if (res[i]!=0) {
@@ -232,8 +300,26 @@ namespace casadi {
         }
       }
     }
+  }
 
-    // Adjoint sensitivities
+  void Diagsplit::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    int nadj = adjSens.size();
+    int nx = offset_.size()-1;
+
+    // Get offsets
+    vector<int> offset1;
+    offset1.reserve(offset_.size());
+    offset1.push_back(0);
+    vector<int> offset2;
+    offset2.reserve(offset_.size());
+    offset2.push_back(0);
+    for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
+        it!=output_sparsity_.end();
+        ++it) {
+      offset1.push_back(offset1.back() + it->size1());
+      offset2.push_back(offset2.back() + it->size2());
+    }
+
     for (int d=0; d<nadj; ++d) {
       if (adjSens[d][0]!=0) {
         vector<MX> v;
@@ -273,10 +359,56 @@ namespace casadi {
     }
   }
 
-  void Vertsplit::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                             MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                             bool output_given) {
+  void Vertsplit::eval(const cpv_MX& arg, const pv_MX& res) {
+    int nx = offset_.size()-1;
+
+    // Get row offsets
+    vector<int> row_offset;
+    row_offset.reserve(offset_.size());
+    row_offset.push_back(0);
+    for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
+        it!=output_sparsity_.end();
+        ++it) {
+      row_offset.push_back(row_offset.back() + it->size1());
+    }
+
+    const MX& x = *arg[0];
+    vector<MX> y = vertsplit(x, row_offset);
+    for (int i=0; i<nx; ++i) {
+      if (res[i]!=0) {
+        *res[i] = y[i];
+      }
+    }
+  }
+
+  void Vertsplit::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
+    int nx = offset_.size()-1;
+
+    // Get row offsets
+    vector<int> row_offset;
+    row_offset.reserve(offset_.size());
+    row_offset.push_back(0);
+    for (std::vector<Sparsity>::const_iterator it=output_sparsity_.begin();
+        it!=output_sparsity_.end();
+        ++it) {
+      row_offset.push_back(row_offset.back() + it->size1());
+    }
+
+    for (int d=0; d<nfwd; ++d) {
+      const cpv_MX& arg = fwdSeed[d];
+      const pv_MX& res = fwdSens[d];
+      const MX& x = *arg[0];
+      vector<MX> y = vertsplit(x, row_offset);
+      for (int i=0; i<nx; ++i) {
+        if (res[i]!=0) {
+          *res[i] = y[i];
+        }
+      }
+    }
+  }
+
+  void Vertsplit::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
     int nadj = adjSeed.size();
     int nx = offset_.size()-1;
 
@@ -290,21 +422,6 @@ namespace casadi {
       row_offset.push_back(row_offset.back() + it->size1());
     }
 
-    // Non-differentiated output and forward sensitivities
-    int first_d = output_given ? 0 : -1;
-    for (int d=first_d; d<nfwd; ++d) {
-      const MXPtrV& arg = d<0 ? input : fwdSeed[d];
-      MXPtrV& res = d<0 ? output : fwdSens[d];
-      MX& x = *arg[0];
-      vector<MX> y = vertsplit(x, row_offset);
-      for (int i=0; i<nx; ++i) {
-        if (res[i]!=0) {
-          *res[i] = y[i];
-        }
-      }
-    }
-
-    // Adjoint sensitivities
     for (int d=0; d<nadj; ++d) {
       if (adjSens[d][0]!=0) {
         vector<MX> v;
@@ -324,7 +441,7 @@ namespace casadi {
 
   MX Horzsplit::getHorzcat(const std::vector<MX>& x) const {
     // Check x length
-    if (x.size()!=getNumOutputs()) {
+    if (x.size()!=nout()) {
       return MXNode::getHorzcat(x);
     }
 
@@ -341,7 +458,7 @@ namespace casadi {
 
   MX Vertsplit::getVertcat(const std::vector<MX>& x) const {
     // Check x length
-    if (x.size()!=getNumOutputs()) {
+    if (x.size()!=nout()) {
       return MXNode::getVertcat(x);
     }
 
@@ -358,7 +475,7 @@ namespace casadi {
 
   MX Diagsplit::getDiagcat(const std::vector<MX>& x) const {
     // Check x length
-    if (x.size()!=getNumOutputs()) {
+    if (x.size()!=nout()) {
       return MXNode::getDiagcat(x);
     }
 

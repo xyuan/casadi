@@ -47,29 +47,23 @@ namespace casadi {
     }
   }
 
-  void Inverse::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                           MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                           bool output_given) {
-    const MX& X = *input[0];
-    MX& inv_X = *output[0];
-    if (!output_given) {
-      inv_X = inv(X);
-    }
+  void Inverse::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = inv(*input[0]);
+  }
 
-    // Forward sensitivities
-    int nfwd = fwdSens.size();
-    for (int d=0; d<nfwd; ++d) {
+  void Inverse::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    MX inv_X = shared_from_this<MX>();
+    for (int d=0; d<fwdSens.size(); ++d) {
       *fwdSens[d][0] = -mul(inv_X, mul(*fwdSeed[d][0], inv_X));
     }
+  }
 
-    // Adjoint sensitivities
-    int nadj = adjSeed.size();
-    if (nadj>0) {
-      MX trans_inv_X = inv_X.T();
-      for (int d=0; d<nadj; ++d) {
-        adjSens[d][0]->addToSum(-mul(trans_inv_X, mul(*adjSeed[d][0], trans_inv_X)));
-        *adjSeed[d][0] = MX();
-      }
+  void Inverse::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    MX inv_X = shared_from_this<MX>();
+    MX trans_inv_X = inv_X.T();
+    for (int d=0; d<adjSeed.size(); ++d) {
+      adjSens[d][0]->addToSum(-mul(trans_inv_X, mul(*adjSeed[d][0], trans_inv_X)));
+      *adjSeed[d][0] = MX();
     }
   }
 

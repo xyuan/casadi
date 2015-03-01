@@ -112,7 +112,7 @@ namespace casadi {
   std::vector<MX> MX::createMultipleOutput(MXNode* node) {
     casadi_assert(dynamic_cast<MultipleOutput*>(node)!=0);
     MX x =  MX::create(node);
-    std::vector<MX> ret(x->getNumOutputs());
+    std::vector<MX> ret(x->nout());
     for (int i=0; i<ret.size(); ++i) {
       ret[i] = MX::create(new OutputNode(x, i));
       if (ret[i].isEmpty(true)) {
@@ -299,7 +299,7 @@ namespace casadi {
       } else if (m.isScalar()) {
         // m scalar means "set all"
         if (m.isDense()) {
-          return setSub(repmat(m, rr.sparsity()), ind1, rr);
+          return setSub(MX(rr.sparsity(), m), ind1, rr);
         } else {
           return setSub(MX(rr.shape()), ind1, rr);
         }
@@ -417,7 +417,7 @@ namespace casadi {
       if (m.isScalar()) {
         // m scalar means "set all"
         if (!m.isDense()) return; // Nothing to set
-        return setNZ(repmat(m, kk.sparsity()), ind1, kk);
+        return setNZ(MX(kk.sparsity(), m), ind1, kk);
       } else if (kk.shape() == m.shape()) {
         // Project sparsity if needed
         return setNZ(m.setSparse(kk.sparsity()), ind1, kk);
@@ -899,7 +899,7 @@ namespace casadi {
   }
 
   int MX::getNumOutputs() const {
-    return (*this)->getNumOutputs();
+    return (*this)->nout();
   }
 
   MX MX::getOutput(int oind) const {
@@ -993,19 +993,16 @@ namespace casadi {
   }
 
   MX MX::T() const {
-    // Quick return if scalar
-    if (isScalar()) {
-      return *this;
-    } else {
-      return (*this)->getTranspose();
-    }
+    return (*this)->getTranspose();
   }
 
   void MX::addToSum(const MX& x) {
-    if (isEmpty(true)) {
-      *this = x;
-    } else {
-      *this += x;
+    if (!x.isEmpty()) {
+      if (isEmpty()) {
+        *this = x;
+      } else {
+        *this += x;
+      }
     }
   }
 
@@ -1239,13 +1236,6 @@ namespace casadi {
   }
 
   MX MX::zz_reshape(const Sparsity& sp) const {
-    // quick return if already the right shape
-    if (sp==sparsity()) return *this;
-
-    // make sure that the patterns match
-    casadi_assert(sp.isReshape(sparsity()));
-
-    // Create a reshape node
     return (*this)->getReshape(sp);
   }
 
@@ -1294,28 +1284,6 @@ namespace casadi {
       res+=(*this)(i, i);
     }
     return res;
-  }
-
-  MX MX::zz_repmat(const Sparsity& sp) const {
-    casadi_assert_message(isScalar(), "repmat(MX x, Sparsity sp) only defined for scalar x");
-    return MX(sp, *this);
-  }
-
-  MX MX::zz_repmat(int n, int m) const {
-    if (n==1 &&  m==1) {
-      // Quick return if possible
-      return *this;
-    } else if (isScalar()) {
-      if (isDense()) {
-        return MX(Sparsity::dense(n, m), *this);
-      } else {
-        return MX(n, m);
-      }
-    } else {
-      std::vector<MX> v_hor(m, *this);
-      std::vector<MX> v_ver(n, horzcat(v_hor));
-      return vertcat(v_ver);
-    }
   }
 
   MX MX::zz_createParent(std::vector<MX> &deps) {
@@ -1462,8 +1430,8 @@ namespace casadi {
     // Get references to the internal data structures
     std::vector<MXAlgEl>& algorithm = f->algorithm_;
     vector<MX> work(f.getWorkSize());
-    MXPtrV input_p, output_p;
-    MXPtrVV dummy_p;
+    vector<const MX*> input_p;
+    vector<MX*> output_p;
 
     for (vector<MXAlgEl>::iterator it=algorithm.begin(); it!=algorithm.end(); ++it) {
       switch (it->op) {
@@ -1495,7 +1463,7 @@ namespace casadi {
             output_p[i] = el<0 ? 0 : &work.at(el);
           }
 
-          it->data->evaluateMX(input_p, output_p, dummy_p, dummy_p, dummy_p, dummy_p, false);
+          it->data->eval(input_p, output_p);
         }
       }
     }
@@ -1523,7 +1491,7 @@ namespace casadi {
     // Otherwise, evaluate symbolically
     MXFunction F(v, ex);
     F.init();
-    return F.call(vdef, true);
+    return F(vdef, true);
   }
 
   MX MX::zz_graph_substitute(const std::vector<MX> &v, const std::vector<MX> &vdef) const {
@@ -1563,8 +1531,8 @@ namespace casadi {
     // Allocate output vector
     vector<MX> f_out(f.getNumOutputs());
 
-    MXPtrV input_p, output_p;
-    MXPtrVV dummy_p;
+    vector<const MX*> input_p;
+    vector<MX*> output_p;
 
     // expr_lookup iterator
     std::map<const MXNode*, int>::const_iterator it_lookup;
@@ -1616,8 +1584,7 @@ namespace casadi {
             int el = it->res[0];
             swork[el] = it->data;
           } else {
-            const_cast<MX&>(it->data)->evaluateMX(input_p, output_p,
-                                                  dummy_p, dummy_p, dummy_p, dummy_p, false);
+            const_cast<MX&>(it->data)->eval(input_p, output_p);
           }
         }
       }
@@ -1714,8 +1681,8 @@ namespace casadi {
     stringstream v_name;
 
     // Arguments for calling the atomic operations
-    MXPtrV input_p, output_p;
-    MXPtrVV dummy_p;
+    vector<const MX*> input_p;
+    vector<MX*> output_p;
 
     // Evaluate the algorithm
     k=0;
@@ -1741,8 +1708,7 @@ namespace casadi {
           }
 
           // Evaluate atomic operation
-          const_cast<MX&>(it->data)->evaluateMX(input_p, output_p,
-                                                dummy_p, dummy_p, dummy_p, dummy_p, false);
+          const_cast<MX&>(it->data)->eval(input_p, output_p);
 
           // Possibly replace results with new variables
           for (int c=0; c<it->res.size(); ++c) {
@@ -1879,7 +1845,7 @@ namespace casadi {
     SXFunction s = f.expand();
     s.init();
 
-    return s.call(graph_substitute(v, syms, boundary), true);
+    return s(graph_substitute(v, syms, boundary), true);
   }
 
   MX MX::zz_kron(const MX& b) const {

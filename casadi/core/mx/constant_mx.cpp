@@ -40,35 +40,28 @@ namespace casadi {
   ConstantMX::~ConstantMX() {
   }
 
-  void ConstantMX::evaluateD(const double* const* input, double** output,
+  void ConstantMX::evalD(const cpv_double& input, const pv_double& output,
                              int* itmp, double* rtmp) {
   }
 
-  void ConstantMX::evaluateSX(const SXElement* const* input, SXElement** output,
+  void ConstantMX::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                               int* itmp, SXElement* rtmp) {
   }
 
-  void ConstantMX::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                              MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                              bool output_given) {
-    // Evaluate nondifferentiated
-    if (!output_given) {
-      if (output[0]) {
-        *output[0] = shared_from_this<MX>();
-      }
-    }
+  void ConstantMX::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = shared_from_this<MX>();
+  }
 
-    // Forward sensitivities
-    if (!fwdSens.empty()) {
-      MX zero_sens(size1(), size2());
-      for (int d=0; d<fwdSens.size(); ++d) {
-        if (fwdSens[d][0]!=0) {
-          *fwdSens[d][0] = zero_sens;
-        }
-      }
-    }
+ void ConstantMX::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+   MX zero_sens(size1(), size2());
+   for (int d=0; d<fwdSens.size(); ++d) {
+     if (fwdSens[d][0]!=0) {
+       *fwdSens[d][0] = zero_sens;
+     }
+   }
+ }
 
-    // Clear adjoint seeds
+  void ConstantMX::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
     for (int d=0; d<adjSeed.size(); ++d) {
       if (adjSeed[d][0]!=0) {
         *adjSeed[d][0] = MX();
@@ -76,21 +69,24 @@ namespace casadi {
     }
   }
 
-  void ConstantMX::propagateSparsity(double** input, double** output, bool fwd) {
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    fill_n(outputd, nnz(), 0);
+  void ConstantMX::spFwd(const cpv_bvec_t& arg,
+                         const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    fill_n(res[0], nnz(), 0);
   }
 
-  void ConstantDMatrix::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                          const std::vector<std::string>& res,
+  void ConstantMX::spAdj(const pv_bvec_t& arg,
+                         const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    fill_n(res[0], nnz(), 0);
+  }
+
+  void ConstantDMatrix::generate(std::ostream &stream, const std::vector<int>& arg,
+                                          const std::vector<int>& res,
                                           CodeGenerator& gen) const {
     // Print the constant
     int ind = gen.getConstant(x_.data(), true);
 
     // Copy the constant to the work vector
-    stream << "  for (i=0; i<" << sparsity().nnz() << "; ++i) ";
-    stream << res.at(0) << "[i]=";
-    stream << "c" << ind << "[i];" << endl;
+    gen.copyVector(stream, "c"+gen.numToString(ind), nnz(), gen.work(res.at(0)), "i", false);
   }
 
   bool ConstantMX::__nonzero__() const {

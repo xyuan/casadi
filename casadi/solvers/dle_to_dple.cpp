@@ -89,10 +89,13 @@ namespace casadi {
     }
   }
 
-  Function DleToDple::getDerivative(int nfwd, int nadj) {
-    return solver_.derivative(nfwd, nadj);
+  Function DleToDple::getDerForward(int nfwd) {
+    return solver_.derForward(nfwd);
   }
 
+  Function DleToDple::getDerReverse(int nadj) {
+    return solver_.derReverse(nadj);
+  }
 
   void DleToDple::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

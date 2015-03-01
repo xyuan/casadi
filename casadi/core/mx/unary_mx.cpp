@@ -56,7 +56,7 @@ namespace casadi {
     }
   }
 
-  void UnaryMX::evaluateD(const double* const* input, double** output,
+  void UnaryMX::evalD(const cpv_double& input, const pv_double& output,
                           int* itmp, double* rtmp) {
     double dummy = numeric_limits<double>::quiet_NaN();
     double* outputd = output[0];
@@ -64,7 +64,7 @@ namespace casadi {
     casadi_math<double>::fun(op_, inputd, dummy, outputd, nnz());
   }
 
-  void UnaryMX::evaluateSX(const SXElement* const* input, SXElement** output,
+  void UnaryMX::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                            int* itmp, SXElement* rtmp) {
     SXElement dummy = 0;
     SXElement* outputd = output[0];
@@ -72,68 +72,53 @@ namespace casadi {
     casadi_math<SXElement>::fun(op_, inputd, dummy, outputd, nnz());
   }
 
-  void UnaryMX::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                           MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                           bool output_given) {
-    // Evaluate function
-    MX f, dummy; // Function value, dummy second argument
-    if (output_given) {
-      f = *output[0];
-    } else {
-      casadi_math<MX>::fun(op_, *input[0], dummy, f);
-    }
+  void UnaryMX::eval(const cpv_MX& input, const pv_MX& output) {
+    MX dummy;
+    casadi_math<MX>::fun(op_, *input[0], dummy, *output[0]);
+  }
 
-    // Number of forward directions
-    int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
-    if (nfwd>0 || nadj>0) {
-      // Get partial derivatives
-      MX pd[2];
-      casadi_math<MX>::der(op_, *input[0], dummy, f, pd);
+  void UnaryMX::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    // Get partial derivatives
+    MX pd[2];
+    MX dummy; // Function value, dummy second argument
+    casadi_math<MX>::der(op_, dep(), dummy, shared_from_this<MX>(), pd);
 
-      // Propagate forward seeds
-      for (int d=0; d<nfwd; ++d) {
-        *fwdSens[d][0] = pd[0]*(*fwdSeed[d][0]);
-      }
-
-      // Propagate adjoint seeds
-      for (int d=0; d<nadj; ++d) {
-        MX s = *adjSeed[d][0];
-        *adjSeed[d][0] = MX();
-        adjSens[d][0]->addToSum(pd[0]*s);
-      }
-    }
-
-    // Perform the assignment (which may be inplace, hence delayed)
-    if (!output_given) {
-      *output[0] = f;
+    // Propagate forward seeds
+    for (int d=0; d<fwdSens.size(); ++d) {
+      *fwdSens[d][0] = pd[0]*(*fwdSeed[d][0]);
     }
   }
 
-  void UnaryMX::propagateSparsity(double** input, double** output, bool fwd) {
-    // Quick return if inplace
-    if (input[0]==output[0]) return;
+  void UnaryMX::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    // Get partial derivatives
+    MX pd[2];
+    MX dummy; // Function value, dummy second argument
+    casadi_math<MX>::der(op_, dep(), dummy, shared_from_this<MX>(), pd);
 
-    bvec_t *inputd = reinterpret_cast<bvec_t*>(input[0]);
-    bvec_t *outputd = reinterpret_cast<bvec_t*>(output[0]);
-    if (fwd) {
-      copy(inputd, inputd+nnz(), outputd);
-    } else {
-      int nz = dep(0).nnz();
-      for (int el=0; el<nz; ++el) {
-        bvec_t s = outputd[el];
-        outputd[el] = bvec_t(0);
-        inputd[el] |= s;
-      }
+    // Propagate adjoint seeds
+    for (int d=0; d<adjSeed.size(); ++d) {
+      MX s = *adjSeed[d][0];
+      *adjSeed[d][0] = MX();
+      adjSens[d][0]->addToSum(pd[0]*s);
     }
   }
 
-  void UnaryMX::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                  const std::vector<std::string>& res, CodeGenerator& gen) const {
-    stream << "  for (i=0; i<" << sparsity().nnz() << "; ++i) ";
-    stream << res.at(0) << "[i]=";
+  void UnaryMX::spFwd(const cpv_bvec_t& arg,
+                      const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    copyFwd(arg[0], res[0], nnz());
+  }
+
+  void UnaryMX::spAdj(const pv_bvec_t& arg,
+                      const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    copyAdj(arg[0], res[0], nnz());
+  }
+
+  void UnaryMX::generate(std::ostream &stream, const std::vector<int>& arg,
+                                  const std::vector<int>& res, CodeGenerator& gen) const {
+    stream << "  for (i=0, rr=" << gen.work(res.at(0)) << ", cs=" << gen.work(arg.at(0))
+           << "; i<" << sparsity().nnz() << "; ++i) *rr++=";
     casadi_math<double>::printPre(op_, stream);
-    stream << arg.at(0) << "[i]";
+    stream << " *cs++ ";
     casadi_math<double>::printPost(op_, stream);
     stream << ";" << endl;
   }

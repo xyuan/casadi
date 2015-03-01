@@ -623,43 +623,42 @@ namespace casadi {
     }
   }
 
-  void SXFunctionInternal::evalSXsparse(const vector<SX>& arg1, vector<SX>& res1,
-                                  const vector<vector<SX> >& fseed, vector<vector<SX> >& fsens,
-                                  const vector<vector<SX> >& aseed, vector<vector<SX> >& asens) {
+  void SXFunctionInternal::evalSX(const vector<SX>& arg, vector<SX>& res) {
     if (verbose()) cout << "SXFunctionInternal::evalSXsparse begin" << endl;
 
-    // Check if arguments matches the input expressions, in which case the output is known
-    // to be the output expressions
-    const int checking_depth = 2;
-    bool output_given = true;
-    for (int i=0; i<arg1.size() && output_given; ++i) {
-      for (int j=0; j<arg1[i].nnz() && output_given; ++j) {
-        if (!isEqual(arg1[i].at(j), inputv_[i].at(j), checking_depth)) {
-          output_given = false;
-        }
-      }
+    // Get the number of inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
+
+    // Make sure matching sparsity of fseed
+    bool matching_sparsity = true;
+    casadi_assert(arg.size()==num_in);
+    for (int i=0; matching_sparsity && i<num_in; ++i)
+      matching_sparsity = arg[i].sparsity()==input(i).sparsity();
+
+    // Correct sparsity if needed
+    if (!matching_sparsity) {
+      vector<SX> arg2(arg);
+      for (int i=0; i<num_in; ++i)
+        if (arg2[i].sparsity()!=input(i).sparsity())
+          arg2[i] = arg2[i].setSparse(input(i).sparsity());
+      return evalSX(arg2, res);
     }
+
+    // Allocate results
+    res.resize(num_out);
+    for (int i=0; i<num_out; ++i)
+      if (res[i].sparsity()!=output(i).sparsity())
+        res[i] = SX::zeros(output(i).sparsity());
 
     // Copy output if known
+    bool output_given = isInput(arg);
     if (output_given) {
-      for (int i=0; i<res1.size(); ++i) {
-        copy(outputv_[i].begin(), outputv_[i].end(), res1[i].begin());
+      for (int i=0; i<res.size(); ++i) {
+        copy(outputv_[i].begin(), outputv_[i].end(), res[i].begin());
       }
+      return;
     }
-
-    // Use the function arguments if possible to avoid problems involving
-    // equivalent but different expressions
-    const vector<SX>& arg = output_given ? inputv_ : arg1;
-    vector<SX>& res = output_given ? outputv_ : res1;
-
-    // Number of forward seeds
-    int nfdir = fsens.size();
-
-    // number of adjoint seeds
-    int nadir = aseed.size();
-
-    // Do we need taping?
-    bool taping = nfdir>0 || nadir>0;
 
     // Iterator to the binary operations
     vector<SXElement>::const_iterator b_it=operations_.begin();
@@ -669,14 +668,6 @@ namespace casadi {
 
     // Iterator to free variables
     vector<SXElement>::const_iterator p_it = free_vars_.begin();
-
-    // Tape
-    vector<TapeEl<SXElement> > s_pdwork;
-    vector<TapeEl<SXElement> >::iterator it1;
-    if (taping) {
-      s_pdwork.resize(operations_.size());
-      it1 = s_pdwork.begin();
-    }
 
     // Evaluate algorithm
     if (verbose()) cout << "SXFunctionInternal::evalSXsparse evaluating algorithm forward" << endl;
@@ -702,7 +693,7 @@ namespace casadi {
           } else {
             switch (it->op) {
               CASADI_MATH_FUN_BUILTIN(s_work_[it->i1], s_work_[it->i2], f)
-                }
+            }
 
             // If this new expression is identical to the expression used
             // to define the algorithm, then reuse
@@ -710,26 +701,84 @@ namespace casadi {
             f.assignIfDuplicate(*b_it++, depth);
           }
 
-          // Get the partial derivatives, if requested
-          if (taping) {
-            switch (it->op) {
-              CASADI_MATH_DER_BUILTIN(s_work_[it->i1], s_work_[it->i2], f, it1++->d)
-                }
-          }
-
           // Finally save the function value
           s_work_[it->i0] = f;
         }
       }
     }
+    if (verbose()) cout << "SXFunctionInternal::evalSX end" << endl;
+  }
 
-    // Quick return if no sensitivities
-    if (!taping) return;
+  void SXFunctionInternal::evalFwd(const vector<vector<SX> >& fseed, vector<vector<SX> >& fsens) {
+    if (verbose()) cout << "SXFunctionInternal::evalFwd begin" << endl;
+
+    // Number of forward seeds
+    int nfwd = fseed.size();
+    fsens.resize(nfwd);
+
+    // Quick return if possible
+    if (nfwd==0) return;
+
+    // Get the number of inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
+
+    // Make sure matching sparsity of fseed
+    bool matching_sparsity = true;
+    for (int d=0; d<nfwd; ++d) {
+      casadi_assert(fseed[d].size()==num_in);
+      for (int i=0; matching_sparsity && i<num_in; ++i)
+        matching_sparsity = fseed[d][i].sparsity()==input(i).sparsity();
+    }
+
+    // Correct sparsity if needed
+    if (!matching_sparsity) {
+      vector<vector<SX> > fseed2(fseed);
+      for (int d=0; d<nfwd; ++d)
+        for (int i=0; i<num_in; ++i)
+          if (fseed2[d][i].sparsity()!=input(i).sparsity())
+            fseed2[d][i] = fseed2[d][i].setSparse(input(i).sparsity());
+      return evalFwd(fseed2, fsens);
+    }
+
+    // Allocate results
+    for (int d=0; d<nfwd; ++d) {
+      fsens[d].resize(num_out);
+      for (int i=0; i<fsens[d].size(); ++i)
+        if (fsens[d][i].sparsity()!=output(i).sparsity())
+          fsens[d][i] = SX::zeros(output(i).sparsity());
+    }
+
+    // Iterator to the binary operations
+    vector<SXElement>::const_iterator b_it=operations_.begin();
+
+    // Tape
+    vector<TapeEl<SXElement> > s_pdwork(operations_.size());
+    vector<TapeEl<SXElement> >::iterator it1 = s_pdwork.begin();
+
+    // Evaluate algorithm
+    if (verbose()) cout << "SXFunctionInternal::evalFwd evaluating algorithm forward" << endl;
+    for (vector<AlgEl>::const_iterator it = algorithm_.begin(); it!=algorithm_.end(); ++it) {
+      switch (it->op) {
+      case OP_INPUT:
+      case OP_OUTPUT:
+      case OP_CONST:
+      case OP_PARAMETER:
+        break;
+      default:
+        {
+          const SXElement& f=*b_it++;
+          switch (it->op) {
+            CASADI_MATH_DER_BUILTIN(f->dep(0), f->dep(1), f, it1++->d)
+          }
+        }
+      }
+    }
 
     // Calculate forward sensitivities
     if (verbose())
-      cout << "SXFunctionInternal::evalSXsparse calculating forward derivatives" << endl;
-    for (int dir=0; dir<nfdir; ++dir) {
+      cout << "SXFunctionInternal::evalFwd calculating forward derivatives" << endl;
+    for (int dir=0; dir<nfwd; ++dir) {
       vector<TapeEl<SXElement> >::const_iterator it2 = s_pdwork.begin();
       for (vector<AlgEl>::const_iterator it = algorithm_.begin(); it!=algorithm_.end(); ++it) {
         switch (it->op) {
@@ -748,16 +797,83 @@ namespace casadi {
         }
       }
     }
+    if (verbose()) cout << "SXFunctionInternal::evalFwd end" << endl;
+  }
+
+  void SXFunctionInternal::evalAdj(const vector<vector<SX> >& aseed, vector<vector<SX> >& asens) {
+    if (verbose()) cout << "SXFunctionInternal::evalAdj begin" << endl;
+
+    // number of adjoint seeds
+    int nadj = aseed.size();
+    asens.resize(nadj);
+
+    // Quick return if possible
+    if (nadj==0) return;
+
+    // Get the number of inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
+
+    // Make sure matching sparsity of fseed
+    bool matching_sparsity = true;
+    for (int d=0; d<nadj; ++d) {
+      casadi_assert(aseed[d].size()==num_out);
+      for (int i=0; matching_sparsity && i<num_out; ++i)
+        matching_sparsity = aseed[d][i].sparsity()==output(i).sparsity();
+    }
+
+    // Correct sparsity if needed
+    if (!matching_sparsity) {
+      vector<vector<SX> > aseed2(aseed);
+      for (int d=0; d<nadj; ++d)
+        for (int i=0; i<num_out; ++i)
+          if (aseed2[d][i].sparsity()!=output(i).sparsity())
+            aseed2[d][i] = aseed2[d][i].setSparse(output(i).sparsity());
+      return evalAdj(aseed2, asens);
+    }
+
+    // Allocate results if needed
+    for (int d=0; d<nadj; ++d) {
+      asens[d].resize(num_in);
+      for (int i=0; i<asens[d].size(); ++i)
+        if (asens[d][i].sparsity()!=input(i).sparsity())
+          asens[d][i] = SX::zeros(input(i).sparsity());
+    }
+
+    // Iterator to the binary operations
+    vector<SXElement>::const_iterator b_it=operations_.begin();
+
+    // Tape
+    vector<TapeEl<SXElement> > s_pdwork(operations_.size());
+    vector<TapeEl<SXElement> >::iterator it1 = s_pdwork.begin();
+
+    // Evaluate algorithm
+    if (verbose()) cout << "SXFunctionInternal::evalFwd evaluating algorithm forward" << endl;
+    for (vector<AlgEl>::const_iterator it = algorithm_.begin(); it!=algorithm_.end(); ++it) {
+      switch (it->op) {
+      case OP_INPUT:
+      case OP_OUTPUT:
+      case OP_CONST:
+      case OP_PARAMETER:
+        break;
+      default:
+        {
+          const SXElement& f=*b_it++;
+          switch (it->op) {
+            CASADI_MATH_DER_BUILTIN(f->dep(0), f->dep(1), f, it1++->d)
+          }
+        }
+      }
+    }
 
     // Calculate adjoint sensitivities
-    if (verbose()) cout << "SXFunctionInternal::evalSXsparse calculating adjoint derivatives"
+    if (verbose()) cout << "SXFunctionInternal::evalAdj calculating adjoint derivatives"
                        << endl;
-    if (nadir>0) fill(s_work_.begin(), s_work_.end(), 0);
-    for (int dir=0; dir<nadir; ++dir) {
+    fill(s_work_.begin(), s_work_.end(), 0);
+    for (int dir=0; dir<nadj; ++dir) {
       vector<TapeEl<SXElement> >::const_reverse_iterator it2 = s_pdwork.rbegin();
       for (vector<AlgEl>::const_reverse_iterator it = algorithm_.rbegin();
-          it!=algorithm_.rend();
-          ++it) {
+           it!=algorithm_.rend(); ++it) {
         SXElement seed;
         switch (it->op) {
         case OP_INPUT:
@@ -786,7 +902,7 @@ namespace casadi {
         }
       }
     }
-    if (verbose()) cout << "SXFunctionInternal::evalSXsparse end" << endl;
+    if (verbose()) cout << "SXFunctionInternal::evalAdj end" << endl;
   }
 
   SXFunctionInternal* SXFunctionInternal::clone() const {
@@ -875,26 +991,8 @@ namespace casadi {
   }
 
   Function SXFunctionInternal::getFullJacobian() {
-    // Get all the inputs
-    SX arg(1, 0);
-    for (vector<SX>::const_iterator i=inputv_.begin(); i!=inputv_.end(); ++i) {
-      arg.appendColumns(vec(*i).T());
-    }
-
-    // Get all the outputs
-    SX res(1, 0);
-    for (vector<SX>::const_iterator i=outputv_.begin(); i!=outputv_.end(); ++i) {
-      res.appendColumns(vec(*i).T());
-    }
-
-    // Generate an expression for the Jacobian
-    SX J = casadi::jacobian(res, arg);
-
-    // Generate a function for the full Jacobian
-    vector<SX> ret_res(1, J);
-    ret_res.insert(ret_res.end(), outputv_.begin(), outputv_.end());
-    SXFunction ret(inputv_, ret_res);
-    return ret;
+    SX J = casadi::jacobian(veccat(outputv_), veccat(inputv_));
+    return SXFunction(inputv_, J);
   }
 
 
@@ -1424,5 +1522,23 @@ namespace casadi {
   }
 
 #endif // WITH_OPENCL
+
+  void SXFunctionInternal::callForward(const std::vector<SX>& arg, const std::vector<SX>& res,
+                                   const std::vector<std::vector<SX> >& fseed,
+                                   std::vector<std::vector<SX> >& fsens,
+                                   bool always_inline, bool never_inline) {
+    casadi_assert_message(!never_inline, "SX expressions do not have call nodes");
+    XFunctionInternal<SXFunction, SXFunctionInternal, SX, SXNode>
+      ::callForward(arg, res, fseed, fsens, true, false);
+  }
+
+  void SXFunctionInternal::callReverse(const std::vector<SX>& arg, const std::vector<SX>& res,
+                                 const std::vector<std::vector<SX> >& aseed,
+                                 std::vector<std::vector<SX> >& asens,
+                                 bool always_inline, bool never_inline) {
+    casadi_assert_message(!never_inline, "SX expressions do not have call nodes");
+    XFunctionInternal<SXFunction, SXFunctionInternal, SX, SXNode>
+      ::callReverse(arg, res, aseed, asens, true, false);
+  }
 
 } // namespace casadi

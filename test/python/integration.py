@@ -105,30 +105,29 @@ class Integrationtests(casadiTestCase):
   def test_tools_trivial(self):
     num = self.num
 
-    t=SX.sym("t")
-    q=SX.sym("q")
-    p=SX.sym("p")
-    
-    f=SXFunction(daeIn(x=q),daeOut(ode=q))
+    x = SX.sym("x")
+    p = SX.sym("p",0)
+    tf = SX.sym("tf")
+    f=SXFunction([x,p],[x])
     f.init()
-    tf = 1
     
     for integrator in [
-         explicitRK(f,tf,4,10),
-         implicitRK(f,"newton",{"linear_solver": "csparse"},tf,4,"radau",10)
+         simpleRK(f),
+         simpleIRK(f),
+         simpleIntegrator(f)
        ]:
       integrator.init()
-      
-      solution = SXFunction(integratorIn(x0=q),integratorOut(xf=q*exp(tf)))
+
+      solution = SXFunction([x,p,tf],[x*exp(tf)])
+      solution.setInputScheme(IOScheme(["x0","p","h"]))
+      solution.setOutputScheme(IOScheme(["xf"]))
       solution.init()
-      
+
       for f in [solution,integrator]:
         f.setInput(1,"x0")
-        
+        f.setInput(1,"h")
       integrator.evaluate()
-      
-
-      self.checkfunction(integrator,solution,digits=5)
+      self.checkfunction(integrator,solution,digits=3)
 
   @slow()
   def test_tools(self):
@@ -137,27 +136,28 @@ class Integrationtests(casadiTestCase):
     t=SX.sym("t")
     q=SX.sym("q")
     p=SX.sym("p")
-    
-    out = SXFunction(daeIn(t=t, x=q, p=p),[q,t,p])
-    out.init()
-
-    f=SXFunction(daeIn(t=t, x=q, p=p),daeOut(ode=q/p*t**2))
+    t0=SX.sym("t0")
+    q0=SX.sym("q0")
+    f=SXFunction([vertcat((q,t)),p],[vertcat((q/p*t**2,1))])
     f.init()
-    tf = 1
     for integrator in [
-         explicitRK(f,tf,4,500),
-         implicitRK(f,"newton",{"linear_solver": "csparse"},tf,4,"radau",50)
-       ]:
+            simpleRK(f,500),
+            simpleIRK(f,50),
+            simpleIntegrator(f)
+            ]:
       integrator.init()
-      
-      solution = SXFunction(integratorIn(x0=q, p=p),integratorOut(xf=q*exp(tf**3/(3*p))))
+
+      solution = SXFunction([vertcat((q0,t0)),p,t],[vertcat([q0*exp(((t0+t)**3-t0**3)/(3*p)),t0+t])])
+      solution.setInputScheme(IOScheme(["x0","p","h"]))
+      solution.setOutputScheme(IOScheme(["xf"]))
       solution.init()
       
       for f in [solution,integrator]:
-        f.setInput(0.3,"x0")
+        f.setInput([0.3,0],"x0")
         f.setInput(0.7,"p")
+        f.setInput(1, "h")
       
-      self.checkfunction(integrator,solution,digits=4)
+      self.checkfunction(integrator,solution,digits=3)
     
   @memory_heavy()
   def test_jac(self):
@@ -1004,7 +1004,7 @@ class Integrationtests(casadiTestCase):
     
     return # this should return identical zero
     H=qeJ.jacobian(0,0)
-    H.setOption("ad_mode","reverse")
+    #H.setOption("ad_mode","reverse")
     H.init()
     H.setInput(A,0)
     H.setInput(vec(B),1)

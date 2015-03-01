@@ -49,67 +49,67 @@ namespace casadi {
     }
   }
 
-  void InnerProd::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                             MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                             bool output_given) {
-    if (!output_given) {
-      *output[0] = (*input[0])->getInnerProd(*input[1]);
-    }
+  void InnerProd::eval(const cpv_MX& input, const pv_MX& output) {
+    *output[0] = (*input[0])->getInnerProd(*input[1]);
+  }
 
-    // Forward sensitivities
-    int nfwd = fwdSens.size();
-    for (int d=0; d<nfwd; ++d) {
-      *fwdSens[d][0] = (*input[0])->getInnerProd(*fwdSeed[d][1])
-          + (*fwdSeed[d][0])->getInnerProd(*input[1]);
+  void InnerProd::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    for (int d=0; d<fwdSens.size(); ++d) {
+      *fwdSens[d][0] = dep(0)->getInnerProd(*fwdSeed[d][1])
+        + (*fwdSeed[d][0])->getInnerProd(dep(1));
     }
+  }
 
-    // Adjoint sensitivities
-    int nadj = adjSeed.size();
-    for (int d=0; d<nadj; ++d) {
-      adjSens[d][0]->addToSum(*adjSeed[d][0] * *input[1]);
-      adjSens[d][1]->addToSum(*adjSeed[d][0] * *input[0]);
+  void InnerProd::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    for (int d=0; d<adjSeed.size(); ++d) {
+      adjSens[d][0]->addToSum(*adjSeed[d][0] * dep(1));
+      adjSens[d][1]->addToSum(*adjSeed[d][0] * dep(0));
       *adjSeed[d][0] = MX();
     }
   }
 
-  void InnerProd::evaluateD(const double* const* input, double** output,
+  void InnerProd::evalD(const cpv_double& input, const pv_double& output,
                             int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void InnerProd::evaluateSX(const SXElement* const* input, SXElement** output,
-                             int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+  void InnerProd::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
+                         int* itmp, SXElement* rtmp) {
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void InnerProd::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void InnerProd::evalGen(const std::vector<const T*>& input,
+                          const std::vector<T*>& output, int* itmp, T* rtmp) {
     *output[0] = casadi_dot(dep(0).nnz(), input[0], 1, input[1], 1);
   }
 
-  void InnerProd::propagateSparsity(double** input, double** output, bool fwd) {
-    bvec_t* res = reinterpret_cast<bvec_t*>(output[0]);
-    bvec_t* arg0 = reinterpret_cast<bvec_t*>(input[0]);
-    bvec_t* arg1 = reinterpret_cast<bvec_t*>(input[1]);
+  void InnerProd::spFwd(const cpv_bvec_t& arg,
+                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    const bvec_t *a0=arg[0], *a1=arg[1];
+    bvec_t* r = res[0];
     const int n = dep(0).nnz();
-    if (fwd) {
-      *res = 0;
-      for (int i=0; i<n; ++i) {
-        *res |= *arg0++ | *arg1++;
-      }
-    } else {
-      for (int i=0; i<n; ++i) {
-        *arg0++ |= *res;
-        *arg1++ |= *res;
-      }
-      *res = 0;
+    *r = 0;
+    for (int i=0; i<n; ++i) {
+      *r |= *a0++ | *a1++;
     }
   }
 
-  void InnerProd::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                    const std::vector<std::string>& res, CodeGenerator& gen) const {
-    stream << "  *" << res.front() << " = "
-           << gen.casadi_dot(dep().nnz(), arg.at(0), 1, arg.at(1), 1) << ";" << endl;
+  void InnerProd::spAdj(const pv_bvec_t& arg,
+                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    bvec_t *a0=arg[0], *a1=arg[1], *r=res[0];
+    const int n = dep(0).nnz();
+    for (int i=0; i<n; ++i) {
+      *a0++ |= *r;
+      *a1++ |= *r;
+    }
+    *r = 0;
+  }
+
+  void InnerProd::generate(std::ostream &stream, const std::vector<int>& arg,
+                                    const std::vector<int>& res, CodeGenerator& gen) const {
+    gen.assign(stream, gen.workelement(res[0]),
+               gen.casadi_dot(dep().nnz(), gen.work(arg[0]), 1, gen.work(arg[1]), 1));
   }
 
 } // namespace casadi

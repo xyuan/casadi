@@ -41,18 +41,19 @@ namespace casadi {
   Concat::~Concat() {
   }
 
-  void Concat::evaluateD(const double* const* input, double** output,
+  void Concat::evalD(const cpv_double& input, const pv_double& output,
                          int* itmp, double* rtmp) {
-    evaluateGen<double>(input, output, itmp, rtmp);
+    evalGen<double>(input, output, itmp, rtmp);
   }
 
-  void Concat::evaluateSX(const SXElement* const* input, SXElement** output,
+  void Concat::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                           int* itmp, SXElement* rtmp) {
-    evaluateGen<SXElement>(input, output, itmp, rtmp);
+    evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
   template<typename T>
-  void Concat::evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp) {
+  void Concat::evalGen(const std::vector<const T*>& input,
+                       const std::vector<T*>& output, int* itmp, T* rtmp) {
     T* res = output[0];
     for (int i=0; i<ndep(); ++i) {
       const T* arg_i = input[i];
@@ -61,33 +62,38 @@ namespace casadi {
     }
   }
 
-  void Concat::propagateSparsity(double** input, double** output, bool fwd) {
-    bvec_t *res_ptr = reinterpret_cast<bvec_t*>(output[0]);
+  void Concat::spFwd(const cpv_bvec_t& arg,
+                     const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    bvec_t *res_ptr = res[0];
     for (int i=0; i<ndep(); ++i) {
       int n_i = dep(i).nnz();
-      bvec_t *arg_i_ptr = reinterpret_cast<bvec_t*>(input[i]);
-      if (fwd) {
-        copy(arg_i_ptr, arg_i_ptr+n_i, res_ptr);
-        res_ptr += n_i;
-      } else {
-        for (int k=0; k<n_i; ++k) {
-          *arg_i_ptr++ |= *res_ptr;
-          *res_ptr++ = 0;
-        }
+      const bvec_t *arg_i_ptr = arg[i];
+      copy(arg_i_ptr, arg_i_ptr+n_i, res_ptr);
+      res_ptr += n_i;
+    }
+  }
+
+  void Concat::spAdj(const pv_bvec_t& arg,
+                     const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    bvec_t *res_ptr = res[0];
+    for (int i=0; i<ndep(); ++i) {
+      int n_i = dep(i).nnz();
+      bvec_t *arg_i_ptr = arg[i];
+      for (int k=0; k<n_i; ++k) {
+        *arg_i_ptr++ |= *res_ptr;
+        *res_ptr++ = 0;
       }
     }
   }
 
-  void Concat::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                 const std::vector<std::string>& res, CodeGenerator& gen) const {
-    int nz_offset = 0;
+  void Concat::generate(std::ostream &stream, const std::vector<int>& arg,
+                        const std::vector<int>& res, CodeGenerator& gen) const {
     for (int i=0; i<arg.size(); ++i) {
       int nz = dep(i).nnz();
-      stream << "  for (i=0; i<" << nz << "; ++i) " << res.front() << "[i+" << nz_offset
-             << "] = " << arg.at(i) << "[i];" << endl;
-      nz_offset += nz;
+      stream << "  for (i=0, ";
+      if (i==0) stream << "rr=" << gen.work(res[0]) << ", ";
+      stream << "cs=" << gen.work(arg[i]) << "; i<" << nz << "; ++i) *rr++ = *cs++;" << endl;
     }
-    casadi_assert(nz_offset == nnz());
   }
 
   MX Concat::getGetNonzeros(const Sparsity& sp, const std::vector<int>& nz) const {
@@ -155,25 +161,18 @@ namespace casadi {
     }
   }
 
-  void Diagcat::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                           MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                           bool output_given) {
+  void Diagcat::eval(const cpv_MX& arg, const pv_MX& res) {
+    *res[0] = diagcat(getVector(arg, ndep()));
+  }
+
+  void Diagcat::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
-
-    // Non-differentiated output
-    if (!output_given) {
-      *output[0] = diagcat(getVector(input));
-    }
-
-    // Forward sensitivities
     for (int d = 0; d<nfwd; ++d) {
-      *fwdSens[d][0] = diagcat(getVector(fwdSeed[d]));
+      *fwdSens[d][0] = diagcat(getVector(fwdSeed[d], ndep()));
     }
+  }
 
-    // Quick return?
-    if (nadj==0) return;
-
+  void Diagcat::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
     // Get offsets for each row and column
     vector<int> offset1(ndep()+1, 0);
     vector<int> offset2(ndep()+1, 0);
@@ -185,6 +184,7 @@ namespace casadi {
     }
 
     // Adjoint sensitivities
+    int nadj = adjSeed.size();
     for (int d=0; d<nadj; ++d) {
       MX& aseed = *adjSeed[d][0];
       vector<MX> s = diagsplit(aseed, offset1, offset2);
@@ -216,25 +216,18 @@ namespace casadi {
     }
   }
 
-  void Horzcat::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                           MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                           bool output_given) {
+  void Horzcat::eval(const cpv_MX& arg, const pv_MX& res) {
+    *res[0] = horzcat(getVector(arg, ndep()));
+  }
+
+  void Horzcat::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
-
-    // Non-differentiated output
-    if (!output_given) {
-      *output[0] = horzcat(getVector(input));
-    }
-
-    // Forward sensitivities
     for (int d = 0; d<nfwd; ++d) {
-      *fwdSens[d][0] = horzcat(getVector(fwdSeed[d]));
+      *fwdSens[d][0] = horzcat(getVector(fwdSeed[d], ndep()));
     }
+  }
 
-    // Quick return?
-    if (nadj==0) return;
-
+  void Horzcat::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
     // Get offsets for each column
     vector<int> col_offset(ndep()+1, 0);
     for (int i=0; i<ndep(); ++i) {
@@ -243,6 +236,7 @@ namespace casadi {
     }
 
     // Adjoint sensitivities
+    int nadj = adjSeed.size();
     for (int d=0; d<nadj; ++d) {
       MX& aseed = *adjSeed[d][0];
       vector<MX> s = horzsplit(aseed, col_offset);
@@ -274,25 +268,18 @@ namespace casadi {
     }
   }
 
-  void Vertcat::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                           MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                           bool output_given) {
+  void Vertcat::eval(const cpv_MX& arg, const pv_MX& res) {
+    *res[0] = vertcat(getVector(arg, ndep()));
+  }
+
+  void Vertcat::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
     int nfwd = fwdSens.size();
-    int nadj = adjSeed.size();
-
-    // Non-differentiated output
-    if (!output_given) {
-      *output[0] = vertcat(getVector(input));
-    }
-
-    // Forward sensitivities
     for (int d = 0; d<nfwd; ++d) {
-      *fwdSens[d][0] = vertcat(getVector(fwdSeed[d]));
+      *fwdSens[d][0] = vertcat(getVector(fwdSeed[d], ndep()));
     }
+  }
 
-    // Quick return?
-    if (nadj==0) return;
-
+  void Vertcat::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
     // Get offsets for each row
     vector<int> row_offset(ndep()+1, 0);
     for (int i=0; i<ndep(); ++i) {
@@ -301,6 +288,7 @@ namespace casadi {
     }
 
     // Adjoint sensitivities
+    int nadj = adjSeed.size();
     for (int d=0; d<nadj; ++d) {
       MX& aseed = *adjSeed[d][0];
       vector<MX> s = vertsplit(aseed, row_offset);
@@ -310,5 +298,6 @@ namespace casadi {
       }
     }
   }
+
 
 } // namespace casadi

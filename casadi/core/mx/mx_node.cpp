@@ -232,67 +232,73 @@ namespace casadi {
                           typeid(*this).name());
   }
 
-  void MXNode::evaluateD(const double* const* input, double** output, int* itmp, double* rtmp) {
-    throw CasadiException(string("MXNode::evaluateD not defined for class ")
+  void MXNode::evalD(const cpv_double& input, const pv_double& output, int* itmp, double* rtmp) {
+    throw CasadiException(string("MXNode::evalD not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::evaluateSX(const SXElement* const* input, SXElement** output,
+  void MXNode::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                           int* itmp, SXElement* rtmp) {
-    throw CasadiException(string("MXNode::evaluateSX not defined for class ")
+    throw CasadiException(string("MXNode::evalSX not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::evaluateMX(const MXPtrV& input, MXPtrV& output) {
-    MXPtrVV fwdSeed, fwdSens, adjSeed, adjSens;
-    evaluateMX(input, output, fwdSeed, fwdSens, adjSeed, adjSens, false);
-  }
-
-  void MXNode::evaluateMX(const MXPtrV& input, MXPtrV& output,
-                          const MXPtrVV& fwdSeed, MXPtrVV& fwdSens,
-                          const MXPtrVV& adjSeed, MXPtrVV& adjSens, bool output_given) {
-    throw CasadiException(string("MXNode::evaluateMX not defined for class ")
+  void MXNode::eval(const cpv_MX& input, const pv_MX& output) {
+    throw CasadiException(string("MXNode::eval not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::propagateSparsity(double** input, double** output, bool fwd) {
+  void MXNode::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+    throw CasadiException(string("MXNode::evalFwd not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  void MXNode::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    throw CasadiException(string("MXNode::evalAdj not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  void MXNode::spFwd(const cpv_bvec_t& arg,
+                     const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
     // By default, everything depends on everything
     bvec_t all_depend(0);
 
-    if (fwd) {
-
-      // Get dependencies of all inputs
-      for (int k=0; k<ndep(); ++k) {
-        const bvec_t* v = reinterpret_cast<const bvec_t*>(input[k]);
-        for (int i=0; i<dep(k).nnz(); ++i) {
-          all_depend |= v[i];
-        }
+    // Get dependencies of all inputs
+    for (int k=0; k<ndep(); ++k) {
+      const bvec_t* v = arg[k];
+      for (int i=0; i<dep(k).nnz(); ++i) {
+        all_depend |= v[i];
       }
+    }
 
-      // Propagate to all outputs
-      for (int k=0; k<getNumOutputs(); ++k) {
-        bvec_t* v = reinterpret_cast<bvec_t*>(output[k]);
-        for (int i=0; i<sparsity(k).nnz(); ++i) {
-          v[i] = all_depend;
-        }
+    // Propagate to all outputs
+    for (int k=0; k<nout(); ++k) {
+      bvec_t* v = res[k];
+      for (int i=0; i<sparsity(k).nnz(); ++i) {
+        v[i] = all_depend;
       }
-    } else {
+    }
+  }
 
-      // Get dependencies of all outputs
-      for (int k=0; k<getNumOutputs(); ++k) {
-        bvec_t* v = reinterpret_cast<bvec_t*>(output[k]);
-        for (int i=0; i<sparsity(k).nnz(); ++i) {
-          all_depend |= v[i];
-          v[i] = 0;
-        }
+  void MXNode::spAdj(const pv_bvec_t& arg,
+                     const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    // By default, everything depends on everything
+    bvec_t all_depend(0);
+
+    // Get dependencies of all outputs
+    for (int k=0; k<nout(); ++k) {
+      bvec_t* v = res[k];
+      for (int i=0; i<sparsity(k).nnz(); ++i) {
+        all_depend |= v[i];
+        v[i] = 0;
       }
+    }
 
-      // Propagate to all inputs
-      for (int k=0; k<ndep(); ++k) {
-        bvec_t* v = reinterpret_cast<bvec_t*>(input[k]);
-        for (int i=0; i<dep(k).nnz(); ++i) {
-          v[i] |= all_depend;
-        }
+    // Propagate to all inputs
+    for (int k=0; k<ndep(); ++k) {
+      bvec_t* v = arg[k];
+      for (int i=0; i<dep(k).nnz(); ++i) {
+        v[i] |= all_depend;
       }
     }
   }
@@ -307,8 +313,8 @@ namespace casadi {
     return shared_from_this<MX>();
   }
 
-  void MXNode::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                 const std::vector<std::string>& res, CodeGenerator& gen) const {
+  void MXNode::generate(std::ostream &stream, const std::vector<int>& arg,
+                                 const std::vector<int>& res, CodeGenerator& gen) const {
     stream << "#error " <<  typeid(*this).name() << ": " << arg << " => " << res << endl;
   }
 
@@ -322,7 +328,11 @@ namespace casadi {
   }
 
   MX MXNode::getTranspose() const {
-    if (sparsity().isDense()) {
+    if (sparsity().isScalar()) {
+      return shared_from_this<MX>();
+    } else if (sparsity().isVector(true)) {
+      return getReshape(sparsity().T());
+    } else if (sparsity().isDense()) {
       return MX::create(new DenseTranspose(shared_from_this<MX>()));
     } else {
       return MX::create(new Transpose(shared_from_this<MX>()));
@@ -330,7 +340,12 @@ namespace casadi {
   }
 
   MX MXNode::getReshape(const Sparsity& sp) const {
-    return MX::create(new Reshape(shared_from_this<MX>(), sp));
+    casadi_assert(sp.isReshape(sparsity()));
+    if (sp==sparsity()) {
+      return shared_from_this<MX>();
+    } else {
+      return MX::create(new Reshape(shared_from_this<MX>(), sp));
+    }
   }
 
 
@@ -425,6 +440,8 @@ namespace casadi {
   MX MXNode::getSetSparse(const Sparsity& sp) const {
     if (sp==sparsity()) {
       return shared_from_this<MX>();
+    } else if (sp.nnz()==0) {
+      return MX::zeros(sp);
     } else {
       return MX::create(new SetSparse(shared_from_this<MX>(), sp));
     }
@@ -450,8 +467,7 @@ namespace casadi {
 
   MX MXNode::getBinarySwitch(int op, const MX& y) const {
     // Make sure that dimensions match
-    casadi_assert_message((sparsity().isScalar(false) || y.isScalar() ||
-                           (sparsity().size2()==y.size2() && size1()==y.size1())),
+    casadi_assert_message(sparsity().isScalar() || y.isScalar() || sparsity().shape()==y.shape(),
                           "Dimension mismatch." << "lhs is " << sparsity().dimString()
                           << ", while rhs is " << y.dimString());
 
@@ -802,15 +818,65 @@ namespace casadi {
     return ret;
   }
 
-  void MXNode::clearVector(const std::vector<std::vector<MX*> > v) {
-    for (int i=0; i<v.size(); ++i) {
-      for (int j=0; j<v[i].size(); ++j) {
-        if (v[i][j]!= 0) {
-          *v[i][j] = MX();
-        }
-      }
+  void MXNode::clearVector(const pv_MX& v, int len) {
+    for (int j=0; j<len; ++j) {
+      if (v[j]!= 0) *v[j] = MX();
     }
   }
 
+  void MXNode::clearVector(const std::vector<pv_MX>& v, int len) {
+    for (int i=0; i<v.size(); ++i) {
+      clearVector(v[i], len);
+    }
+  }
+
+  std::vector<MX> MXNode::getVector(const cpv_MX& v, int len) {
+    casadi_assert(v.size()>=len);
+    std::vector<MX> ret(len);
+    for (int i=0; i<len; i++) {
+      if (v[i]!=0) ret[i] = *v[i];
+    }
+    return ret;
+  }
+
+  std::vector<MX> MXNode::getVector(const pv_MX& v, int len) {
+    casadi_assert(v.size()>=len);
+    std::vector<MX> ret(len);
+    for (int i=0; i<len; i++) {
+      if (v[i]!=0) ret[i] = *v[i];
+    }
+    return ret;
+  }
+
+  std::vector<std::vector<MX> > MXNode::getVector(const std::vector<pv_MX>& v, int len) {
+    std::vector<std::vector<MX> > ret(v.size());
+    for (int i=0; i<v.size(); i++) {
+      ret[i] = getVector(v[i], len);
+    }
+    return ret;
+  }
+
+  std::vector<std::vector<MX> > MXNode::getVector(const std::vector<cpv_MX>& v, int len) {
+    std::vector<std::vector<MX> > ret(v.size());
+    for (int i=0; i<v.size(); i++) {
+      ret[i] = getVector(v[i], len);
+    }
+    return ret;
+  }
+
+  void MXNode::copyFwd(const bvec_t* arg, bvec_t* res, int len) {
+    if (arg!=res) {
+      copy(arg, arg+len, res);
+    }
+  }
+
+  void MXNode::copyAdj(bvec_t* arg, bvec_t* res, int len) {
+    if (arg!=res) {
+      for (int k=0; k<len; ++k) {
+        *arg++ |= *res;
+        *res++ = 0;
+      }
+    }
+  }
 
 } // namespace casadi

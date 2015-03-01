@@ -120,111 +120,73 @@ namespace casadi {
     solve(getPtr(x), nrhs, transpose);
   }
 
-  void LinearSolverInternal::evaluateMXGen(const MXPtrV& arg, MXPtrV& res,
-                                           const MXPtrVV& fseed, MXPtrVV& fsens,
-                                           const MXPtrVV& aseed, MXPtrVV& asens,
-                                           bool output_given, bool tr) {
-    int nfwd = fsens.size();
-    int nadj = aseed.size();
-    const MX& B = *arg[0];
-    const MX& A = *arg[1];
-    MX& X = *res[0];
+  void LinearSolverInternal::
+  callForwardLinsol(const std::vector<MX>& arg, const std::vector<MX>& res,
+                const std::vector<std::vector<MX> >& fseed,
+                std::vector<std::vector<MX> >& fsens, bool tr) {
+    // Number of derivatives
+    int nfwd = fseed.size();
+    const MX& A = arg[1];
+    const MX& X = res[0];
 
-    // Nondifferentiated output
-    if (!output_given) {
-      if (B.isZero()) {
-        X = MX(B.shape());
-      } else {
-        X = solve(A, B, tr);
-      }
-    }
-
-    // Forward sensitivities, collect the right hand sides
-    std::vector<int> rhs_ind;
-    std::vector<MX> rhs;
-    std::vector<int> col_offset(1, 0);
+    // Solve for all directions at once
+    std::vector<MX> rhs(nfwd);
+    std::vector<int> col_offset(nfwd+1, 0);
     for (int d=0; d<nfwd; ++d) {
-      const MX& B_hat = *fseed[d][0];
-      const MX& A_hat = *fseed[d][1];
-
-      // Get right hand side
-      MX rhs_d;
-      if (tr) {
-        rhs_d = B_hat - mul(A_hat.T(), X);
-      } else {
-        rhs_d = B_hat - mul(A_hat, X);
-      }
-
-      // Simplifiy if zero
-      if (rhs_d.isZero()) {
-        *fsens[d][0] = MX(rhs_d.shape());
-      } else {
-        rhs.push_back(rhs_d);
-        rhs_ind.push_back(d);
-        col_offset.push_back(col_offset.back()+rhs_d.size2());
-      }
+      const MX& B_hat = fseed[d][0];
+      const MX& A_hat = fseed[d][1];
+      rhs[d] = tr ? B_hat - mul(A_hat.T(), X) : B_hat - mul(A_hat, X);
+      col_offset[d+1] = col_offset[d] + rhs[d].size2();
     }
+    rhs = horzsplit(solve(A, horzcat(rhs), tr), col_offset);
 
-    if (!rhs.empty()) {
-      // Solve for all directions at once
-      rhs = horzsplit(solve(A, horzcat(rhs), tr), col_offset);
-
-      // Save result
-      for (int i=0; i<rhs.size(); ++i) {
-        *fsens[rhs_ind[i]][0] = rhs[i];
-      }
-    }
-
-    // Adjoint sensitivities, collect right hand sides
-    rhs.resize(0);
-    rhs_ind.resize(0);
-    col_offset.resize(1);
-    for (int d=0; d<nadj; ++d) {
-      MX& X_bar = *aseed[d][0];
-
-      // Simplifiy if zero
-      if (X_bar.isZero()) {
-        if (aseed[d][0]!=asens[d][0]) {
-          *asens[d][0] = X_bar;
-          X_bar = MX();
-        }
-      } else {
-        rhs.push_back(X_bar);
-        rhs_ind.push_back(d);
-        col_offset.push_back(col_offset.back()+X_bar.size2());
-
-        // Delete seed
-        X_bar = MX();
-      }
-    }
-
-    if (!rhs.empty()) {
-      // Solve for all directions at once
-      rhs = horzsplit(solve(A, horzcat(rhs), !tr), col_offset);
-
-      for (int i=0; i<rhs.size(); ++i) {
-        int d = rhs_ind[i];
-
-        // Propagate to A
-        if (!tr) {
-          asens[d][1]->addToSum(-mul(rhs[i], X.T(), MX::zeros(A.sparsity())));
-        } else {
-          asens[d][1]->addToSum(-mul(X, rhs[i].T(), MX::zeros(A.sparsity())));
-        }
-
-        // Propagate to B
-        if (aseed[d][0]==asens[d][0]) {
-          *asens[d][0] = rhs[i];
-        } else {
-          asens[d][0]->addToSum(rhs[i]);
-        }
-      }
+    // Fetch result
+    fsens.resize(nfwd);
+    for (int d=0; d<nfwd; ++d) {
+      fsens[d].resize(1);
+      fsens[d][0] = rhs[d];
     }
   }
 
-  void LinearSolverInternal::propagateSparsityGen(double** arg, double** res,
-                                                  int* itmp, bvec_t* rtmp,
-                                                  bool fwd, bool tr, int nrhs) {
+  void LinearSolverInternal::
+  callReverseLinsol(const std::vector<MX>& arg, const std::vector<MX>& res,
+                const std::vector<std::vector<MX> >& aseed,
+                std::vector<std::vector<MX> >& asens, bool tr) {
+    // Number of derivatives
+    int nadj = aseed.size();
+    const MX& A = arg[1];
+    const MX& X = res[0];
+
+    // Solve for all directions at once
+    std::vector<MX> rhs(nadj);
+    std::vector<int> col_offset(nadj+1, 0);
+    for (int d=0; d<nadj; ++d) {
+      rhs[d] = aseed[d][0];
+      col_offset[d+1] = col_offset[d] + rhs[d].size2();
+    }
+    rhs = horzsplit(solve(A, horzcat(rhs), !tr), col_offset);
+
+    // Collect sensitivities
+    asens.resize(nadj);
+    for (int d=0; d<nadj; ++d) {
+      asens[d].resize(2);
+
+      // Propagate to A
+      if (!tr) {
+        asens[d][1] = -mul(rhs[d], X.T(), MX::zeros(A.sparsity()));
+      } else {
+        asens[d][1] = -mul(X, rhs[d].T(), MX::zeros(A.sparsity()));
+      }
+
+      // Propagate to B
+      asens[d][0] = rhs[d];
+    }
+  }
+
+  void LinearSolverInternal::
+  spFwdLinsol(const std::vector<const bvec_t*>& arg,
+              const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp,
+              bool tr, int nrhs) {
     // Sparsities
     const Sparsity& A_sp = input(LINSOL_A).sparsity();
     const int* A_colind = A_sp.colind();
@@ -232,57 +194,70 @@ namespace casadi {
     int n = A_sp.size1();
 
     // Get pointers to data
-    bvec_t* B_ptr = reinterpret_cast<bvec_t*>(arg[0]);
-    bvec_t* A_ptr = reinterpret_cast<bvec_t*>(arg[1]);
-    bvec_t* X_ptr = reinterpret_cast<bvec_t*>(res[0]);
-    bvec_t* tmp_ptr = rtmp;
+    const bvec_t *B=arg[0], *A = arg[1];
+    bvec_t* X = res[0];
+    bvec_t* tmp = rtmp;
 
     // For all right-hand-sides
     for (int r=0; r<nrhs; ++r) {
+      // Copy B to a temporary vector
+      copy(B, B+n, tmp);
 
-      if (fwd) {
-
-        // Copy B_ptr to a temporary vector
-        copy(B_ptr, B_ptr+n, tmp_ptr);
-
-        // Add A_hat contribution to tmp
-        for (int cc=0; cc<n; ++cc) {
-          for (int k=A_colind[cc]; k<A_colind[cc+1]; ++k) {
-            int rr = A_row[k];
-            tmp_ptr[tr ? cc : rr] |= A_ptr[k];
-          }
+      // Add A_hat contribution to tmp
+      for (int cc=0; cc<n; ++cc) {
+        for (int k=A_colind[cc]; k<A_colind[cc+1]; ++k) {
+          int rr = A_row[k];
+          tmp[tr ? cc : rr] |= A[k];
         }
+      }
 
-        // Propagate to X_ptr
-        std::fill(X_ptr, X_ptr+n, 0);
-        spSolve(X_ptr, tmp_ptr, tr);
+      // Propagate to X
+      std::fill(X, X+n, 0);
+      spSolve(X, tmp, tr);
 
-      } else { // adjoint
+      // Continue to the next right-hand-side
+      B += n;
+      X += n;
+    }
+  }
 
-        // Solve transposed
-        std::fill(tmp_ptr, tmp_ptr+n, 0);
-        spSolve(tmp_ptr, B_ptr, !tr);
+  void LinearSolverInternal::
+  spAdjLinsol(const std::vector<bvec_t*>& arg,
+              const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp,
+              bool tr, int nrhs) {
+    // Sparsities
+    const Sparsity& A_sp = input(LINSOL_A).sparsity();
+    const int* A_colind = A_sp.colind();
+    const int* A_row = A_sp.row();
+    int n = A_sp.size1();
 
-        // Clear seeds
-        std::fill(B_ptr, B_ptr+n, 0);
+    // Get pointers to data
+    bvec_t *B=arg[0], *A=arg[1], *X=res[0];
+    bvec_t* tmp = rtmp;
 
-        // Propagate to X_ptr
-        for (int i=0; i<n; ++i) {
-          X_ptr[i] |= tmp_ptr[i];
-        }
+    // For all right-hand-sides
+    for (int r=0; r<nrhs; ++r) {
+      // Solve transposed
+      std::fill(tmp, tmp+n, 0);
+      spSolve(tmp, X, !tr);
 
-        // Propagate to A_ptr
-        for (int cc=0; cc<n; ++cc) {
-          for (int k=A_colind[cc]; k<A_colind[cc+1]; ++k) {
-            int rr = A_row[k];
-            A_ptr[k] |= tmp_ptr[tr ? cc : rr];
-          }
+      // Clear seeds
+      std::fill(X, X+n, 0);
+
+      // Propagate to B
+      for (int i=0; i<n; ++i) B[i] |= tmp[i];
+
+      // Propagate to A
+      for (int cc=0; cc<n; ++cc) {
+        for (int k=A_colind[cc]; k<A_colind[cc+1]; ++k) {
+          int rr = A_row[k];
+          A[k] |= tmp[tr ? cc : rr];
         }
       }
 
       // Continue to the next right-hand-side
-      B_ptr += n;
-      X_ptr += n;
+      B += n;
+      X += n;
     }
   }
 
@@ -357,23 +332,9 @@ namespace casadi {
     }
   }
 
-  void LinearSolverInternal::evaluateDGen(const double* const* arg, double** res,
-                                          int* itmp, double* rtmp, bool tr, int nrhs) {
-
-    // Factorize the matrix
-    setInput(arg[1], LINSOL_A);
-    prepare();
-
-    // Solve for nondifferentiated output
-    if (arg[0]!=res[0]) {
-      copy(arg[0], arg[0]+input(LINSOL_A).size2(), res[0]);
-    }
-    solve(res[0], nrhs, tr);
-  }
-
-  void LinearSolverInternal::evaluateSXGen(const SXElement* const* arg, SXElement** res,
+  void LinearSolverInternal::evalSXLinsol(const cpv_SXElement& arg, const pv_SXElement& res,
                                            int* itmp, SXElement* rtmp, bool tr, int nrhs) {
-    casadi_error("LinearSolverInternal::evaluateSXGen not defined for class "
+    casadi_error("LinearSolverInternal::evalSXLinsol not defined for class "
                  << typeid(*this).name());
   }
 

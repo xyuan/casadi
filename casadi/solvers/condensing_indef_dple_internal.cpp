@@ -110,7 +110,7 @@ namespace casadi {
     // Initialize the NLP solver
     solver_.init();
 
-    std::vector<MX> Pr = solver_.call(dpleIn("a", Ap, "v", R));
+    std::vector<MX> Pr = solver_(dpleIn("a", Ap, "v", R));
 
     std::vector<MX> Ps(K_);
     Ps[0] = Pr[0];
@@ -132,10 +132,13 @@ namespace casadi {
     Wrapper::evaluate();
   }
 
-  Function CondensingIndefDpleInternal::getDerivative(int nfwd, int nadj) {
-    return f_.derivative(nfwd, nadj);
+  Function CondensingIndefDpleInternal::getDerForward(int nfwd) {
+    return f_.derForward(nfwd);
   }
 
+  Function CondensingIndefDpleInternal::getDerReverse(int nadj) {
+    return f_.derReverse(nadj);
+  }
 
   void CondensingIndefDpleInternal::deepCopyMembers(
       std::map<SharedObjectNode*, SharedObject>& already_copied) {

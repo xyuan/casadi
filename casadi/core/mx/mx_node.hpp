@@ -71,7 +71,6 @@ namespace casadi {
   }
   ///@}
 
-
   /** \brief Node class for MX objects
       \author Joel Andersson
       \date 2010
@@ -128,28 +127,30 @@ namespace casadi {
     virtual void printPart(std::ostream &stream, int part) const = 0;
 
     /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                          const std::vector<int>& res, CodeGenerator& gen) const;
 
     /** \brief  Evaluate numerically */
-    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
+    virtual void evalD(const cpv_double& arg, const pv_double& res, int* itmp, double* rtmp);
 
     /** \brief  Evaluate symbolically (SX) */
-    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
-                            int* itmp, SXElement* rtmp);
+    virtual void evalSX(const cpv_SXElement& arg, const pv_SXElement& res,
+                        int* itmp, SXElement* rtmp);
 
     /** \brief  Evaluate symbolically (MX) */
-    virtual void evaluateMX(const MXPtrV& input, MXPtrV& output,
-                            const MXPtrVV& fwdSeed, MXPtrVV& fwdSens,
-                            const MXPtrVV& adjSeed, MXPtrVV& adjSens, bool output_given);
+    virtual void eval(const cpv_MX& arg, const pv_MX& res);
 
-    /** \brief  Evaluate symbolically (MX), no derivatives */
-    void evaluateMX(const MXPtrV& input, MXPtrV& output);
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<cpv_MX>& fseed, const std::vector<pv_MX>& fsens);
 
-    /** \brief  Propagate sparsity */
-    virtual void propagateSparsity(double** input, double** output,
-                                   int* itmp, bvec_t* rtmp, bool fwd)
-    { propagateSparsity(input, output, fwd);}
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<pv_MX>& aseed, const std::vector<pv_MX>& fsens);
+
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const cpv_bvec_t& arg, const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const pv_bvec_t& arg, const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
 
     /** \brief  Get the name */
     virtual const std::string& getName() const;
@@ -196,7 +197,7 @@ namespace casadi {
     virtual bool hasDep() const {return ndep()>0; }
 
     /** \brief  Number of outputs */
-    virtual int getNumOutputs() const { return 1;}
+    virtual int nout() const { return 1;}
 
     /** \brief  Get an output */
     virtual MX getOutput(int oind) const;
@@ -262,14 +263,6 @@ namespace casadi {
 
     /// Can the operation be performed inplace (i.e. overwrite the result)
     virtual int numInplace() const { return 0;}
-
-    /// Convert vector of pointers to vector of objects
-    template<typename T>
-    static std::vector<T> getVector(const std::vector<T*> v);
-
-    /// Convert vector of vectors of pointers to vector of vectors of objects
-    template<typename T>
-    static std::vector<std::vector<T> > getVector(const std::vector<std::vector<T*> > v);
 
     /// Simplify the expression (ex is a reference to the node)
     virtual void simplifyMe(MX& ex) {}
@@ -377,38 +370,32 @@ namespace casadi {
     /** \brief  The sparsity pattern */
     Sparsity sparsity_;
 
-    /** \brief  Propagate sparsity, no work */
-    virtual void propagateSparsity(double** input, double** output, bool fwd);
+    /// Convert vector of const MX pointers to vector of MX
+    static std::vector<MX> getVector(const cpv_MX& v, int len);
+
+    /// Convert vector of const MX pointers to vector of MX
+    static std::vector<MX> getVector(const pv_MX& v, int len);
+
+    /// Convert vector of vectors of pointers to vector of vectors of objects
+    static std::vector<std::vector<MX> > getVector(const std::vector<pv_MX>& v, int len);
+
+    /// Convert vector of vectors of pointers to vector of vectors of objects
+    static std::vector<std::vector<MX> > getVector(const std::vector<cpv_MX>& v, int len);
 
     /** \brief Free adjoint memory (MX) */
-    static void clearVector(const std::vector<std::vector<MX*> > v);
+    static void clearVector(const pv_MX& v, int len);
+
+    /** \brief Free adjoint memory (MX) */
+    static void clearVector(const std::vector<pv_MX>& v, int len);
+
+    /** \brief Propagate sparsities forward through a copy operation */
+    static void copyFwd(const bvec_t* arg, bvec_t* res, int len);
+
+    /** \brief Propagate sparsities backwards through a copy operation */
+    static void copyAdj(bvec_t* arg, bvec_t* res, int len);
   };
 
-
-  // Implementations
-
-  template<typename T>
-  std::vector<T> MXNode::getVector(const std::vector<T*> v) {
-    std::vector<T> ret(v.size());
-    for (int i=0; i<v.size(); i++) {
-      if (v[i]!=0) {
-        ret[i] = *v[i];
-      }
-    }
-    return ret;
-  }
-
-  template<typename T>
-  std::vector<std::vector<T> > MXNode::getVector(const std::vector<std::vector<T*> > v) {
-    std::vector<std::vector<T> > ret(v.size());
-    for (int i=0; i<v.size(); i++) {
-      ret[i] = getVector(v[i]);
-    }
-    return ret;
-  }
   /// \endcond
-
 } // namespace casadi
-/// \endcond
 
 #endif // CASADI_MX_NODE_HPP

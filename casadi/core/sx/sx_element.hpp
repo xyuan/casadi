@@ -313,19 +313,12 @@ namespace casadi {
 
 #endif // SWIG
 /// \endcond
-
   typedef std::vector<SXElement> SXElementVector;
   typedef std::vector<std::vector<SXElement> > SXElementVectorVector;
   typedef std::vector< std::vector<std::vector<SXElement> > > SXElementVectorVectorVector;
   typedef Matrix<SXElement> SX;
   typedef std::vector<Matrix<SXElement> > SXVector;
   typedef std::vector< std::vector<Matrix<SXElement> > > SXVectorVector;
-
-  /// \cond INTERNAL
-  typedef SX* SXPtr;
-  typedef std::vector<SXPtr> SXPtrV;
-  typedef std::vector<SXPtrV> SXPtrVV;
-  /// \endcond
 
   // Specialize functions in GenericMatrix<SX> and SX
   template<> SX GenericMatrix<SX>::sym(const std::string& name, const Sparsity& sp);

@@ -77,12 +77,31 @@ namespace casadi {
     fcn_->printPart(this, stream, part);
   }
 
-  void CallFunction::evaluateD(const double* const* input, double** output,
-                               int* itmp, double* rtmp) {
-    fcn_->evaluateD(this, input, output, itmp, rtmp);
+  void CallFunction::evalD(const cpv_double& input, const pv_double& output,
+                           int* itmp, double* rtmp) {
+    // Number of inputs and outputs
+    int num_in = fcn_.getNumInputs();
+    int num_out = fcn_.getNumOutputs();
+
+    // Pass the inputs to the function
+    for (int i = 0; i < num_in; ++i) {
+      if (input[i] != 0) {
+        fcn_.setInput(input[i], i);
+      } else {
+        fcn_.setInput(0., i);
+      }
+    }
+
+    // Evaluate
+    fcn_.evaluate();
+
+    // Get the outputs
+    for (int i=0; i<num_out; ++i) {
+      if (output[i] != 0) fcn_.getOutput(output[i], i);
+    }
   }
 
-  int CallFunction::getNumOutputs() const {
+  int CallFunction::nout() const {
     return fcn_.getNumOutputs();
   }
 
@@ -94,15 +113,87 @@ namespace casadi {
     return fcn_;
   }
 
-  void CallFunction::evaluateSX(const SXElement* const* input, SXElement** output,
+  void CallFunction::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
                                 int* itmp, SXElement* rtmp) {
-    fcn_->evaluateSX(this, input, output, itmp, rtmp);
+    // Number of inputs and outputs
+    int num_in = fcn_.getNumInputs();
+    int num_out = fcn_.getNumOutputs();
+
+    // Create input arguments
+    vector<SX> argv(num_in);
+    for (int i=0; i<num_in; ++i) {
+      argv[i] = SX::zeros(fcn_.input(i).sparsity());
+      if (input[i] != 0) argv[i].set(input[i]);
+    }
+
+    // Evaluate symbolically
+    vector<SX> resv;
+    fcn_->evalSX(argv, resv);
+
+    // Collect the result
+    for (int i = 0; i < num_out; ++i) {
+      if (output[i] != 0) resv[i].get(output[i]);
+    }
   }
 
-  void CallFunction::evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                                MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                                bool output_given) {
-    fcn_->evaluateMX(this, input, output, fwdSeed, fwdSens, adjSeed, adjSens, output_given);
+  void CallFunction::eval(const cpv_MX& input, const pv_MX& output) {
+    vector<MX> arg = getVector(input, ndep());
+    vector<MX> res = fcn_->createCall(arg);
+    for (int i=0; i<res.size(); ++i) {
+      if (output[i]!=0) {
+        *output[i] = res[i];
+      }
+    }
+  }
+
+  void CallFunction::evalFwd(const std::vector<cpv_MX>& fwdSeed,
+                             const std::vector<pv_MX>& fwdSens) {
+    // Nondifferentiated inputs and outputs
+    vector<MX> arg(ndep());
+    for (int i=0; i<arg.size(); ++i) arg[i] = dep(i);
+    vector<MX> res(nout());
+    for (int i=0; i<res.size(); ++i) res[i] = getOutput(i);
+
+    // Collect seeds
+    vector<vector<MX> > fseed(getVector(fwdSeed, ndep())), fsens;
+
+    // Call the cached functions
+    fcn_.callForward(arg, res, fseed, fsens);
+
+    // Store the forward sensitivities
+    for (int d=0; d<fwdSens.size(); ++d) {
+      for (int i=0; i<fwdSens[d].size(); ++i) {
+        if (fwdSens[d][i]!=0) {
+          *fwdSens[d][i] = fsens[d][i];
+        }
+      }
+    }
+  }
+
+  void CallFunction::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+    // Nondifferentiated inputs and outputs
+    vector<MX> arg(ndep());
+    for (int i=0; i<arg.size(); ++i) arg[i] = dep(i);
+    vector<MX> res(nout());
+    for (int i=0; i<res.size(); ++i) res[i] = getOutput(i);
+
+    // Collect seeds
+    vector<vector<MX> > aseed(getVector(adjSeed, nout())), asens;
+
+    // Call the cached functions
+    fcn_.callReverse(arg, res, aseed, asens);
+
+    // Free adjoint seeds
+    clearVector(adjSeed, nout());
+
+    // Store the adjoint sensitivities
+    for (int d=0; d<adjSens.size(); ++d) {
+      for (int i=0; i<adjSens[d].size(); ++i) {
+        if (adjSens[d][i]!=0) {
+          adjSens[d][i]->addToSum(asens[d][i]);
+        }
+      }
+    }
   }
 
   void CallFunction::deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied) {
@@ -110,15 +201,19 @@ namespace casadi {
     fcn_ = deepcopy(fcn_, already_copied);
   }
 
-  void CallFunction::propagateSparsity(double** input, double** output,
-                                       int* itmp, bvec_t* rtmp, bool use_fwd) {
-    fcn_->propagateSparsity(this, input, output, itmp, rtmp, use_fwd);
+  void CallFunction::spFwd(const cpv_bvec_t& arg,
+                           const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    fcn_->spFwd(arg, res, itmp, rtmp);
   }
 
-  void CallFunction::generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                       const std::vector<std::string>& res,
-                                       CodeGenerator& gen) const {
-    fcn_->generateOperation(this, stream, arg, res, gen);
+  void CallFunction::spAdj(const pv_bvec_t& arg,
+                           const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+    fcn_->spAdj(arg, res, itmp, rtmp);
+  }
+
+  void CallFunction::generate(std::ostream &stream, const std::vector<int>& arg,
+                              const std::vector<int>& res, CodeGenerator& gen) const {
+    fcn_->generate(stream, arg, res, gen);
   }
 
   void CallFunction::nTmp(size_t& ni, size_t& nr) {

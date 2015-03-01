@@ -26,11 +26,7 @@
 #ifndef CASADI_INTEGRATION_TOOLS_HPP
 #define CASADI_INTEGRATION_TOOLS_HPP
 
-#include <vector>
-#include <algorithm>
-#include "casadi/core/casadi_exception.hpp"
-#include "casadi/core/options_functionality.hpp"
-#include "casadi/core/mx/mx.hpp"
+#include "casadi/core/function/mx_function.hpp"
 
 namespace casadi {
 
@@ -70,61 +66,49 @@ namespace casadi {
                                   std::vector< double > &OUTPUT);
 #endif // SWIG
 
-#ifndef SWIG
-extern const long double legendre_points1[2];
-extern const long double legendre_points2[3];
-extern const long double legendre_points3[4];
-extern const long double legendre_points4[5];
-extern const long double legendre_points5[6];
-extern const long double legendre_points6[7];
-extern const long double legendre_points7[8];
-extern const long double legendre_points8[9];
-extern const long double legendre_points9[10];
-extern const long double* legendre_points[10];
-
-// Radau collocation points
-extern const long double radau_points1[2];
-extern const long double radau_points2[3];
-extern const long double radau_points3[4];
-extern const long double radau_points4[5];
-extern const long double radau_points5[6];
-extern const long double radau_points6[7];
-extern const long double radau_points7[8];
-extern const long double radau_points8[9];
-extern const long double radau_points9[10];
-extern const long double* radau_points[10];
-
-extern const long double** collocation_points[2];
-#endif // SWIG
-
   // Type of collocation points
   enum CollocationPoints {LEGENDRE, RADAU};
 
   /** \brief Construct an explicit Runge-Kutta integrator
-  * \param f dynamical system
-  * \copydoc scheme_DAEInput
-  * \copydoc scheme_DAEOutput
-  * \param tf    Integration end time
-  * \param order Order of integration
-  * \param ne    Number of times the \e RK primitive is repeated over the integration interval
-  */
-  CASADI_EXPORT Function explicitRK(Function& f, const MX &tf=1,
-                                                int order=4, int ne = 1);
+   * The constructed function (which is of type MXFunction), has three inputs,
+   * corresponding to initial state (x0), parameter (p) and integration time (h)
+   * and one output, corresponding to final state (xf).
+   *
+   * \param f     ODE function with two inputs (x and p) and one output (xdot)
+   * \param N     Number of integrator steps
+   * \param order Order of interpolating polynomials
+   */
+  CASADI_EXPORT MXFunction simpleRK(Function f, int N=10, int order=4);
 
-  /** \brief Construct an implicit Runge-Kutta integrator
-  * \param f dynamical system
-  * \copydoc scheme_DAEInput
-  * \copydoc scheme_DAEOutput
-  * \param tf    Integration end time
-  * \param order Order of integration
-  * \param scheme Collocation scheme, as excepted by collocationPoints function.
-  * \param ne    Number of times the \e RK primitive is repeated over the integration interval
+  /** \brief Construct an implicit Runge-Kutta integrator using a collocation scheme
+   * The constructed function (which is of type MXFunction), has three inputs,
+   * corresponding to initial state (x0), parameter (p) and integration time (h)
+   * and one output, corresponding to final state (xf).
+   *
+   * \param f      ODE function with two inputs (x and p) and one output (xdot)
+   * \param N      Number of integrator steps
+   * \param order  Order of interpolating polynomials
+   * \param scheme Collocation scheme, as excepted by collocationPoints function.
   */
   CASADI_EXPORT
-  Function implicitRK(Function& f, const std::string& impl,
-                      const Dictionary& dict = Dictionary(), const MX &tf=1, int order=4,
-                      const std::string& scheme="radau", int ne = 1);
+  MXFunction simpleIRK(Function f, int N=10, int order=4, const std::string& scheme="radau",
+                       const std::string& solver="newton",
+                       const Dictionary& solver_options = Dictionary());
 
+  /** \brief Simplified wrapper for the Integrator class
+   * Constructs an integrator using the same syntax as simpleRK and simpleIRK.
+   * The constructed function (which is of type MXFunction), has three inputs,
+   * corresponding to initial state (x0), parameter (p) and integration time (h)
+   * and one output, corresponding to final state (xf).
+   *
+   * \param f      ODE function with two inputs (x and p) and one output (xdot)
+   * \param N      Number of integrator steps
+   * \param order  Order of interpolating polynomials
+   * \param scheme Collocation scheme, as excepted by collocationPoints function.
+  */
+  CASADI_EXPORT
+  MXFunction simpleIntegrator(Function f, const std::string& integrator="cvodes",
+                              const Dictionary& integrator_options = Dictionary());
 } // namespace casadi
 
 #endif // CASADI_INTEGRATION_TOOLS_HPP

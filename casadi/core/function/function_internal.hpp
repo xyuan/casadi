@@ -93,61 +93,61 @@ namespace casadi {
     virtual void spInit(bool fwd) {}
 
     /** \brief  Evaluate symbolically, SXElement type, possibly nonmatching sparsity patterns */
-    virtual void evalSX(const std::vector<SX>& arg, std::vector<SX>& res,
-                        const std::vector<std::vector<SX> >& fseed,
-                        std::vector<std::vector<SX> >& fsens,
-                        const std::vector<std::vector<SX> >& aseed,
-                        std::vector<std::vector<SX> >& asens);
+    virtual void evalSX(const std::vector<SX>& arg, std::vector<SX>& res);
 
     /** \brief  Evaluate symbolically, MX type */
-    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res,
-                        const std::vector<std::vector<MX> >& fseed,
-                        std::vector<std::vector<MX> >& fsens,
-                        const std::vector<std::vector<MX> >& aseed,
-                        std::vector<std::vector<MX> >& asens);
-
-    /** \brief  Evaluate symbolically, SXElement type, matching sparsity patterns */
-    virtual void evalSXsparse(const std::vector<SX>& arg, std::vector<SX>& res,
-                              const std::vector<std::vector<SX> >& fseed,
-                              std::vector<std::vector<SX> >& fsens,
-                              const std::vector<std::vector<SX> >& aseed,
-                              std::vector<std::vector<SX> >& asens);
+    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res);
 
     /** \brief  Create function call node */
-    virtual void createCall(const std::vector<MX> &arg, std::vector<MX> &res,
-                            const std::vector<std::vector<MX> > &fseed,
-                            std::vector<std::vector<MX> > &fsens,
-                            const std::vector<std::vector<MX> > &aseed,
-                            std::vector<std::vector<MX> > &asens);
-
-    /** \brief  Create derivative node */
-    virtual void createCallDerivative(const std::vector<MX> &arg, std::vector<MX> &res,
-                                      const std::vector<std::vector<MX> > &fseed,
-                                      std::vector<std::vector<MX> > &fsens,
-                                      const std::vector<std::vector<MX> > &aseed,
-                                      std::vector<std::vector<MX> > &asens);
-
-    /** \brief  Create a call to this */
-    std::vector<MX> callSelf(const std::vector<MX> &arg);
+    virtual std::vector<MX> createCall(const std::vector<MX>& arg);
 
     /** \brief Call a function, DMatrix type (overloaded) */
     void call(const DMatrixVector& arg, DMatrixVector& res,
-              const DMatrixVectorVector& fseed, DMatrixVectorVector& fsens,
-              const DMatrixVectorVector& aseed, DMatrixVectorVector& asens,
               bool always_inline, bool never_inline);
 
     /** \brief Call a function, MX type (overloaded) */
     void call(const MXVector& arg, MXVector& res,
-              const MXVectorVector& fseed, MXVectorVector& fsens,
-              const MXVectorVector& aseed, MXVectorVector& asens,
               bool always_inline, bool never_inline);
 
     /** \brief Call a function, SX type (overloaded) */
     void call(const SXVector& arg, SXVector& res,
-              const SXVectorVector& fseed, SXVectorVector& fsens,
-              const SXVectorVector& aseed, SXVectorVector& asens,
               bool always_inline, bool never_inline);
 
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    virtual void callForward(const std::vector<MX>& arg, const std::vector<MX>& res,
+                         const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    virtual void callReverse(const std::vector<MX>& arg, const std::vector<MX>& res,
+                         const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    virtual void callForward(const std::vector<SX>& arg, const std::vector<SX>& res,
+                         const std::vector<std::vector<SX> >& fseed,
+                         std::vector<std::vector<SX> >& fsens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    virtual void callReverse(const std::vector<SX>& arg, const std::vector<SX>& res,
+                         const std::vector<std::vector<SX> >& aseed,
+                         std::vector<std::vector<SX> >& asens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    virtual void callForward(const std::vector<DMatrix>& arg, const std::vector<DMatrix>& res,
+                         const std::vector<std::vector<DMatrix> >& fseed,
+                         std::vector<std::vector<DMatrix> >& fsens,
+                         bool always_inline, bool never_inline);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    virtual void callReverse(const std::vector<DMatrix>& arg, const std::vector<DMatrix>& res,
+                         const std::vector<std::vector<DMatrix> >& aseed,
+                         std::vector<std::vector<DMatrix> >& asens,
+                         bool always_inline, bool never_inline);
     ///@{
     /** \brief Return Hessian function */
     Function hessian(int iind, int oind);
@@ -182,26 +182,37 @@ namespace casadi {
 
     ///@{
     /** \brief Return function that calculates forward derivatives
-     *
-     *    This method returns a cached instance if available,
-     *    and calls <tt>Function getDerivative(int nfwd, int nadj)</tt>
+     *    derForward(nfwd) returns a cached instance if available,
+     *    and calls <tt>Function getDerForward(int nfwd)</tt>
      *    if no cached version is available.
      */
-    Function derivative(int nfwd, int nadj);
-
-    /** Set a function that calculates nfwd forward derivatives and nadj adjoint derivatives */
-    void setDerivative(const Function& fcn, int nfwd, int nadj);
-
-    /** \brief Constructs and returns a function that calculates forward derivatives */
-    virtual Function getDerivative(int nfwd, int nadj);
-
-    /** \brief Constructs and returns a function that calculates forward derivatives
-     *
-     *  by creating the Jacobian then multiplying */
-    virtual Function getDerivativeViaJac(int nfwd, int nadj);
-
+    Function derForward(int nfwd);
+    virtual Function getDerForward(int nfwd);
+    virtual bool hasDerForward() const { return hasSetOption("custom_forward");}
+    void setDerForward(const Function& fcn, int nfwd);
     ///@}
 
+    ///@{
+    /** \brief Return function that calculates adjoint derivatives
+     *    derReverse(nadj) returns a cached instance if available,
+     *    and calls <tt>Function getDerReverse(int nadj)</tt>
+     *    if no cached version is available.
+     */
+    Function derReverse(int nadj);
+    virtual Function getDerReverse(int nadj);
+    virtual bool hasDerReverse() const { return hasSetOption("custom_reverse");}
+    void setDerReverse(const Function& fcn, int nadj);
+    ///@}
+
+    /** \brief Can derivatives be calculated in any way? */
+    bool hasDerivative() const;
+
+    /** \brief  Weighting factor for chosing forward/reverse mode */
+    virtual double adWeight();
+
+    /** \brief  Weighting factor for chosing forward/reverse mode,
+        sparsity propagation */
+    virtual double adWeightSp();
 
     /** \brief Create a helper MXFunction with some properties copied
     *
@@ -292,6 +303,9 @@ namespace casadi {
     /// Get a vector of symbolic variables with the same dimensions as the inputs
     virtual std::vector<MX> symbolicInput() const;
 
+    /// Get a vector of symbolic variables with the same dimensions as the outputs
+    virtual std::vector<MX> symbolicOutput() const;
+
     /// Get a vector of symbolic variables corresponding to the outputs
     virtual std::vector<MX> symbolicOutput(const std::vector<MX>& arg);
 
@@ -336,19 +350,17 @@ namespace casadi {
     /// The following functions are called internally from EvaluateMX.
     /// For documentation, see the MXNode class
     ///@{
-    virtual void evaluateD(MXNode* node, const double* const* arg, double** res,
-                           int* itmp, double* rtmp);
-    virtual void evaluateSX(MXNode* node, const SXElement* const* arg, SXElement** res,
-                            int* itmp, SXElement* rtmp);
-    virtual void evaluateMX(MXNode* node, const MXPtrV& arg, MXPtrV& res,
-                            const MXPtrVV& fseed, MXPtrVV& fsens, const MXPtrVV& aseed,
-                            MXPtrVV& asens, bool output_given);
-    virtual void propagateSparsity(MXNode* node, double** arg, double** res,
-                                   int* itmp, bvec_t* rtmp, bool fwd);
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const std::vector<const bvec_t*>& arg,
+                       const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const std::vector<bvec_t*>& arg,
+                       const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp);
+
     virtual void nTmp(MXNode* node, size_t& ni, size_t& nr);
-    virtual void generateOperation(const MXNode* node, std::ostream &stream,
-                                   const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                          const std::vector<int>& res, CodeGenerator& gen) const;
     virtual void printPart(const MXNode* node, std::ostream &stream, int part) const;
     ///@}
 
@@ -371,6 +383,12 @@ namespace casadi {
                                   const Matrix<double> &lb, const Matrix<double> &ub,
                                   const std::string &name, double tol=1e-8);
 
+    ///@{
+    /** \brief Calculate derivatives by multiplying the full Jacobian and multiplying */
+    virtual bool fwdViaJac(int nfwd);
+    virtual bool adjViaJac(int nadj);
+    ///@}
+
     /** \brief  Inputs of the function */
     IOSchemeVector<DMatrix> input_;
 
@@ -389,8 +407,8 @@ namespace casadi {
     /** \brief  Flag to indicate whether statistics must be gathered */
     bool gather_stats_;
 
-    /// Cache for functions to evaluate directional derivatives
-    std::vector<std::vector<WeakRef> > derivative_fcn_;
+    /// Cache for functions to evaluate directional derivatives (new)
+    std::vector<WeakRef> derivative_fwd_, derivative_adj_;
 
     /// Cache for full Jacobian
     WeakRef full_jacobian_;
@@ -415,8 +433,76 @@ namespace casadi {
     /** \brief get function name with all non alphanumeric characters converted to '_' */
     std::string getSanitizedName() const;
 
+    /** \brief Can a derivative direction be skipped */
+    template<typename MatType>
+    static bool purgable(const std::vector<MatType>& seed);
+
+    /** \brief Symbolic expressions for the forward seeds */
+    template<typename MatType>
+    std::vector<std::vector<MatType> > symbolicFwdSeed(int nfwd, const std::vector<MatType>& v);
+
+    /** \brief Symbolic expressions for the adjoint seeds */
+    template<typename MatType>
+    std::vector<std::vector<MatType> > symbolicAdjSeed(int nadj, const std::vector<MatType>& v);
   };
 
+  // Template implementations
+  template<typename MatType>
+  bool FunctionInternal::purgable(const std::vector<MatType>& v) {
+    for (typename std::vector<MatType>::const_iterator i=v.begin(); i!=v.end(); ++i) {
+      if (!i->isZero()) return false;
+    }
+    return true;
+  }
+
+  template<typename MatType>
+  std::vector<std::vector<MatType> >
+  FunctionInternal::symbolicFwdSeed(int nfwd, const std::vector<MatType>& v) {
+    std::vector<std::vector<MatType> > fseed(nfwd, v);
+    for (int dir=0; dir<nfwd; ++dir) {
+      // Replace symbolic inputs
+      int iind=0;
+      for (typename std::vector<MatType>::iterator i=fseed[dir].begin();
+          i!=fseed[dir].end();
+          ++i, ++iind) {
+        // Name of the forward seed
+        std::stringstream ss;
+        ss << "f";
+        if (nfwd>1) ss << dir;
+        ss << "_";
+        ss << iind;
+
+        // Save to matrix
+        *i = MatType::sym(ss.str(), i->sparsity());
+
+      }
+    }
+    return fseed;
+  }
+
+  template<typename MatType>
+  std::vector<std::vector<MatType> >
+  FunctionInternal::symbolicAdjSeed(int nadj, const std::vector<MatType>& v) {
+    std::vector<std::vector<MatType> > aseed(nadj, v);
+    for (int dir=0; dir<nadj; ++dir) {
+      // Replace symbolic inputs
+      int oind=0;
+      for (typename std::vector<MatType>::iterator i=aseed[dir].begin();
+          i!=aseed[dir].end();
+          ++i, ++oind) {
+        // Name of the adjoint seed
+        std::stringstream ss;
+        ss << "a";
+        if (nadj>1) ss << dir << "_";
+        ss << oind;
+
+        // Save to matrix
+        *i = MatType::sym(ss.str(), i->sparsity());
+
+      }
+    }
+    return aseed;
+  }
 
 } // namespace casadi
 

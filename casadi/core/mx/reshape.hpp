@@ -51,29 +51,40 @@ namespace casadi {
 
     /// Evaluate the function (template)
     template<typename T>
-    void evaluateGen(const T* const* input, T** output, int* itmp, T* rtmp);
+    void evalGen(const std::vector<const T*>& input,
+                 const std::vector<T*>& output, int* itmp, T* rtmp);
 
     /// Evaluate the function numerically
-    virtual void evaluateD(const double* const* input, double** output, int* itmp, double* rtmp);
+    virtual void evalD(const cpv_double& input, const pv_double& output,
+                       int* itmp, double* rtmp);
 
     /// Evaluate the function symbolically (SX)
-    virtual void evaluateSX(const SXElement* const* input, SXElement** output,
-                            int* itmp, SXElement* rtmp);
+    virtual void evalSX(const cpv_SXElement& input, const pv_SXElement& output,
+                        int* itmp, SXElement* rtmp);
 
     /// Evaluate the function symbolically (MX)
-    virtual void evaluateMX(const MXPtrV& input, MXPtrV& output, const MXPtrVV& fwdSeed,
-                            MXPtrVV& fwdSens, const MXPtrVV& adjSeed, MXPtrVV& adjSens,
-                            bool output_given);
+    virtual void eval(const cpv_MX& input, const pv_MX& output);
 
-    /// Propagate sparsity
-    virtual void propagateSparsity(double** input, double** output, bool fwd);
+    /** \brief Calculate forward mode directional derivatives */
+    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+
+    /** \brief Calculate reverse mode directional derivatives */
+    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
+
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(const cpv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(const pv_bvec_t& arg,
+                       const pv_bvec_t& res, int* itmp, bvec_t* rtmp);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
 
     /** \brief Generate code for the operation */
-    virtual void generateOperation(std::ostream &stream, const std::vector<std::string>& arg,
-                                   const std::vector<std::string>& res, CodeGenerator& gen) const;
+    virtual void generate(std::ostream &stream, const std::vector<int>& arg,
+                                   const std::vector<int>& res, CodeGenerator& gen) const;
 
     /** \brief Get the operation */
     virtual int getOp() const { return OP_RESHAPE;}
@@ -87,6 +98,9 @@ namespace casadi {
     /** \brief Check if two nodes are equivalent up to a given depth */
     virtual bool zz_isEqual(const MXNode* node, int depth) const
     { return sameOpAndDeps(node, depth) && sparsity()==node->sparsity();}
+
+    /// Transpose (if a dimension is one)
+    virtual MX getTranspose() const;
   };
 
 } // namespace casadi

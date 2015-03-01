@@ -256,7 +256,7 @@ namespace casadi {
     }
 
     // Call d
-    vector<MX> res = d.call(f_arg);
+    vector<MX> res = d(f_arg);
     vector<MX>::const_iterator res_it = res.begin();
 
     // Collect right-hand-sides
@@ -300,7 +300,7 @@ namespace casadi {
       }
 
       // Call d
-      res = d.call(g_arg);
+      res = d(g_arg);
       res_it = res.begin();
 
       // Collect right-hand-sides
@@ -336,7 +336,7 @@ namespace casadi {
       }
 
       // Call der
-      res = d.call(f_arg);
+      res = d(f_arg);
       res_it = res.begin() + DAE_NUM_OUT;
 
       // Record locations in augg for later
@@ -375,7 +375,7 @@ namespace casadi {
         }
 
         // Call der
-        res = d.call(g_arg);
+        res = d(g_arg);
         res_it = res.begin() + RDAE_NUM_OUT;
 
         // Collect right-hand-sides
@@ -399,7 +399,7 @@ namespace casadi {
         if (nrp_>0) g_arg[RDAE_RP] = MX::zeros(g_arg[RDAE_RP].sparsity());
 
         // Call der again
-        res = d.call(g_arg);
+        res = d(g_arg);
         res_it = res.begin() + RDAE_NUM_OUT;
 
         // Collect right-hand-sides and add contribution to the forward integration
@@ -685,12 +685,12 @@ namespace casadi {
     return ret;
   }
 
-  Function IntegratorInternal::getDerivative(int nfwd, int nadj) {
-    log("IntegratorInternal::getDerivative", "begin");
+  Function IntegratorInternal::getDerForward(int nfwd) {
+    log("IntegratorInternal::getDerForward", "begin");
 
     // Form the augmented DAE
     AugOffset offset;
-    std::pair<Function, Function> aug_dae = getAugmented(nfwd, nadj, offset);
+    std::pair<Function, Function> aug_dae = getAugmented(nfwd, 0, offset);
 
     // Create integrator for augmented DAE
     Integrator integrator;
@@ -708,7 +708,7 @@ namespace casadi {
 
     // All inputs of the return function
     vector<MX> ret_in;
-    ret_in.reserve(INTEGRATOR_NUM_IN*(1+nfwd) + INTEGRATOR_NUM_OUT*nadj);
+    ret_in.reserve(INTEGRATOR_NUM_IN*(1+nfwd) + INTEGRATOR_NUM_OUT);
 
     // Augmented state
     MX x0_aug, p_aug, z0_aug, rx0_aug, rp_aug, rz0_aug;
@@ -767,10 +767,145 @@ namespace casadi {
 
       // Add to input vector
       ret_in.insert(ret_in.end(), dd.begin(), dd.end());
+
+      // Make space for dummy outputs
+      if (dir==-1) ret_in.resize(ret_in.size() + INTEGRATOR_NUM_OUT);
     }
+
+    // Call the integrator
+    vector<MX> integrator_in(INTEGRATOR_NUM_IN);
+    integrator_in[INTEGRATOR_X0] = x0_aug;
+    integrator_in[INTEGRATOR_P] = p_aug;
+    integrator_in[INTEGRATOR_Z0] = z0_aug;
+    integrator_in[INTEGRATOR_RX0] = rx0_aug;
+    integrator_in[INTEGRATOR_RP] = rp_aug;
+    integrator_in[INTEGRATOR_RZ0] = rz0_aug;
+    vector<MX> integrator_out = integrator(integrator_in);
+
+    // Augmented results
+    vector<MX> xf_aug = horzsplit(integrator_out[INTEGRATOR_XF], offset.x);
+    vector<MX> qf_aug = horzsplit(integrator_out[INTEGRATOR_QF], offset.q);
+    vector<MX> zf_aug = horzsplit(integrator_out[INTEGRATOR_ZF], offset.z);
+    vector<MX> rxf_aug = horzsplit(integrator_out[INTEGRATOR_RXF], offset.rx);
+    vector<MX> rqf_aug = horzsplit(integrator_out[INTEGRATOR_RQF], offset.rq);
+    vector<MX> rzf_aug = horzsplit(integrator_out[INTEGRATOR_RZF], offset.rz);
+    vector<MX>::const_iterator xf_aug_it = xf_aug.begin();
+    vector<MX>::const_iterator qf_aug_it = qf_aug.begin();
+    vector<MX>::const_iterator zf_aug_it = zf_aug.begin();
+    vector<MX>::const_iterator rxf_aug_it = rxf_aug.begin();
+    vector<MX>::const_iterator rqf_aug_it = rqf_aug.begin();
+    vector<MX>::const_iterator rzf_aug_it = rzf_aug.begin();
+
+    // Add dummy inputs (outputs of the nondifferentiated funciton)
+    dd.resize(INTEGRATOR_NUM_OUT);
+    dd[INTEGRATOR_XF]  = MX::sym("xf_dummy", Sparsity(xf().shape()));
+    dd[INTEGRATOR_QF]  = MX::sym("qf_dummy", Sparsity(qf().shape()));
+    dd[INTEGRATOR_ZF]  = MX::sym("zf_dummy", Sparsity(zf().shape()));
+    dd[INTEGRATOR_RXF]  = MX::sym("rxf_dummy", Sparsity(rxf().shape()));
+    dd[INTEGRATOR_RQF]  = MX::sym("rqf_dummy", Sparsity(rqf().shape()));
+    dd[INTEGRATOR_RZF]  = MX::sym("rzf_dummy", Sparsity(rzf().shape()));
+    std::copy(dd.begin(), dd.end(), ret_in.begin()+INTEGRATOR_NUM_IN);
+
+    // All outputs of the return function
+    vector<MX> ret_out;
+    ret_out.reserve(INTEGRATOR_NUM_OUT*nfwd);
+
+    // Collect the forward sensitivities
+    fill(dd.begin(), dd.end(), MX());
+    for (int dir=-1; dir<nfwd; ++dir) {
+      if ( nx_>0) dd[INTEGRATOR_XF]  = *xf_aug_it++;
+      if ( nq_>0) dd[INTEGRATOR_QF]  = *qf_aug_it++;
+      if ( nz_>0) dd[INTEGRATOR_ZF]  = *zf_aug_it++;
+      if (nrx_>0) dd[INTEGRATOR_RXF] = *rxf_aug_it++;
+      if (nrq_>0) dd[INTEGRATOR_RQF] = *rqf_aug_it++;
+      if (nrz_>0) dd[INTEGRATOR_RZF] = *rzf_aug_it++;
+      if (dir>=0) // Nondifferentiated output ignored
+        ret_out.insert(ret_out.end(), dd.begin(), dd.end());
+    }
+    log("IntegratorInternal::getDerForward", "end");
+
+    // Create derivative function and return
+    return MXFunction(ret_in, ret_out);
+  }
+
+  Function IntegratorInternal::getDerReverse(int nadj) {
+    log("IntegratorInternal::getDerReverse", "begin");
+
+    // Form the augmented DAE
+    AugOffset offset;
+    std::pair<Function, Function> aug_dae = getAugmented(0, nadj, offset);
+
+    // Create integrator for augmented DAE
+    Integrator integrator;
+    integrator.assignNode(create(aug_dae.first, aug_dae.second));
+
+    // Set solver specific options
+    setDerivativeOptions(integrator, offset);
+
+    // Pass down specific options if provided
+    if (hasSetOption("augmented_options"))
+      integrator.setOption(getOption("augmented_options"));
+
+    // Initialize the integrator since we will call it below
+    integrator.init();
+
+    // All inputs of the return function
+    vector<MX> ret_in;
+    ret_in.reserve(INTEGRATOR_NUM_IN + INTEGRATOR_NUM_OUT*(1+nadj));
+
+    // Augmented state
+    MX x0_aug, p_aug, z0_aug, rx0_aug, rp_aug, rz0_aug;
+
+    // Temp stringstream
+    stringstream ss;
+
+    // Inputs or forward/adjoint seeds in one direction
+    vector<MX> dd;
+
+    // Add nondifferentiated inputs and forward seeds
+    dd.resize(INTEGRATOR_NUM_IN);
+    fill(dd.begin(), dd.end(), MX());
+
+    // Differential state
+    dd[INTEGRATOR_X0] = MX::sym("x0", x0().sparsity());
+    x0_aug.appendColumns(dd[INTEGRATOR_X0]);
+
+    // Parameter
+    dd[INTEGRATOR_P] = MX::sym("p", p().sparsity());
+    p_aug.appendColumns(dd[INTEGRATOR_P]);
+
+    // Initial guess for algebraic variable
+    dd[INTEGRATOR_Z0] = MX::sym("r0", z0().sparsity());
+    z0_aug.appendColumns(dd[INTEGRATOR_Z0]);
+
+    // Backward state
+    dd[INTEGRATOR_RX0] = MX::sym("rx0", rx0().sparsity());
+    rx0_aug.appendColumns(dd[INTEGRATOR_RX0]);
+
+    // Backward parameter
+    dd[INTEGRATOR_RP] = MX::sym("rp", rp().sparsity());
+    rp_aug.appendColumns(dd[INTEGRATOR_RP]);
+
+    // Initial guess for backward algebraic variable
+    dd[INTEGRATOR_RZ0] = MX::sym("rz0", rz0().sparsity());
+    rz0_aug.appendColumns(dd[INTEGRATOR_RZ0]);
+
+    // Add to input vector
+    ret_in.insert(ret_in.end(), dd.begin(), dd.end());
+
+    // Add dummy inputs (outputs of the nondifferentiated funciton)
+    dd.resize(INTEGRATOR_NUM_OUT);
+    dd[INTEGRATOR_XF]  = MX::sym("xf_dummy", Sparsity(xf().shape()));
+    dd[INTEGRATOR_QF]  = MX::sym("qf_dummy", Sparsity(qf().shape()));
+    dd[INTEGRATOR_ZF]  = MX::sym("zf_dummy", Sparsity(zf().shape()));
+    dd[INTEGRATOR_RXF]  = MX::sym("rxf_dummy", Sparsity(rxf().shape()));
+    dd[INTEGRATOR_RQF]  = MX::sym("rqf_dummy", Sparsity(rqf().shape()));
+    dd[INTEGRATOR_RZF]  = MX::sym("rzf_dummy", Sparsity(rzf().shape()));
+    ret_in.insert(ret_in.end(), dd.begin(), dd.end());
 
     // Add adjoint seeds
     dd.resize(INTEGRATOR_NUM_OUT);
+    fill(dd.begin(), dd.end(), MX());
     for (int dir=0; dir<nadj; ++dir) {
 
       // Differential states become backward differential state
@@ -821,7 +956,7 @@ namespace casadi {
     integrator_in[INTEGRATOR_RX0] = rx0_aug;
     integrator_in[INTEGRATOR_RP] = rp_aug;
     integrator_in[INTEGRATOR_RZ0] = rz0_aug;
-    vector<MX> integrator_out = integrator.call(integrator_in);
+    vector<MX> integrator_out = integrator(integrator_in);
 
     // Augmented results
     vector<MX> xf_aug = horzsplit(integrator_out[INTEGRATOR_XF], offset.x);
@@ -839,19 +974,19 @@ namespace casadi {
 
     // All outputs of the return function
     vector<MX> ret_out;
-    ret_out.reserve(INTEGRATOR_NUM_OUT*(1+nfwd) + INTEGRATOR_NUM_IN*nadj);
+    ret_out.reserve(INTEGRATOR_NUM_IN*nadj);
 
     // Collect the nondifferentiated results and forward sensitivities
     dd.resize(INTEGRATOR_NUM_OUT);
     fill(dd.begin(), dd.end(), MX());
-    for (int dir=-1; dir<nfwd; ++dir) {
+    for (int dir=-1; dir<0; ++dir) {
       if ( nx_>0) dd[INTEGRATOR_XF]  = *xf_aug_it++;
       if ( nq_>0) dd[INTEGRATOR_QF]  = *qf_aug_it++;
       if ( nz_>0) dd[INTEGRATOR_ZF]  = *zf_aug_it++;
       if (nrx_>0) dd[INTEGRATOR_RXF] = *rxf_aug_it++;
       if (nrq_>0) dd[INTEGRATOR_RQF] = *rqf_aug_it++;
       if (nrz_>0) dd[INTEGRATOR_RZF] = *rzf_aug_it++;
-      ret_out.insert(ret_out.end(), dd.begin(), dd.end());
+      //ret_out.insert(ret_out.end(), dd.begin(), dd.end());
     }
 
     // Collect the adjoint sensitivities
@@ -870,15 +1005,6 @@ namespace casadi {
 
     // Create derivative function and return
     return MXFunction(ret_in, ret_out);
-  }
-
-  Function IntegratorInternal::getJacobian(int iind, int oind, bool compact, bool symmetric) {
-    vector<MX> arg = symbolicInput();
-    vector<MX> res = shared_from_this<Function>().call(arg);
-    MXFunction f(arg, res);
-    f.setOption("ad_mode", "forward");
-    f.init();
-    return f.jacobian(iind, oind, compact, symmetric);
   }
 
   void IntegratorInternal::reset() {

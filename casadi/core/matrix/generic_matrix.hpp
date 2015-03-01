@@ -120,8 +120,13 @@ namespace casadi {
     /** \brief  Check if the matrix expression is square */
     bool isSquare() const { return sparsity().isSquare();}
 
-    /** \brief  Check if the matrix is a vector (i.e. size2()==1) */
-    bool isVector() const { return sparsity().isVector();}
+    /** \brief  Check if the matrix is a column vector (i.e. size2()==1)
+        Optionally, checks if either row or column vector.
+     */
+    bool isVector(bool row_or_col=false) const { return sparsity().isVector(row_or_col);}
+
+    /** \brief  Check if the matrix is a row vector (i.e. size1()==1) */
+    bool isRowVector() const { return sparsity().isVector();}
 
     /** \brief Check if the matrix is upper triangular */
     bool isTriu() const { return sparsity().isTriu();}
@@ -333,21 +338,6 @@ namespace casadi {
 
     /** \brief  Make the matrix dense if not already */
     inline friend MatType densify(const MatType& x) { return x.zz_densify();}
-
-    /** \brief Repeat matrix A n times vertically and m times horizontally */
-    inline friend MatType repmat(const MatType &A, int n, int m=1) {
-      return A.zz_repmat(n, m);
-    }
-
-    /** \brief Repeat matrix A n times vertically and m times horizontally */
-    inline friend MatType repmat(const MatType &A, const std::pair<int, int>& rc) {
-      return A.zz_repmat(rc.first, rc.second);
-    }
-
-    /** \brief Repeat a scalar to a new sparsity pattern */
-    inline friend MatType repmat(const MatType &A, const Sparsity& sp) {
-      return A.zz_repmat(sp);
-    }
 
     /** \brief Check if expression depends on the argument
         The argument must be symbolic

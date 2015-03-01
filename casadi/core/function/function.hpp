@@ -76,12 +76,6 @@ namespace casadi {
       Write the Jacobian as \f$J_ {i, j} = \nabla f_{i, j} =
       \frac {\partial f_{i, j}(\vec{x})}{\partial \vec{x}}\f$.
 
-      Using \f$\vec {v} \in \mathbf{R}^n\f$ as a forward seed:  <tt>setFwdSeed(v, i)</tt>\n
-      Retrieving \f$\vec {s}_f \in \mathbf{R}^p\f$ from:        <tt>getFwdSens(sf, j)</tt>\n
-
-      Using \f$\vec {w} \in \mathbf{R}^p\f$ as a forward seed:  <tt>setAdjSeed(w, j)</tt>\n
-      Retrieving \f$\vec {s}_a \in \mathbf{R}^n \f$ from:        <tt>getAdjSens(sa, i)</tt>\n
-
       We have the following relationships for function mapping from a row vector to a row vector:
 
       \f$ \vec {s}_f = \nabla f_{i, j} . \vec{v}\f$ \n
@@ -282,46 +276,74 @@ namespace casadi {
 
     ///@{
     /** \brief Evaluate the function symbolically or numerically  */
-    std::vector<DMatrix> call(const std::vector<DMatrix> &arg, bool always_inline=false,
-                              bool never_inline=false);
-    std::vector<SX> call(const std::vector<SX> &arg, bool always_inline=false,
-                         bool never_inline=false);
-    std::vector<MX> call(const std::vector<MX> &arg, bool always_inline=false,
-                         bool never_inline=false);
+    void call(const std::vector<DMatrix> &arg, std::vector<DMatrix>& SWIG_OUTPUT(res),
+              bool always_inline=false, bool never_inline=false);
+    void call(const std::vector<SX> &arg, std::vector<SX>& SWIG_OUTPUT(res),
+              bool always_inline=false, bool never_inline=false);
+    void call(const std::vector<MX> &arg, std::vector<MX>& SWIG_OUTPUT(res),
+              bool always_inline=false, bool never_inline=false);
     ///@}
 
     ///@{
     /// Functor shorthand for evaluation
-    std::vector<DMatrix> operator()(const std::vector<DMatrix>& arg) { return call(arg);}
-    std::vector<SX> operator()(const std::vector<SX>& arg) { return call(arg);}
-    std::vector<MX> operator()(const std::vector<MX>& arg) { return call(arg);}
-    IOSchemeVector<DMatrix> operator()(const IOSchemeVector<DMatrix>& arg) {
-      return outputScheme().fromVector(call(arg));
-    }
-    IOSchemeVector<SX> operator()(const IOSchemeVector<SX>& arg) {
-      return outputScheme().fromVector(call(arg));
-    }
-    IOSchemeVector<MX> operator()(const IOSchemeVector<MX>& arg) {
-      return outputScheme().fromVector(call(arg));
-    }
+    std::vector<DMatrix> operator()(const std::vector<DMatrix>& arg,
+                                    bool always_inline=false, bool never_inline=false);
+    std::vector<SX> operator()(const std::vector<SX>& arg,
+                               bool always_inline=false, bool never_inline=false);
+    std::vector<MX> operator()(const std::vector<MX>& arg,
+                               bool always_inline=false, bool never_inline=false);
+    IOSchemeVector<DMatrix> operator()(const IOSchemeVector<DMatrix>& arg,
+                                       bool always_inline=false, bool never_inline=false);
+    IOSchemeVector<SX> operator()(const IOSchemeVector<SX>& arg,
+                                  bool always_inline=false, bool never_inline=false);
+    IOSchemeVector<MX> operator()(const IOSchemeVector<MX>& arg,
+                                  bool always_inline=false, bool never_inline=false);
     ///@}
 
 #ifndef SWIG
     ///@{
     /// Functor shorthand for evaluation, single argument (only C++)
-    std::vector<DMatrix> operator()(const DMatrix& arg0) { return call(toVector(arg0));}
-    std::vector<SX> operator()(const SX& arg0) { return call(toVector(arg0));}
-    std::vector<MX> operator()(const MX& arg0) { return call(toVector(arg0));}
-    ///@}
-
-    ///@{
-    /// Functor shorthand for evaluation, two arguments (only C++)
-    std::vector<DMatrix> operator()(const DMatrix& arg0, const DMatrix& arg1)
-    { return call(toVector(arg0, arg1));}
-    std::vector<SX> operator()(const SX& arg0, const SX& arg1) { return call(toVector(arg0, arg1));}
-    std::vector<MX> operator()(const MX& arg0, const MX& arg1) { return call(toVector(arg0, arg1));}
+    std::vector<DMatrix> operator()(const DMatrix& arg0) { return operator()(toVector(arg0));}
+    std::vector<SX> operator()(const SX& arg0) { return operator()(toVector(arg0));}
+    std::vector<MX> operator()(const MX& arg0) { return operator()(toVector(arg0));}
     ///@}
 #endif // SWIG
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    void callForward(const std::vector<MX>& arg, const std::vector<MX>& res,
+                 const std::vector<std::vector<MX> >& fseed,
+                 std::vector<std::vector<MX> >& SWIG_OUTPUT(fsens),
+                 bool always_inline=false, bool never_inline=false);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    void callReverse(const std::vector<MX>& arg, const std::vector<MX>& res,
+                 const std::vector<std::vector<MX> >& aseed,
+                 std::vector<std::vector<MX> >& SWIG_OUTPUT(asens),
+                 bool always_inline=false, bool never_inline=false);
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    void callForward(const std::vector<SX>& arg, const std::vector<SX>& res,
+                 const std::vector<std::vector<SX> >& fseed,
+                 std::vector<std::vector<SX> >& SWIG_OUTPUT(fsens),
+                 bool always_inline=false, bool never_inline=false);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    void callReverse(const std::vector<SX>& arg, const std::vector<SX>& res,
+                 const std::vector<std::vector<SX> >& aseed,
+                 std::vector<std::vector<SX> >& SWIG_OUTPUT(asens),
+                 bool always_inline=false, bool never_inline=false);
+
+    /** \brief Create call to (cached) derivative function, forward mode  */
+    void callForward(const std::vector<DMatrix>& arg, const std::vector<DMatrix>& res,
+                 const std::vector<std::vector<DMatrix> >& fseed,
+                 std::vector<std::vector<DMatrix> >& SWIG_OUTPUT(fsens),
+                 bool always_inline=false, bool never_inline=false);
+
+    /** \brief Create call to (cached) derivative function, reverse mode  */
+    void callReverse(const std::vector<DMatrix>& arg, const std::vector<DMatrix>& res,
+                 const std::vector<std::vector<DMatrix> >& aseed,
+                 std::vector<std::vector<DMatrix> >& SWIG_OUTPUT(asens),
+                 bool always_inline=false, bool never_inline=false);
 
     /// \cond INTERNAL
     ///@{
@@ -355,7 +377,8 @@ namespace casadi {
     std::vector<std::vector<MX> > callParallel(const std::vector<std::vector<MX> > &arg,
                                                const Dictionary& paropt=Dictionary());
 
-    /** \brief Get a function that calculates nfwd forward derivatives and nadj adjoint derivatives
+    /** \brief Get a function that calculates \a nfwd forward derivatives and nadj adjoint derivatives
+     *         Legacy function: Use derForward and derReverse instead.
      *
      *         Returns a function with <tt>(1+nfwd)*n_in+nadj*n_out</tt> inputs
      *         and <tt>(1+nfwd)*n_out + nadj*n_in</tt> outputs.
@@ -371,16 +394,52 @@ namespace casadi {
      *
      *         <tt>(n_in = getNumInputs(), n_out = getNumOutputs())</tt>
      *
-     *        The functions returned are cached, meaning that if called multiple timed
-     *        with the same value, then multiple references to the same function will be returned.
      */
     Function derivative(int nfwd, int nadj);
 
-    /** \brief Set a function that calculates \a nfwd forward derivatives
-        and \a nadj adjoint derivatives
+    /** \brief Get a function that calculates \a nfwd forward derivatives
+     *
+     *         Returns a function with <tt>n_in + n_out +nfwd*n_in</tt> inputs
+     *         and <tt>nfwd*n_out</tt> outputs.
+     *         The first <tt>n_in</tt> inputs correspond to nondifferentiated inputs.
+     *         The next <tt>n_out</tt> inputs correspond to nondifferentiated outputs.
+     *         and the last <tt>nfwd*n_in</tt> inputs correspond to forward seeds,
+     *         one direction at a time
+     *         The  <tt>nfwd*n_out</tt> outputs correspond to forward sensitivities,
+     *         one direction at a time.     *
+     *         <tt>(n_in = getNumInputs(), n_out = getNumOutputs())</tt>
+     *
+     *        The functions returned are cached, meaning that if called multiple timed
+     *        with the same value, then multiple references to the same function will be returned.
+     */
+    Function derForward(int nfwd);
 
-NOTE: Does _not_ take ownership, only weak references to the derivatives are kept internally */
-    void setDerivative(const Function& fcn, int nfwd, int nadj);
+    /** \brief Get a function that calculates \a nadj adjoint derivatives
+     *
+     *         Returns a function with <tt>n_in + n_out +nadj*n_out</tt> inputs
+     *         and <tt>nadj*n_in</tt> outputs.
+     *         The first <tt>n_in</tt> inputs correspond to nondifferentiated inputs.
+     *         The next <tt>n_out</tt> inputs correspond to nondifferentiated outputs.
+     *         and the last <tt>nadj*n_out</tt> inputs correspond to adjoint seeds,
+     *         one direction at a time
+     *         The  <tt>nadj*n_in</tt> outputs correspond to adjoint sensitivities,
+     *         one direction at a time.     *
+     *         <tt>(n_in = getNumInputs(), n_out = getNumOutputs())</tt>
+     *
+     *         <tt>(n_in = getNumInputs(), n_out = getNumOutputs())</tt>
+     *
+     *        The functions returned are cached, meaning that if called multiple timed
+     *        with the same value, then multiple references to the same function will be returned.
+     */
+    Function derReverse(int nadj);
+
+    /** \brief Set a function that calculates \a nfwd forward derivatives
+        NOTE: Does _not_ take ownership, only weak references to the derivatives are kept internally */
+    void setDerForward(const Function& fcn, int nfwd);
+
+    /** \brief Set a function that calculates \a nadj adjoint derivatives
+        NOTE: Does _not_ take ownership, only weak references to the derivatives are kept internally */
+    void setDerReverse(const Function& fcn, int nadj);
 
     ///@{
     /// Get, if necessary generate, the sparsity of a Jacobian block
@@ -473,6 +532,57 @@ NOTE: Does _not_ take ownership, only weak references to the derivatives are kep
     /// \cond INTERNAL
     /** \brief Check if the numerical values of the supplied bounds make sense */
     void checkInputs() const;
+#ifndef SWIG
+    /** \brief Check if input arguments have correct length and dimensions */
+    template<typename M>
+    void checkArg(const std::vector<M>& arg) const;
+
+    /** \brief Check if output arguments have correct length and dimensions */
+    template<typename M>
+    void checkRes(const std::vector<M>& res) const;
+
+    /** \brief Check forward mode seeds dimensions */
+    template<typename M>
+    void checkFwdSeed(const std::vector<std::vector<M> >& fseed) const;
+
+    /** \brief Check reverse mode seeds dimensions */
+    template<typename M>
+    void checkAdjSeed(const std::vector<std::vector<M> >& aseed) const;
+
+    /** \brief Check if input arguments that needs to be replaced */
+    template<typename M>
+    bool matchingArg(const std::vector<M>& arg) const;
+
+    /** \brief Check if output arguments that needs to be replaced */
+    template<typename M>
+    bool matchingRes(const std::vector<M>& arg) const;
+
+    /** \brief Check if there are 0-by-0 forward seeds that needs to be replaced */
+    template<typename M>
+    bool matchingFwdSeed(const std::vector<std::vector<M> >& fseed) const;
+
+    /** \brief Check if there are 0-by-0 reverse seeds that needs to be replaced */
+    template<typename M>
+    bool matchingAdjSeed(const std::vector<std::vector<M> >& aseed) const;
+
+    /** \brief Replace 0-by-0 inputs */
+    template<typename M>
+    std::vector<M> replaceArg(const std::vector<M>& arg) const;
+
+    /** \brief Replace 0-by-0 outputs */
+    template<typename M>
+    std::vector<M> replaceRes(const std::vector<M>& res) const;
+
+    /** \brief Replace 0-by-0 forward seeds */
+    template<typename M>
+    std::vector<std::vector<M> >
+      replaceFwdSeed(const std::vector<std::vector<M> >& fseed) const;
+
+    /** \brief Replace 0-by-0 reverse seeds */
+    template<typename M>
+    std::vector<std::vector<M> >
+      replaceAdjSeed(const std::vector<std::vector<M> >& aseed) const;
+#endif // SWIG
     /// \endcond
 
     /** \brief get function name with all non alphanumeric characters converted to '_' */

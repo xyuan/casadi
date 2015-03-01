@@ -78,8 +78,17 @@ namespace casadi {
     /// Is the class able to propagate seeds through the algorithm?
     virtual bool spCanEvaluate(bool fwd) { return true;}
 
-    /// Generate a function that calculates nfwd forward derivatives and nadj adjoint derivatives
-    virtual Function getDerivative(int nfwd, int nadj);
+    ///@{
+    /** \brief Generate a function that calculates \a nfwd forward derivatives */
+    virtual Function getDerForward(int nfwd);
+    virtual bool hasDerForward() const { return true;}
+    ///@}
+
+    ///@{
+    /** \brief Generate a function that calculates \a nadj adjoint derivatives */
+    virtual Function getDerReverse(int nadj);
+    virtual bool hasDerReverse() const { return true;}
+    ///@}
 
     /// Generate a function that calculates a Jacobian function
     virtual Function getJacobian(int iind, int oind, bool compact, bool symmetric);
