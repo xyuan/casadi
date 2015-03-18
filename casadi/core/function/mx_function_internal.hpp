@@ -54,12 +54,6 @@ namespace casadi {
     /** \brief  All the runtime elements in the order of evaluation */
     std::vector<AlgEl> algorithm_;
 
-    /** \brief  Temporary vector needed for the evaluation (integer) */
-    std::vector<int> itmp_;
-
-    /** \brief  Temporary vector needed for the evaluation (real) */
-    std::vector<double> rtmp_;
-
     /** \brief Offsets for elements in the rtmp_ vector */
     std::vector<int> workloc_;
 
@@ -82,8 +76,8 @@ namespace casadi {
     /** \brief  Destructor */
     virtual ~MXFunctionInternal();
 
-    /** \brief  Evaluate the algorithm */
-    virtual void evaluate();
+    /** \brief  Evaluate numerically, work vectors given */
+    virtual void evalD(const cpv_double& arg, const pv_double& res, int* itmp, double* rtmp);
 
     /** \brief  Print description */
     virtual void print(std::ostream &stream) const;
@@ -143,7 +137,6 @@ namespace casadi {
 
     // print an element of an algorithm
     void print(std::ostream &stream, const AlgEl& el) const;
-
   };
 
 } // namespace casadi

@@ -69,29 +69,20 @@ namespace casadi {
       \author Joel Andersson
    */
   struct CASADI_EXPORT Variable : public PrintableObject<Variable> {
-
     /// Default constructor
-    Variable();
+    Variable() {}
+
+    /// Constructor
+    explicit Variable(const std::string& name);
 
     /// Variable name
     std::string name() const;
-
-    /// Set the variable name (and corresponding expressions)
-    void setName(const std::string& name);
 
     /// Variable expression
     SXElement v;
 
     /// Derivative expression
     SXElement d;
-
-    /// Binding equation. Equal to "v" if unknown
-    SXElement beq;
-
-    /** \brief Derivative binding equation, i.e. ordinary differential equation (ODE).
-     * Equal do "d" if unknown
-     */
-    SXElement ode;
 
     /// Nominal value
     double nominal;
@@ -100,13 +91,13 @@ namespace casadi {
     double start;
 
     /// Lower bound
-    SXElement min;
+    double min;
 
     /// Upper bound
-    SXElement max;
+    double max;
 
     /// Initial guess
-    SXElement initialGuess;
+    double initialGuess;
 
     /// Derivative at time 0
     double derivativeStart;
@@ -135,30 +126,14 @@ namespace casadi {
     /// Display unit
     std::string displayUnit;
 
-    /// Variable index
-    int index;
-
     /// Free attribute
     bool free;
-
-    /// Timed variable (never allocate)
-    SXElement atTime(double t, bool allocate=false) const;
-
-    /// Timed variable (allocate if necessary)
-    SXElement atTime(double t, bool allocate=false);
 
     /// Print a description of the object
     void print(std::ostream &stream=CASADI_COUT, bool trailing_newline=true) const;
 
     /// Print a representation of the object
     void repr(std::ostream &stream=CASADI_COUT, bool trailing_newline=true) const;
-
-#ifndef SWIG
-  private:
-    // Timed variables
-    std::map<double, SXElement> timed_;
-#endif // SWIG
-
   };
 } // namespace casadi
 

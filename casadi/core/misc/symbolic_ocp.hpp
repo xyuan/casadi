@@ -33,62 +33,57 @@ namespace casadi {
   // Forward declarations
   class XmlNode;
 
-  /** \brief A flat OCP representation coupled to an XML file
-
-      <H3>Variables:  </H3>
+  /** \brief A flat OCP representation
+      <H3>Independent variables:  </H3>
       \verbatim
-      x:      differential states
-      z:      algebraic states
-      p :     independent parameters
-      t :     time
-      u :     control signals
-      q :     quadrature states
-      y :     dependent variables
+      t:      time
       \endverbatim
 
-      <H3>Equations:  </H3>
+      <H3>Time-continuous variables:  </H3>
       \verbatim
-      explicit or implicit ODE: \dot {x} = ode(t, x, z, u, p_free, pi, pd)
-      or                           0 = ode(t, x, z,\dot {x}, u, p_free, pi, pd)
-      algebraic equations:            0 = alg(t, x, z, u, p_free, pi, pd)
-      quadratures:              \dot {q} = quad(t, x, z, u, p_free, pi, pd)
-      dependent equations:            y = dep(t, x, z, u, p_free, pi, pd)
-      initial equations:              0 = initial(t, x, z, u, p_free, pi, pd)
+      x:      states defined by ODE
+      s:      implicitly defined states
+      z:      algebraic variables
+      u:      control signals
+      q:      quadrature states
+      i:      intermediate variables
+      y:      outputs
       \endverbatim
 
-      <H3>Objective function terms:  </H3>
+      <H3>Time-constant variables:  </H3>
+      \verbatim
+      p:      free parameters
+      \endverbatim
+
+      <H3>Dynamic constraints (imposed everywhere):  </H3>
+      \verbatim
+      ODE                    \dot{x} ==  ode(t, x, s, z, u, p, i)
+      DAE or implicit ODE:         0 ==  dae(t, x, s, z, u, p, i, sdot)
+      algebraic equations:         0 ==  alg(t, x, s, z, u, p, i)
+      quadrature equations:  \dot{q} == quad(t, x, s, z, u, p, i)
+      intermediate equations:      i == idef(t, x, s, z, u, p, i)
+      output equations:            y == ydef(t, x, s, z, u, p, i)
+      \endverbatim
+
+      <H3>Point constraints (imposed pointwise):  </H3>
+      \verbatim
+      Initial equations:           0 == init(t, x, s, z, u, p, i, sdot)
+      \endverbatim
+
+      <H3>Contributions to the objective function:  </H3>
       \verbatim
       Mayer terms:          \sum {mterm_k}
       Lagrange terms:       \sum {\integral{mterm}}
       \endverbatim
 
-      Note that when parsed, all dynamic equations end up in the implicit category "dae".
-      At a later state, the DAE can be reformulated, for example in semi-explicit form,
-      possibly in addition to a set of quadrature states.
-
-      <H3>Usage skeleton:</H3>
-
-      1. Call default constructor
-      > SymbolicOCP ocp;
-
-      2. Parse an FMI conformant XML file <BR>
-      > ocp.parseFMI(xml_file_name)
-
-      3. Modify/add variables, equations, optimization <BR>
-      > ...
-
-      When the optimal control problem is in a suitable form, it is possible to either
-      generate functions for numeric/symbolic evaluation or exporting the OCP formulation
-      into a new FMI conformant XML file. The latter functionality is not yet available.
-
-      \date 2012
+      \date 2012-2015
       \author Joel Andersson
   */
   class CASADI_EXPORT SymbolicOCP : public PrintableObject<SymbolicOCP> {
   public:
 
     /// Default constructor
-    SymbolicOCP(bool ignore_timed_variables=true);
+    SymbolicOCP();
 
     /** @name Variables and equations
      *  Public data members
@@ -97,19 +92,14 @@ namespace casadi {
     /** \brief Independent variable (usually time) */
     SX t;
 
-    /** \brief Differential-algebraic equation (DAE) with corresponding state vector and initial
-     * conditions
-     * DAE in fully-implicit form and corresponding states and algebraic variables.
-     * dae and s have matching dimensions and <tt>0 == dae(der(s), s, ...)</tt>
-     * implicitly defines <tt>der(s)</tt>.
-     * At <tt>t==0</tt>, <tt>0 == initial(der(s), s, ...)</tt> holds in addition to the dae.
-     */
-    SX s, dae, initial;
-
     /** \brief Differential states defined by ordinary differential equations (ODE)
-     * The ODE can be retrieved by calling the method #ode with x as argument.
      */
-    SX x;
+    SX x, ode;
+
+    /** \brief Differential-algebraic equation (DAE) with corresponding state vector,
+     * state derivatives.
+     */
+    SX s, sdot, dae;
 
     /** \brief Algebraic equations and corresponding algebraic variables
      * \a alg and \a z have matching dimensions and
@@ -119,15 +109,17 @@ namespace casadi {
 
     /** \brief Quadrature states
      * Quadrature states are defined by ODEs whose state does not enter in the right-hand-side.
-     * The ODE can be retrieved by calling the method #ode with q as argument.
      */
-    SX q;
+    SX q, quad;
 
-    /** \brief Output variables
+    /** \brief Intermediate variables and definitions definitions
      * Interdependencies are allowed but must be non-cyclic.
-     * The definitions can be retrieved by calling the method #beq with y as argument.
      */
-    SX y;
+    SX i, idef;
+
+    /** \brief Output variables and corresponding definitions
+     */
+    SX y, ydef;
 
     /** \brief Free controls
      * The trajectories of the free controls are decision variables of the optimal control problem.
@@ -140,39 +132,13 @@ namespace casadi {
      * optimization algorithm in order to minimize the cost functional.
      */
     SX p;
-
-    /** \brief Independent parameters
-     * An independent parameter is a parameter whose value is determined by an expression that
-     * contains only literals.
-     * An independent parameter is fixed after the DAE has been initialized.
-     * The definitions can be retrieved by calling the method #beq with pi as argument.
-     */
-    SX pi;
-
-    /** \brief Dependent parameters and corresponding definitions
-     * A dependent parameter is a parameter whose value is determined by an expression which
-     * contains references to other parameters.
-     * A dependent parameter is fixed after the DAE has been initialized.
-     * Interdependencies are allowed but must be non-cyclic.
-     * The definitions can be retrieved by calling the method #beq with pd as argument.
-    */
-    SX pd;
-
-    /** \brief Independent constant
-     * An independent constant is a constant whose value is determined by an expression that
-     * contains only literals.
-     * The definitions can be retrieved by calling the method #beq with ci as argument.
-     */
-    SX ci;
-
-    /** \brief Dependent constants and corresponding definitions
-     * A dependent constant is a constant whose value is determined by an expression which
-     * contains references to other constants.
-     * Interdependencies are allowed but must be non-cyclic.
-     * The definitions can be retrieved by calling the method #beq with cd as argument.
-    */
-    SX cd;
     ///@}
+
+    /** \brief Initial conditions
+     * At <tt>t==0</tt>, <tt>0 == init(sdot, s, ...)</tt> holds in addition to
+     * the ode and/or dae.
+     */
+    SX init;
 
     /// Interval start time
     double t0;
@@ -209,24 +175,36 @@ namespace casadi {
     SX lterm;
     ///@}
 
-    /** \brief Path constraints of the optimal control problem
+    /** @name Symbolic modeling
+     *  Formulate an optimal control problem
      */
-    SX path;
-
-    /** \brief Point constraints of the optimal control problem
-     */
-    SX point;
-
-    /// Parse from XML to C++ format
-    void parseFMI(const std::string& filename);
-
-    /// Add a variable
-    void addVariable(const std::string& name, const Variable& var);
-
     ///@{
-    /// Access a variable by name
-    Variable& variable(const std::string& name);
-    const Variable& variable(const std::string& name) const;
+    /// Add a new differential state
+    SX add_x(const std::string& name);
+
+    /// Add a implicit state
+    std::pair<SX, SX> add_s(const std::string& name);
+
+    /// Add a new algebraic variable
+    SX add_z(const std::string& name);
+
+    /// Add a new parameter
+    SX add_p(const std::string& name);
+
+    /// Add a new control
+    SX add_u(const std::string& name);
+
+    /// Add an ordinary differential equation
+    void add_ode(const SX& new_ode);
+
+    /// Add a differential-algebraic equation
+    void add_dae(const SX& new_dae);
+
+    /// Add an algebraic equation
+    void add_alg(const SX& new_alg);
+
+    /// Check if dimensions match
+    void sanityCheck() const;
     ///@}
 
     /** @name Manipulation
@@ -235,10 +213,10 @@ namespace casadi {
     ///@{
 
     /// Identify and separate the algebraic variables and equations in the DAE
-    void separateAlgebraic();
+    void split_dae();
 
-    /// Eliminate algebraic variables, transforming them into outputs
-    void eliminateAlgebraic();
+    /// Eliminate algebraic variables and equations transforming them into outputs
+    void eliminate_alg();
 
     /// Transform the implicit DAE to a semi-explicit DAE
     void makeSemiExplicit();
@@ -246,50 +224,61 @@ namespace casadi {
     /// Transform the implicit DAE or semi-explicit DAE into an explicit ODE
     void makeExplicit();
 
-    /// Eliminate independent parameters
-    void eliminateIndependentParameters();
+    /// Sort intermediate variables
+    void sort_i();
 
-    /// Sort the dependent parameters
-    void sortDependentParameters();
+    /// Eliminate interdependencies amongst intermediate variables
+    void split_i();
 
-    /// Eliminate interdependencies amongst the dependent parameters
-    void eliminateDependentParameterInterdependencies();
-
-    /// Eliminate dependent parameters
-    void eliminateDependentParameters();
-
-    /// Sort the outputs
-    void sortOutputs();
-
-    /// Eliminate interdependencies amongst the outputs
-    void eliminateOutputInterdependencies();
-
-    /// Eliminate outputs
-    void eliminateOutputs();
+    /// Eliminate intermediate variables
+    void eliminate_i();
 
     /// Eliminate Lagrange terms from the objective function and make them quadrature states
-    void eliminateLagrangeTerms();
+    void eliminate_lterm();
 
     /// Eliminate quadrature states and turn them into ODE states
-    void eliminateQuadratureStates();
+    void eliminate_quad();
 
     /// Sort the DAE and implicitly defined states
-    void sortDAE();
+    void sort_dae();
 
     /// Sort the algebraic equations and algebraic states
-    void sortALG();
-
-    /// Generate a <tt>MUSCOD-II</tt> compatible DAT file
-    void generateMuscodDatFile(const std::string& filename,
-                               const Dictionary& mc2_ops=Dictionary()) const;
-
-    ///@}
+    void sort_alg();
 
     /// Scale the variables
     void scaleVariables();
 
     /// Scale the implicit equations
     void scaleEquations();
+    ///@}
+
+    /** @name Import and export
+     */
+    ///@{
+    /// Import existing problem from FMI/XML
+    void parseFMI(const std::string& filename);
+
+    /// Generate a <tt>MUSCOD-II</tt> compatible DAT file
+    void generateMuscodDatFile(const std::string& filename,
+                               const Dictionary& mc2_ops=Dictionary()) const;
+
+    /// Generate a file for numerical evaluation
+    void generateCode(const std::string& filename,
+                      const Dictionary& options=Dictionary());
+
+    /// Generate a header file for generateCode
+    static void generateHeader(const std::string& filename, const std::string& prefix="");
+
+    /// Generate code for a particular function
+    static void generateFunction(std::ostream &stream, const std::string& fname,
+                                 const std::vector<SX>& f_in, const std::vector<SX>& f_out,
+                                 CodeGenerator& gen,
+                                 bool fwd=false, bool adj=false, bool foa=false);
+
+    /// Corresponding header
+    static void generateFunctionHeader(std::ostream &stream, const std::string& fname,
+                                       bool fwd=false, bool adj=false, bool foa=false);
+    ///@}
 
     /// Get variable expression by name
     SX operator()(const std::string& name) const;
@@ -299,38 +288,6 @@ namespace casadi {
 
     /// Get a derivative expression by non-differentiated expression
     SX der(const SX& var) const;
-
-    /// Get a binding equation by name
-    SX beq(const std::string& name) const;
-
-    /// Get a binding equation by non-differentiated expression
-    SX beq(const SX& var) const;
-
-    /// Set a binding equation by name
-    void setBeq(const std::string& name, const SX& val);
-
-    /// Set an binding expression by non-differentiated expression
-    void setBeq(const SX& var, const SX& val);
-
-    /** \brief Get a derivative binding equation (i.e. ordinary differential equation, ODE)
-     * by name.
-     *
-     * Returns variable expression if unknown.
-     */
-    SX ode(const std::string& name) const;
-
-    /** \brief Get a derivative binding expression (i.e. ordinary differential equation, ODE)
-     * by non-differentiated expression.
-     *
-     * Returns derivative expression if unknown.
-     */
-    SX ode(const SX& var) const;
-
-    /// Set a derivative binding equation by name
-    void setOde(const std::string& name, const SX& val);
-
-    /// Set an derivative binding expression by non-differentiated expression
-    void setOde(const SX& var, const SX& val);
 
     /// Get the nominal value by name
     double nominal(const std::string& name) const;
@@ -345,40 +302,40 @@ namespace casadi {
     void setNominal(const SX& var, const std::vector<double>& val);
 
     /// Get the lower bound by name
-    SX min(const std::string& name) const;
+    double min(const std::string& name, bool normalized=false) const;
 
     /// Get the lower bound(s) by expression
-    SX min(const SX& var) const;
+    std::vector<double> min(const SX& var, bool normalized=false) const;
 
     /// Set the lower bound by name
-    void setMin(const std::string& name, const SX& val);
+    void setMin(const std::string& name, double val, bool normalized=false);
 
     /// Set the lower bound(s) by expression
-    void setMin(const SX& var, const SX& val);
+    void setMin(const SX& var, const std::vector<double>& val, bool normalized=false);
 
     /// Get the upper bound by name
-    SX max(const std::string& name) const;
+    double max(const std::string& name, bool normalized=false) const;
 
     /// Get the upper bound(s) by expression
-    SX max(const SX& var) const;
+    std::vector<double> max(const SX& var, bool normalized=false) const;
 
     /// Set the upper bound by name
-    void setMax(const std::string& name, const SX& val);
+    void setMax(const std::string& name, double val, bool normalized=false);
 
     /// Set the upper bound(s) by expression
-    void setMax(const SX& var, const SX& val);
+    void setMax(const SX& var, const std::vector<double>& val, bool normalized=false);
 
     /// Get the initial guess by name
-    SX initialGuess(const std::string& name) const;
+    double initialGuess(const std::string& name, bool normalized=false) const;
 
     /// Get the initial guess(es) by expression
-    SX initialGuess(const SX& var) const;
+    std::vector<double> initialGuess(const SX& var, bool normalized=false) const;
 
     /// Set the initial guess by name
-    void setInitialGuess(const std::string& name, const SX& val);
+    void setInitialGuess(const std::string& name, double val, bool normalized=false);
 
     /// Set the initial guess(es) by expression
-    void setInitialGuess(const SX& var, const SX& val);
+    void setInitialGuess(const SX& var, const std::vector<double>& val, bool normalized=false);
 
     /// Get the (optionally normalized) value at time 0 by name
     double start(const std::string& name, bool normalized=false) const;
@@ -413,17 +370,23 @@ namespace casadi {
     /// Set the unit for a component
     void setUnit(const std::string& name, const std::string& val);
 
-    /// Timed variable (never allocate)
-    SX atTime(const std::string& name, double t, bool allocate=false) const;
-
-    /// Timed variable (allocate if necessary)
-    SX atTime(const std::string& name, double t, bool allocate=false);
-
     ///  Print representation
     void repr(std::ostream &stream=CASADI_COUT, bool trailing_newline=true) const;
 
     /// Print description
     void print(std::ostream &stream=CASADI_COUT, bool trailing_newline=true) const;
+
+    /// Add a variable
+    void addVariable(const std::string& name, const Variable& var);
+
+    /// Add a new variable: returns corresponding symbolic expression
+    SX addVariable(const std::string& name);
+
+    ///@{
+    /// Access a variable by name
+    Variable& variable(const std::string& name);
+    const Variable& variable(const std::string& name) const;
+    ///@}
 
 #ifndef SWIG
     // Internal methods
@@ -435,9 +398,6 @@ namespace casadi {
     /// Find of variable by name
     typedef std::map<std::string, Variable> VarMap;
     VarMap varmap_;
-
-    /// Allow timed variables?
-    bool ignore_timed_variables_;
 
     /// Read an equation
     SX readExpr(const XmlNode& odenode);

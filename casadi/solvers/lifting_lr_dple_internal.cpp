@@ -65,7 +65,7 @@ namespace casadi {
     addOption("form",    OT_STRING,    "A",
               "The form of the lifting", "A:0|B:1");
 
-    Adaptor::addOptions();
+    Adaptor<LiftingLrDpleInternal, LrDleInternal>::addOptions();
   }
 
   LiftingLrDpleInternal::~LiftingLrDpleInternal() {
@@ -177,14 +177,14 @@ namespace casadi {
     f_.setOutputScheme(SCHEME_LR_DPLEOutput);
     f_.init();
 
-    Wrapper::checkDimensions();
+    Wrapper<LiftingLrDpleInternal>::checkDimensions();
 
   }
 
 
 
   void LiftingLrDpleInternal::evaluate() {
-    Wrapper::evaluate();
+    Wrapper<LiftingLrDpleInternal>::evaluate();
   }
 
   Function LiftingLrDpleInternal::getDerForward(int nfwd) {

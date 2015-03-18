@@ -44,14 +44,13 @@ print ocp
 #$ By insprecting the equations, we see that it is relatively both straightforward to eliminate 
 #$ the algebraic variables from the problem and to rewrite the DAE as an explicit ODE.
 #$ Indeed, for cases like this one, CasADi can do this reformulation automatically:
-ocp.eliminateIndependentParameters()
 ocp.makeExplicit()
 #! Let us extract variables for the states, the control and equations
 x = ocp.x
 u = ocp.u
-f = ocp.ode(ocp.x)
+f = ocp.ode
 L = ocp.lterm
-I = ocp.initial
+I = ocp.init
 #$ These are expressions that can be visualized or manipulated using CasADi's 
 #$ symbolic framework:
 print 5*sin(f[0])
@@ -67,12 +66,12 @@ print hessian(L,x)
 #$ We can also retrieve other information from the model such as the end time,
 #$ variable bounds and initial guess:
 tf = ocp.tf
-ubx = evalf(ocp.max(x))
-lbx = evalf(ocp.min(x))
-ubu = evalf(ocp.max(u))
-lbu = evalf(ocp.min(u))
-x0 = evalf(ocp.initialGuess(x))
-u0 = evalf(ocp.initialGuess(u))
+ubx = ocp.max(x)
+lbx = ocp.min(x)
+ubu = ocp.max(u)
+lbu = ocp.min(u)
+x0 = ocp.initialGuess(x)
+u0 = ocp.initialGuess(u)
 #$ We now proceeed to solve the optimal control problem, which can be written more compactly as:
 #$  $$ \begin{array}{cl}   \textbf{minimize}    &  \displaystyle\int_{t=0}^{\texttt{tf}}{\texttt{L} \, dt} \\ \\
 #$                         \textbf{subject to}  &  \texttt{I}(t) = 0, \quad \text{for} \quad t=0 \\

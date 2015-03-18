@@ -29,13 +29,15 @@
 using namespace std;
 namespace casadi {
 
-  Variable::Variable() {
+  Variable::Variable(const std::string& name) {
+    this->v = SXElement::sym(name);
+    this->d = SXElement::sym("der_" + name);
     this->variability = CONTINUOUS;
     this->causality = INTERNAL;
     this->category = CAT_UNKNOWN;
     this->alias = NO_ALIAS;
     this->description = "";
-    this->valueReference = -1; //?
+    this->valueReference = -1;
     this->min = -numeric_limits<double>::infinity();
     this->max = numeric_limits<double>::infinity();
     this->initialGuess = 0;
@@ -45,48 +47,10 @@ namespace casadi {
     this->unit = "";
     this->displayUnit = "";
     this->free = false;
-    this->index = -1;
   }
 
   string Variable::name() const {
     return this->v.getName();
-  }
-
-  void Variable::setName(const std::string& name) {
-    this->v = this->beq = SXElement::sym(name);
-    this->d = this->ode = SXElement::sym("der_" + name);
-  }
-
-  SXElement Variable::atTime(double t, bool allocate) const {
-    casadi_assert(!allocate);
-    return const_cast<Variable*>(this)->atTime(t, false);
-  }
-
-  SXElement Variable::atTime(double t, bool allocate) {
-    // Find an existing element
-    map<double, SXElement>::const_iterator it = timed_.find(t);
-
-    // If not found
-    if (it==timed_.end()) {
-      if (allocate) {
-        // Create a timed variable
-        stringstream ss;
-        ss << name() << ".atTime(" << t << ")";
-        SXElement tvar = SXElement::sym(ss.str());
-
-        // Save to map
-        timed_[t] = tvar;
-
-        // Return the expression
-        return tvar;
-      } else {
-        casadi_error(" has no timed variable with t = " << t << ".");
-      }
-
-    } else {
-      // Return the expression
-      return it->second;
-    }
   }
 
   void Variable::repr(ostream &stream, bool trailing_newline) const {

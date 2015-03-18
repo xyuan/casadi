@@ -35,14 +35,14 @@
 #include "../matrix/matrix_tools.hpp"
 #include "../sx/sx_tools.hpp"
 #include "../function/integrator.hpp"
+#include "../function/code_generator.hpp"
 #include "../casadi_calculus.hpp"
 #include "xml_file.hpp"
 
 using namespace std;
 namespace casadi {
 
-  SymbolicOCP::SymbolicOCP(bool ignore_timed_variables)
-      : ignore_timed_variables_(ignore_timed_variables) {
+  SymbolicOCP::SymbolicOCP() {
     t = SX::sym("t");
     t0 = t0_guess = numeric_limits<double>::quiet_NaN();
     tf = tf_guess = numeric_limits<double>::quiet_NaN();
@@ -50,8 +50,15 @@ namespace casadi {
     tf_free = false;
 
     // Start with vectors of zero length
-    this->s=this->x=this->z=this->q=this->ci=this->cd=this->pi=this->pd=this->p=this->y=
-        this->u=this->path=this->point = SX::zeros(0, 1);
+    this->s=this->sdot=this->dae=this->init=
+      this->x=this->ode=
+      this->z=this->alg=
+      this->q=this->quad=
+      this->i=this->idef=
+      this->y=this->ydef=
+      this->u=
+      this->p=
+      SX::zeros(0, 1);
   }
 
   void SymbolicOCP::parseFMI(const std::string& filename) {
@@ -93,8 +100,7 @@ namespace casadi {
         if (varmap_.find(qn)==varmap_.end()) {
 
           // Create variable
-          Variable var;
-          var.setName(name);
+          Variable var(name);
 
           // Value reference
           var.valueReference = valueReference;
@@ -110,9 +116,6 @@ namespace casadi {
             var.variability = CONTINUOUS;
           else
             throw CasadiException("Unknown variability");
-
-          // ODE is zero for non-continuous variables
-          if (var.variability!=CONTINUOUS) var.ode = 0;
 
           // Causality
           if (causality.compare("input")==0)
@@ -139,15 +142,9 @@ namespace casadi {
             const XmlNode& props = vnode["Real"];
             props.readAttribute("unit", var.unit, false);
             props.readAttribute("displayUnit", var.displayUnit, false);
-            double dmin = -numeric_limits<double>::infinity();
-            props.readAttribute("min", dmin, false);
-            var.min = dmin;
-            double dmax =  numeric_limits<double>::infinity();
-            props.readAttribute("max", dmax, false);
-            var.max = dmax;
-            double dinitialGuess = 0;
-            props.readAttribute("initialGuess", dinitialGuess, false);
-            var.initialGuess = dinitialGuess;
+            props.readAttribute("min", var.min, false);
+            props.readAttribute("max", var.max, false);
+            props.readAttribute("initialGuess", var.initialGuess, false);
             props.readAttribute("start", var.start, false);
             props.readAttribute("nominal", var.nominal, false);
             props.readAttribute("free", var.free, false);
@@ -185,26 +182,28 @@ namespace casadi {
             break;
           case CAT_STATE:
             this->s.append(var.v);
+            this->sdot.append(var.d);
             break;
           case CAT_DEPENDENT_CONSTANT:
-            this->cd.append(var.v);
+            // Skip
             break;
           case CAT_INDEPENDENT_CONSTANT:
-            this->ci.append(var.v);
+            // Skip
             break;
           case CAT_DEPENDENT_PARAMETER:
-            this->pd.append(var.v);
+            // Skip
             break;
           case CAT_INDEPENDENT_PARAMETER:
             if (var.free) {
               this->p.append(var.v);
             } else {
-              this->pi.append(var.v);
+              // Skip
             }
             break;
           case CAT_ALGEBRAIC:
             if (var.causality == INTERNAL) {
               this->s.append(var.v);
+              this->sdot.append(var.d);
             } else if (var.causality == INPUT) {
               this->u.append(var.v);
             }
@@ -229,7 +228,8 @@ namespace casadi {
         // Get the variable and binding expression
         Variable& var = readVariable(beq[0]);
         SX bexpr = readExpr(beq[1][0]);
-        setBeq(var.v, bexpr.toScalar());
+        this->i.append(var.v);
+        this->idef.append(bexpr);
       }
     }
 
@@ -263,7 +263,7 @@ namespace casadi {
 
         // Add the differential equations
         for (int i=0; i<inode.size(); ++i) {
-          initial.append(readExpr(inode[i]));
+          init.append(readExpr(inode[i]));
         }
       }
     }
@@ -304,14 +304,6 @@ namespace casadi {
         double value;
         tpnode[i].readAttribute("value", value);
         tp[i] = value;
-
-        if (!ignore_timed_variables_) {
-          // Allocate all the timed variables
-          for (int k=0; k<tpnode[i].size(); ++k) {
-            string qn = qualifiedName(tpnode[i][k]);
-            atTime(qn, value, true);
-          }
-        }
       }
 
       for (int i=0; i<opts.size(); ++i) {
@@ -361,65 +353,13 @@ namespace casadi {
         } else if (onode.checkName("opt:TimePoints")) {
           // Ignore, treated above
         } else if (onode.checkName("opt:PointConstraints")) {
-          for (int i=0; i<onode.size(); ++i) {
-            const XmlNode& constr_i = onode[i];
-
-            // Create a new variable
-            Variable v;
-            stringstream ss;
-            ss << "point_" << i;
-            v.setName(ss.str());
-
-            // Get the definition and bounds
-            if (constr_i.checkName("opt:ConstraintLeq")) {
-              v.beq = readExpr(constr_i[0]).toScalar();
-              v.max = readExpr(constr_i[1]).toScalar();
-            } else if (constr_i.checkName("opt:ConstraintGeq")) {
-              v.beq = readExpr(constr_i[0]).toScalar();
-              v.min = readExpr(constr_i[1]).toScalar();
-            } else if (constr_i.checkName("opt:ConstraintEq")) {
-              v.beq = readExpr(constr_i[0]).toScalar();
-              v.max = v.min = readExpr(constr_i[1]).toScalar();
-            } else {
-              cerr << "unknown constraint type" << constr_i.getName() << endl;
-              throw CasadiException("SymbolicOCP::addConstraints");
-            }
-
-            // Add to list of variables and outputs
-            addVariable(ss.str(), v);
-            this->point.append(v.v);
-          }
-        } else if (onode.checkName("opt:Constraints") || onode.checkName("opt:PathConstraints")) {
-          for (int i=0; i<onode.size(); ++i) {
-            const XmlNode& constr_i = onode[i];
-            // Create a new variable
-            Variable v;
-            stringstream ss;
-            ss << "path_" << i;
-            v.setName(ss.str());
-
-            // Get the definition and bounds
-            if (constr_i.checkName("opt:ConstraintLeq")) {
-              v.beq = readExpr(constr_i[0]).toScalar();
-              v.max = readExpr(constr_i[1]).toScalar();
-            } else if (constr_i.checkName("opt:ConstraintGeq")) {
-              v.beq = readExpr(constr_i[0]).toScalar();
-              v.min = readExpr(constr_i[1]).toScalar();
-            } else if (constr_i.checkName("opt:ConstraintEq")) {
-              v.beq = readExpr(constr_i[0]).toScalar();
-              v.max = v.min = readExpr(constr_i[1]).toScalar();
-            } else {
-              cerr << "unknown constraint type" << constr_i.getName() << endl;
-              throw CasadiException("SymbolicOCP::addConstraints");
-            }
-
-            // Add to list of variables and outputs
-            addVariable(ss.str(), v);
-            this->path.append(v.v);
-          }
+          casadi_warning("opt:PointConstraints not supported, ignored");
+        } else if (onode.checkName("opt:Constraints")) {
+          casadi_warning("opt:Constraints not supported, ignored");
+        } else if (onode.checkName("opt:PathConstraints")) {
+          casadi_warning("opt:PointConstraints not supported, ignored");
         } else {
-          throw CasadiException(string("SymbolicOCP::addOptimization: Unknown node ")
-                                +onode.getName());
+          casadi_warning("SymbolicOCP::addOptimization: Unknown node " << onode.getName());
         }
       }
     }
@@ -523,14 +463,7 @@ namespace casadi {
     } else if (name.compare("Time")==0) {
       return t.toScalar();
     } else if (name.compare("TimedVariable")==0) {
-      if (ignore_timed_variables_) {
-        return readVariable(node[0]).v;
-      } else {
-        // Get the index of the time point
-        int index;
-        node.readAttribute("timePointIndex", index);
-        return readVariable(node[0]).atTime(tp[index]);
-      }
+      return readVariable(node[0]).v;
     }
 
     // throw error if reached this point
@@ -549,13 +482,10 @@ namespace casadi {
     stream << "#x = " << this->x.nnz() << ", ";
     stream << "#z = " << this->z.nnz() << ", ";
     stream << "#q = " << this->q.nnz() << ", ";
+    stream << "#i = " << this->i.nnz() << ", ";
     stream << "#y = " << this->y.nnz() << ", ";
-    stream << "#pi = " << this->pi.nnz() << ", ";
-    stream << "#pd = " << this->pd.nnz() << ", ";
-    stream << "#pf = " << this->p.nnz() << ", ";
-    stream << "#ci =  " << this->ci.nnz() << ", ";
-    stream << "#cd =  " << this->cd.nnz() << ", ";
     stream << "#u = " << this->u.nnz() << ", ";
+    stream << "#p = " << this->p.nnz() << ", ";
     stream << endl << endl;
 
     // Variables in the class hierarchy
@@ -568,13 +498,10 @@ namespace casadi {
     stream << "  x = " << str(this->x) << endl;
     stream << "  z =  " << str(this->z) << endl;
     stream << "  q =  " << str(this->q) << endl;
+    stream << "  i =  " << str(this->i) << endl;
     stream << "  y =  " << str(this->y) << endl;
-    stream << "  pi =  " << str(this->pi) << endl;
-    stream << "  pd =  " << str(this->pd) << endl;
-    stream << "  pf =  " << str(this->p) << endl;
-    stream << "  ci =  " << str(this->ci) << endl;
-    stream << "  cd =  " << str(this->cd) << endl;
     stream << "  u =  " << str(this->u) << endl;
+    stream << "  p =  " << str(this->p) << endl;
     stream << "}" << endl;
 
     if (!this->dae.isEmpty()) {
@@ -588,7 +515,7 @@ namespace casadi {
     if (!this->x.isEmpty()) {
       stream << "Differential equations" << endl;
       for (int k=0; k<this->x.nnz(); ++k) {
-        stream << str(der(this->x[k])) << " == " << str(ode(this->x[k])) << endl;
+        stream << str(der(this->x[k])) << " == " << str(this->ode[k]) << endl;
       }
       stream << endl;
     }
@@ -604,51 +531,30 @@ namespace casadi {
     if (!this->q.isEmpty()) {
       stream << "Quadrature equations" << endl;
       for (int k=0; k<this->q.nnz(); ++k) {
-        stream << str(der(this->q[k])) << " == " << str(ode(this->q[k])) << endl;
+        stream << str(der(this->q[k])) << " == " << str(this->quad[k]) << endl;
       }
       stream << endl;
     }
 
-    if (!this->initial.isEmpty()) {
+    if (!this->init.isEmpty()) {
       stream << "Initial equations" << endl;
-      for (SX::const_iterator it=this->initial.begin(); it!=this->initial.end(); it++) {
+      for (SX::const_iterator it=this->init.begin(); it!=this->init.end(); it++) {
         stream << "0 == " << *it << endl;
       }
       stream << endl;
     }
 
-    if (!this->pi.isEmpty()) {
-      stream << "Independent parameters" << endl;
-      for (int i=0; i<this->pi.nnz(); ++i)
-        stream << this->pi.at(i) << " == " << str(beq(this->pi.at(i))) << endl;
-      stream << endl;
-    }
-
-    if (!this->pd.isEmpty()) {
-      stream << "Dependent parameters" << endl;
-      for (int i=0; i<this->pd.nnz(); ++i)
-        stream << this->pd.at(i) << " == " << str(beq(this->pd.at(i))) << endl;
-      stream << endl;
-    }
-
-    if (!this->ci.isEmpty()) {
-      stream << "Independent constants" << endl;
-      for (int i=0; i<this->ci.nnz(); ++i)
-        stream << this->ci.at(i) << " == " << str(beq(this->ci.at(i))) << endl;
-      stream << endl;
-    }
-
-    if (!this->cd.isEmpty()) {
-      stream << "Dependent constants" << endl;
-      for (int i=0; i<this->cd.nnz(); ++i)
-        stream << this->cd.at(i) << " == " << str(beq(this->cd.at(i))) << endl;
+    if (!this->i.isEmpty()) {
+      stream << "Intermediate variables" << endl;
+      for (int i=0; i<this->i.nnz(); ++i)
+        stream << this->i.at(i) << " == " << str(this->idef.at(i)) << endl;
       stream << endl;
     }
 
     if (!this->y.isEmpty()) {
       stream << "Output variables" << endl;
       for (int i=0; i<this->y.nnz(); ++i)
-        stream << this->y.at(i) << " == " << str(beq(this->y.at(i))) << endl;
+        stream << this->y.at(i) << " == " << str(this->ydef.at(i)) << endl;
       stream << endl;
     }
 
@@ -666,22 +572,6 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->path.isEmpty()) {
-      stream << "Path constraints" << endl;
-      for (int i=0; i<this->path.nnz(); ++i)
-        stream << str(max(this->path.at(i))) << " <= "
-               << this->path.at(i) << " <= " << str(max(this->path.at(i))) << endl;
-      stream << endl;
-    }
-
-    if (!this->point.isEmpty()) {
-      stream << "Point constraints" << endl;
-      for (int i=0; i<this->point.nnz(); ++i)
-        stream << str(max(this->point.at(i))) << " <= "
-               << this->point.at(i) << " <= " << str(max(this->point.at(i))) << endl;
-      stream << endl;
-    }
-
     // Constraint functions
     stream << "Time horizon" << endl;
     stream << "t0 = " << this->t0 << endl;
@@ -690,7 +580,7 @@ namespace casadi {
     if (trailing_newline) stream << endl;
   }
 
-  void SymbolicOCP::eliminateLagrangeTerms() {
+  void SymbolicOCP::eliminate_lterm() {
     // Index for the names
     int ind = 0;
     // For every integral term in the objective function
@@ -701,8 +591,7 @@ namespace casadi {
       q_name << "q_" << ind++;
 
       // Create a new quadrature state
-      Variable qv;
-      qv.setName(q_name.str());
+      Variable qv(q_name.str());
 
       // Set attributes
       qv.variability = CONTINUOUS;
@@ -717,7 +606,7 @@ namespace casadi {
       this->q.append(qv.v);
 
       // Add the Lagrange term to the list of quadratures
-      setOde(qv.v, *it);
+      this->quad.append(qv.v);
 
       // Add to the list of Mayer terms
       this->mterm.append(qv.v);
@@ -727,7 +616,7 @@ namespace casadi {
     this->lterm.clear();
   }
 
-  void SymbolicOCP::eliminateQuadratureStates() {
+  void SymbolicOCP::eliminate_quad() {
     // Move all the quadratures to the list of differential states
     this->x.append(this->q);
     this->q = SX::zeros(0, 1);
@@ -740,19 +629,15 @@ namespace casadi {
       if (it->second.nominal!=1) {
         Variable& v=it->second;
         casadi_assert(v.nominal!=0);
-        v.beq *= v.nominal;
-        v.ode /= v.nominal;
         v.min /= v.nominal;
         v.max /= v.nominal;
         v.start /= v.nominal;
         v.derivativeStart /= v.nominal;
         v.initialGuess /= v.nominal;
         v_id.push_back(v.v);
-        v_rep.push_back(v.beq);
         v_id.push_back(v.d);
+        v_rep.push_back(v.v * v.nominal);
         v_rep.push_back(v.d * v.nominal);
-        ex_rep.push_back(v.ode);
-        ex_rep.push_back(v.beq);
       }
     }
 
@@ -761,10 +646,13 @@ namespace casadi {
 
     // Collect all expressions to be replaced
     vector<SX> ex;
-    ex.push_back(ex_rep);
+    ex.push_back(this->ode);
     ex.push_back(this->dae);
     ex.push_back(this->alg);
-    ex.push_back(this->initial);
+    ex.push_back(this->quad);
+    ex.push_back(this->idef);
+    ex.push_back(this->ydef);
+    ex.push_back(this->init);
     ex.push_back(this->mterm);
     ex.push_back(this->lterm);
 
@@ -773,10 +661,13 @@ namespace casadi {
 
     // Get the modified expressions
     vector<SX>::const_iterator it=ex.begin();
-    ex_rep = (*it++).data();
+    this->ode = *it++ / nominal(this->x);
     this->dae = *it++;
     this->alg = *it++;
-    this->initial = *it++;
+    this->quad = *it++ / nominal(this->q);
+    this->idef = *it++ / nominal(this->i);
+    this->ydef = *it++ / nominal(this->y);
+    this->init = *it++;
     this->mterm = *it++;
     this->lterm = *it++;
     casadi_assert(it==ex.end());
@@ -784,52 +675,17 @@ namespace casadi {
     // Save the substituted expressions
     vector<SXElement>::iterator ex_rep_it = ex_rep.begin();
     for (VarMap::iterator it=varmap_.begin(); it!=varmap_.end(); ++it) {
-      Variable& v=it->second;
-      if (v.nominal!=1) {
-        v.ode = *ex_rep_it++;
-        v.beq = *ex_rep_it++;
-        v.nominal=1;
-      }
+      it->second.nominal=1;
     }
     casadi_assert(ex_rep_it==ex_rep.end());
   }
 
-  void SymbolicOCP::eliminateIndependentParameters() {
-    // Collect all expressions to be replaced
-    vector<SX> ex;
-    ex.push_back(this->dae);
-    ex.push_back(ode(this->x));
-    ex.push_back(this->alg);
-    ex.push_back(ode(this->q));
-    ex.push_back(beq(this->y));
-    ex.push_back(this->initial);
-    ex.push_back(this->mterm);
-    ex.push_back(this->lterm);
-    ex.push_back(beq(this->pd));
+  void SymbolicOCP::sort_i() {
+    // Quick return if no intermediates
+    if (this->i.isEmpty()) return;
 
-    // Substitute all at once (since they may have common subexpressions)
-    ex = substitute(ex, vector<SX>(1, this->pi), vector<SX>(1, beq(this->pi)));
-
-    // Get the modified expressions
-    vector<SX>::const_iterator it=ex.begin();
-    this->dae = *it++;
-    setOde(this->x, *it++);
-    this->alg = *it++;
-    setOde(this->q, *it++);
-    setBeq(this->y, *it++);
-    this->initial = *it++;
-    this->mterm = *it++;
-    this->lterm = *it++;
-    setBeq(this->pd, *it++);
-    casadi_assert(it==ex.end());
-  }
-
-  void SymbolicOCP::sortDependentParameters() {
-    // Quick return if no dependent parameters
-    if (this->pd.isEmpty()) return;
-
-    // Find out which dependent parameter depends on which binding equation
-    SXFunction f(this->pd, this->pd - beq(this->pd));
+    // Find out which intermediates depends on which other
+    SXFunction f(this->i, this->i - this->idef);
     f.init();
     Sparsity sp = f.jacSparsity();
 
@@ -838,125 +694,53 @@ namespace casadi {
     sp.dulmageMendelsohn(rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock);
 
     // Permute variables
-    this->pd = this->pd(colperm);
+    this->i = this->i(colperm);
+    this->idef = this->idef(colperm);
   }
 
-  void SymbolicOCP::eliminateDependentParameterInterdependencies() {
-    // Quick return if no dependent parameters
-    if (this->pd.isEmpty()) return;
+  void SymbolicOCP::split_i() {
+    // Quick return if no intermediates
+    if (this->i.isEmpty()) return;
 
-    // Begin by sorting the parameters
-    sortDependentParameters();
+    // Begin by sorting the intermediate
+    sort_i();
 
     // Sort the equations by causality
-    SX pd_def = beq(this->pd);
-    substituteInPlace(this->pd, pd_def, false);
+    substituteInPlace(this->i, this->idef);
 
-    // Make sure that the dependent variables have been properly eliminated from the definitions
-    casadi_assert(!dependsOn(pd_def, this->pd));
-
-    // Save new binding equations
-    setBeq(this->pd, pd_def);
+    // Make sure that the interdependencies have been properly eliminated
+    casadi_assert(!dependsOn(this->idef, this->i));
   }
 
-  void SymbolicOCP::eliminateDependentParameters() {
-    // Quick return if no dependent parameters
-    if (this->pd.isEmpty()) return;
+  void SymbolicOCP::eliminate_i() {
+    // Quick return if possible
+    if (this->i.isEmpty()) return;
 
-    // Remove interdependencies
-    eliminateDependentParameterInterdependencies();
+    // Begin by sorting the intermediate
+    sort_i();
 
     // Collect all expressions to be replaced
     vector<SX> ex;
     ex.push_back(this->dae);
-    ex.push_back(ode(this->x));
+    ex.push_back(this->ode);
     ex.push_back(this->alg);
-    ex.push_back(ode(this->q));
-    ex.push_back(beq(this->y));
-    ex.push_back(this->initial);
+    ex.push_back(this->quad);
+    ex.push_back(this->ydef);
+    ex.push_back(this->init);
     ex.push_back(this->mterm);
     ex.push_back(this->lterm);
 
     // Substitute all at once (since they may have common subexpressions)
-    ex = substitute(ex, vector<SX>(1, this->pd), vector<SX>(1, beq(this->pd)));
+    substituteInPlace(this->i, this->idef, ex);
 
     // Get the modified expressions
     vector<SX>::const_iterator it=ex.begin();
     this->dae = *it++;
-    setOde(this->x, *it++);
+    this->ode = *it++;
     this->alg = *it++;
-    setOde(this->q, *it++);
-    setBeq(this->y, *it++);
-    this->initial = *it++;
-    this->mterm = *it++;
-    this->lterm = *it++;
-    casadi_assert(it==ex.end());
-  }
-
-  void SymbolicOCP::sortOutputs() {
-    // Quick return if no outputs
-    if (this->y.isEmpty()) return;
-
-    // Find out which dependent parameter depends on which binding equation
-    SXFunction f(this->y, this->y - beq(this->y));
-    f.init();
-    Sparsity sp = f.jacSparsity();
-
-    // BLT transformation
-    vector<int> rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock;
-    sp.dulmageMendelsohn(rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock);
-
-    // Permute variables
-    this->y = this->y(colperm);
-  }
-
-  void SymbolicOCP::eliminateOutputInterdependencies() {
-    // Quick return if no outputs
-    if (this->y.isEmpty()) return;
-
-    // Begin by sorting the outputs
-    sortOutputs();
-
-    // Sort the equations by causality
-    SX y_def = beq(this->y);
-    substituteInPlace(this->y, y_def, false);
-
-    // Make sure that the outputs have been properly eliminated from the output definitions
-    casadi_assert(!dependsOn(y_def, this->y));
-
-    // Save new binding equations
-    setBeq(this->y, y_def);
-  }
-
-  void SymbolicOCP::eliminateOutputs() {
-    // Quick return if no dependent parameters
-    if (this->y.isEmpty()) return;
-
-    // Remove interdependencies
-    eliminateOutputInterdependencies();
-
-    // Collect all expressions to be replaced
-    vector<SX> ex;
-    ex.push_back(this->dae);
-    ex.push_back(ode(this->x));
-    ex.push_back(this->alg);
-    ex.push_back(ode(this->q));
-    ex.push_back(beq(this->y));
-    ex.push_back(this->initial);
-    ex.push_back(this->mterm);
-    ex.push_back(this->lterm);
-
-    // Substitute all at once (since they may have common subexpressions)
-    ex = substitute(ex, vector<SX>(1, this->y), vector<SX>(1, beq(this->y)));
-
-    // Get the modified expressions
-    vector<SX>::const_iterator it=ex.begin();
-    this->dae = *it++;
-    setOde(this->x, *it++);
-    this->alg = *it++;
-    setOde(this->q, *it++);
-    setBeq(this->y, *it++);
-    this->initial = *it++;
+    this->quad = *it++;
+    this->ydef = *it++;
+    this->init = *it++;
     this->mterm = *it++;
     this->lterm = *it++;
     casadi_assert(it==ex.end());
@@ -969,24 +753,22 @@ namespace casadi {
     double time1 = clock();
 
     // Variables
-    enum Variables {T, X, XDOT, Z, PI, PF, U, NUM_VAR};
+    enum Variables {T, X, XDOT, Z, P, U, NUM_VAR};
     vector<SX > v(NUM_VAR); // all variables
     v[T] = this->t;
     v[X] = this->x;
     v[XDOT] = der(this->x); // BUG!!!
     v[Z] = this->z;
-    v[PI] = this->pi;
-    v[PF] = this->p;
+    v[P] = this->p;
     v[U] = this->u;
 
     // Create the jacobian of the implicit equations with respect to [x, z, p, u]
     SX xz;
     xz.append(v[X]);
     xz.append(v[Z]);
-    xz.append(v[PI]);
-    xz.append(v[PF]);
+    xz.append(v[P]);
     xz.append(v[U]);
-    SXFunction fcn = SXFunction(xz, ode(this->x));
+    SXFunction fcn = SXFunction(xz, this->ode);
     SXFunction J(v, fcn.jac());
 
     // Evaluate the Jacobian in the starting point
@@ -995,8 +777,7 @@ namespace casadi {
     J.setInput(start(this->x, true), X);
     J.input(XDOT).setAll(0.0);
     J.setInput(start(this->z, true), Z);
-    J.setInput(start(this->pi, true), PI);
-    J.setInput(start(this->p, true), PF);
+    J.setInput(start(this->p, true), P);
     J.setInput(start(this->u, true), U);
     J.evaluate();
 
@@ -1025,19 +806,19 @@ namespace casadi {
     }
 
     // Scale the equations
-    setOde(this->x, ode(this->x)/scale);
+    this->ode /= scale;
 
     double time2 = clock();
     double dt = (time2-time1)/CLOCKS_PER_SEC;
     cout << "... equation scaling complete after " << dt << " seconds." << endl;
   }
 
-  void SymbolicOCP::sortDAE() {
+  void SymbolicOCP::sort_dae() {
     // Quick return if no differential states
     if (this->x.isEmpty()) return;
 
     // Find out which differential equation depends on which differential state
-    SXFunction f(der(this->s), this->dae);
+    SXFunction f(this->sdot, this->dae);
     f.init();
     Sparsity sp = f.jacSparsity();
 
@@ -1050,9 +831,10 @@ namespace casadi {
 
     // Permute variables
     this->s = this->s(colperm);
+    this->sdot = this->sdot(colperm);
   }
 
-  void SymbolicOCP::sortALG() {
+  void SymbolicOCP::sort_alg() {
     // Quick return if no algebraic states
     if (this->z.isEmpty()) return;
 
@@ -1073,14 +855,17 @@ namespace casadi {
   }
 
   void SymbolicOCP::makeSemiExplicit() {
+    // Only works if there are no i
+    eliminate_i();
+
     // Separate the algebraic variables and equations
-    separateAlgebraic();
+    split_dae();
 
     // Quick return if there are no implicitly defined states
     if (this->s.isEmpty()) return;
 
     // Write the ODE as a function of the state derivatives
-    SXFunction f(der(this->s), this->dae);
+    SXFunction f(this->sdot, this->dae);
     f.init();
 
     // Get the sparsity of the Jacobian which can be used to determine which
@@ -1097,9 +882,10 @@ namespace casadi {
 
     // Permute variables
     this->s = this->s(colperm);
+    this->sdot = this->sdot(colperm);
 
     // Now write the sorted ODE as a function of the state derivatives
-    f = SXFunction(der(this->s), this->dae);
+    f = SXFunction(this->sdot, this->dae);
     f.init();
 
     // Get the Jacobian
@@ -1147,15 +933,18 @@ namespace casadi {
     }
 
     // Eliminate inter-dependencies
-    substituteInPlace(der(this->s), new_ode, false);
+    substituteInPlace(this->sdot, new_ode, false);
 
     // Add to explicit differential states and ODE
-    setOde(this->s, new_ode);
     this->x.append(this->s);
-    this->dae = this->s = SX::zeros(0, 1);
+    this->ode.append(new_ode);
+    this->dae = this->s = this->sdot = SX::zeros(0, 1);
   }
 
-  void SymbolicOCP::eliminateAlgebraic() {
+  void SymbolicOCP::eliminate_alg() {
+    // Only works if there are no i
+    eliminate_i();
+
     // Quick return if there are no algebraic states
     if (this->z.isEmpty()) return;
 
@@ -1242,23 +1031,26 @@ namespace casadi {
 
     // Add to the beginning of the dependent variables
     // (since the other dependent variable might depend on them)
-    this->y = vertcat(z_exp, this->y);
-    setBeq(z_exp, f_exp);
+    this->i = vertcat(z_exp, this->i);
+    this->idef = vertcat(f_exp, this->idef);
 
     // Save new algebraic equations
     this->z = z_imp;
     this->alg = f_imp;
 
     // Eliminate new dependent variables from the other equations
-    eliminateOutputs();
+    eliminate_i();
   }
 
   void SymbolicOCP::makeExplicit() {
+    // Only works if there are no i
+    eliminate_i();
+
     // Start by transforming to semi-explicit form
     makeSemiExplicit();
 
     // Then eliminate the algebraic variables
-    eliminateAlgebraic();
+    eliminate_alg();
 
     // Error if still algebraic variables
     casadi_assert_message(this->z.isEmpty(), "Failed to eliminate algebraic variables");
@@ -1283,12 +1075,98 @@ namespace casadi {
     // Try to find the component
     if (varmap_.find(name)!=varmap_.end()) {
       stringstream ss;
-      ss << "Variable \"" << name << "\" has already been added.";
-      throw CasadiException(ss.str());
+      casadi_error("Variable \"" << name << "\" has already been added.");
     }
 
     // Add to the map of all variables
     varmap_[name] = var;
+  }
+
+  SX SymbolicOCP::addVariable(const std::string& name) {
+    Variable v(name);
+    addVariable(name, v);
+    return v.v;
+  }
+
+  SX SymbolicOCP::add_x(const std::string& name) {
+    SX new_x = addVariable(name);
+    this->x.append(new_x);
+    return new_x;
+  }
+
+  std::pair<SX, SX> SymbolicOCP::add_s(const std::string& name) {
+    Variable v(name);
+    addVariable(name, v);
+    this->s.append(v.v);
+    this->sdot.append(v.d);
+    return std::pair<SX, SX>(v.v, v.d);
+  }
+
+  SX SymbolicOCP::add_z(const std::string& name) {
+    SX new_z = addVariable(name);
+    this->z.append(new_z);
+    return new_z;
+  }
+
+  SX SymbolicOCP::add_p(const std::string& name) {
+    SX new_p = addVariable(name);
+    this->p.append(new_p);
+    return new_p;
+  }
+
+  SX SymbolicOCP::add_u(const std::string& name) {
+    SX new_u = addVariable(name);
+    this->u.append(new_u);
+    return new_u;
+  }
+
+  void SymbolicOCP::add_ode(const SX& new_ode) {
+    this->ode.append(new_ode);
+  }
+
+  void SymbolicOCP::add_dae(const SX& new_dae) {
+    this->dae.append(new_dae);
+  }
+
+  void SymbolicOCP::add_alg(const SX& new_alg) {
+    this->alg.append(new_alg);
+  }
+
+  void SymbolicOCP::sanityCheck() const {
+    // Time
+    casadi_assert_message(this->t.isSymbolic(), "Non-symbolic time t");
+    casadi_assert_message(this->t.isScalar(), "Non-scalar time t");
+
+    // Differential states
+    casadi_assert_message(this->x.isSymbolic(), "Non-symbolic state x");
+    casadi_assert_message(this->x.shape()==this->ode.shape(), "ode has wrong dimensions");
+
+    // DAE
+    casadi_assert_message(this->s.isSymbolic(), "Non-symbolic state x");
+    casadi_assert_message(this->s.shape()==this->sdot.shape(), "sdot has wrong dimensions");
+    casadi_assert_message(this->s.shape()==this->dae.shape(), "dae has wrong dimensions");
+
+    // Algebraic variables/equations
+    casadi_assert_message(this->z.isSymbolic(), "Non-symbolic algebraic variable z");
+    casadi_assert_message(this->z.shape()==this->alg.shape(), "alg has wrong dimensions");
+
+    // Quadrature states/equations
+    casadi_assert_message(this->q.isSymbolic(), "Non-symbolic quadrature state q");
+    casadi_assert_message(this->q.shape()==this->quad.shape(), "quad has wrong dimensions");
+
+    // Intermediate variables
+    casadi_assert_message(this->i.isSymbolic(), "Non-symbolic intermediate variable i");
+    casadi_assert_message(this->i.shape()==this->idef.shape(), "idef has wrong dimensions");
+
+    // Output equations
+    casadi_assert_message(this->y.isSymbolic(), "Non-symbolic output y");
+    casadi_assert_message(this->y.shape()==this->ydef.shape(), "ydef has wrong dimensions");
+
+    // Control
+    casadi_assert_message(this->u.isSymbolic(), "Non-symbolic control u");
+
+    // Parameter
+    casadi_assert_message(this->p.isSymbolic(), "Non-symbolic parameter p");
   }
 
   std::string SymbolicOCP::qualifiedName(const XmlNode& nn) {
@@ -1402,48 +1280,47 @@ namespace casadi {
     datfile << endl;
 
     // Parameter properties
-    SX p = vertcat(this->pi, this->p);
-    if (!p.isEmpty()) {
+    if (!this->p.isEmpty()) {
       datfile << "*  global model parameter start values, scale factors, and bounds" << endl;
       datfile << "p" << endl;
       for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << start(p[k]) << endl;
+        datfile << k << ": " << start(this->p[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_sca" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << nominal(p[k]) << endl;
+      for (int k=0; k<this->p.nnz(); ++k) {
+        datfile << k << ": " << nominal(this->p[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_min" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << min(p[k]) << endl;
+      for (int k=0; k<this->p.nnz(); ++k) {
+        datfile << k << ": " << min(this->p[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_max" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << max(p[k]) << endl;
+      for (int k=0; k<this->p.nnz(); ++k) {
+        datfile << k << ": " << max(this->p[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_fix" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << (min(p[k])==max(p[k])) << endl;
+      for (int k=0; k<this->p.nnz(); ++k) {
+        datfile << k << ": " << (min(this->p[k])==max(this->p[k])) << endl;
       }
       datfile << endl;
 
       datfile << "p_name" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << p[k].getName() << endl;
+      for (int k=0; k<this->p.nnz(); ++k) {
+        datfile << k << ": " << this->p[k].getName() << endl;
       }
       datfile << endl;
 
       datfile << "p_unit" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << unit(p[k]) << endl;
+      for (int k=0; k<this->p.nnz(); ++k) {
+        datfile << k << ": " << unit(this->p[k]) << endl;
       }
       datfile << endl;
     }
@@ -1607,62 +1484,16 @@ namespace casadi {
     return ret;
   }
 
-  SX SymbolicOCP::beq(const std::string& name) const {
-    return variable(name).beq;
-  }
+  void SymbolicOCP::split_dae() {
+    // Only works if there are no i
+    eliminate_i();
 
-  SX SymbolicOCP::beq(const SX& var) const {
-    return attribute(&SymbolicOCP::beq, var);
-  }
-
-  void SymbolicOCP::setBeq(const std::string& name, const SX& val) {
-    variable(name).beq = val.toScalar();
-  }
-
-  void SymbolicOCP::setBeq(const SX& var, const SX& val) {
-    setAttribute(&SymbolicOCP::setBeq, var, val);
-  }
-
-  SX SymbolicOCP::ode(const std::string& name) const {
-    return variable(name).ode;
-  }
-
-  SX SymbolicOCP::ode(const SX& var) const {
-    casadi_assert(var.isVector() && var.isSymbolic());
-    SX ret = SX::zeros(var.sparsity());
-    for (int i=0; i<ret.nnz(); ++i) {
-      ret[i] = ode(var.at(i).getName());
-    }
-    return ret;
-  }
-
-  void SymbolicOCP::setOde(const std::string& name, const SX& val) {
-    variable(name).ode = val.toScalar();
-  }
-
-  void SymbolicOCP::setOde(const SX& var, const SX& val) {
-    casadi_assert(var.isVector() && var.isSymbolic());
-    casadi_assert(var.sparsity()==val.sparsity());
-    for (int i=0; i<var.nnz(); ++i) {
-      setOde(var.at(i).getName(), val.at(i));
-    }
-  }
-
-  SX SymbolicOCP::atTime(const std::string& name, double t, bool allocate) const {
-    return variable(name).atTime(t, allocate);
-  }
-
-  SX SymbolicOCP::atTime(const std::string& name, double t, bool allocate) {
-    return variable(name).atTime(t, allocate);
-  }
-
-  void SymbolicOCP::separateAlgebraic() {
     // Quick return if no s
     if (this->s.isEmpty()) return;
 
     // We investigate the interdependencies in sdot -> dae
     vector<SX> f_in;
-    f_in.push_back(der(this->s));
+    f_in.push_back(this->sdot);
     SXFunction f(f_in, this->dae);
     f.init();
 
@@ -1706,10 +1537,11 @@ namespace casadi {
     f.spEvaluate(false);
 
     // Get the new algebraic variables and new states
-    SX new_s, new_z;
+    SX new_s, new_sdot, new_z;
     for (int i=0; i<ns; ++i) {
       if (f_sdot[i]==bvec_t(1)) {
         new_s.append(this->s[i]);
+        new_sdot.append(this->sdot[i]);
       } else {
         casadi_assert(f_sdot[i]==bvec_t(0));
         new_z.append(this->s[i]);
@@ -1722,6 +1554,7 @@ namespace casadi {
     // Divide up the s and dae
     this->dae = new_dae;
     this->s = new_s;
+    this->sdot = new_sdot;
     this->alg.append(new_alg);
     this->z.append(new_z);
   }
@@ -1816,52 +1649,59 @@ namespace casadi {
     }
   }
 
-  SX SymbolicOCP::min(const std::string& name) const {
-    return variable(name).min;
+  double SymbolicOCP::min(const std::string& name, bool normalized) const {
+    const Variable& v = variable(name);
+    return normalized ? v.min / v.nominal : v.min;
   }
 
-  SX SymbolicOCP::min(const SX& var) const {
-    return attribute(&SymbolicOCP::min, var);
+  std::vector<double> SymbolicOCP::min(const SX& var, bool normalized) const {
+    return attribute(&SymbolicOCP::min, var, normalized);
   }
 
-  void SymbolicOCP::setMin(const std::string& name, const SX& val) {
-    variable(name).min = val.toScalar();
+  void SymbolicOCP::setMin(const std::string& name, double val, bool normalized) {
+    Variable& v = variable(name);
+    v.min = normalized ? val*v.nominal : val;
   }
 
-  void SymbolicOCP::setMin(const SX& var, const SX& val) {
-    setAttribute(&SymbolicOCP::setMin, var, val);
+  void SymbolicOCP::setMin(const SX& var, const std::vector<double>& val, bool normalized) {
+    setAttribute(&SymbolicOCP::setMin, var, val, normalized);
   }
 
-  SX SymbolicOCP::max(const std::string& name) const {
-    return variable(name).max;
+  double SymbolicOCP::max(const std::string& name, bool normalized) const {
+    const Variable& v = variable(name);
+    return normalized ? v.max / v.nominal : v.max;
   }
 
-  SX SymbolicOCP::max(const SX& var) const {
-    return attribute(&SymbolicOCP::max, var);
+  std::vector<double> SymbolicOCP::max(const SX& var, bool normalized) const {
+    return attribute(&SymbolicOCP::max, var, normalized);
   }
 
-  void SymbolicOCP::setMax(const std::string& name, const SX& val) {
-    variable(name).max = val.toScalar();
+  void SymbolicOCP::setMax(const std::string& name, double val, bool normalized) {
+    Variable& v = variable(name);
+    v.max = normalized ? val*v.nominal : val;
   }
 
-  void SymbolicOCP::setMax(const SX& var, const SX& val) {
-    setAttribute(&SymbolicOCP::setMax, var, val);
+  void SymbolicOCP::setMax(const SX& var, const std::vector<double>& val, bool normalized) {
+    setAttribute(&SymbolicOCP::setMax, var, val, normalized);
   }
 
-  SX SymbolicOCP::initialGuess(const std::string& name) const {
-    return variable(name).initialGuess;
+  double SymbolicOCP::initialGuess(const std::string& name, bool normalized) const {
+    const Variable& v = variable(name);
+    return normalized ? v.initialGuess / v.nominal : v.initialGuess;
   }
 
-  SX SymbolicOCP::initialGuess(const SX& var) const {
-    return attribute(&SymbolicOCP::initialGuess, var);
+  std::vector<double> SymbolicOCP::initialGuess(const SX& var, bool normalized) const {
+    return attribute(&SymbolicOCP::initialGuess, var, normalized);
   }
 
-  void SymbolicOCP::setInitialGuess(const std::string& name, const SX& val) {
-    variable(name).initialGuess = val.toScalar();
+  void SymbolicOCP::setInitialGuess(const std::string& name, double val, bool normalized) {
+    Variable& v = variable(name);
+    v.initialGuess = normalized ? val*v.nominal : val;
   }
 
-  void SymbolicOCP::setInitialGuess(const SX& var, const SX& val) {
-    setAttribute(&SymbolicOCP::setInitialGuess, var, val);
+  void SymbolicOCP::setInitialGuess(const SX& var, const std::vector<double>& val,
+                                    bool normalized) {
+    setAttribute(&SymbolicOCP::setInitialGuess, var, val, normalized);
   }
 
   double SymbolicOCP::start(const std::string& name, bool normalized) const {
@@ -1899,6 +1739,323 @@ namespace casadi {
   void SymbolicOCP::setDerivativeStart(const SX& var, const std::vector<double>& val,
                                        bool normalized) {
     setAttribute(&SymbolicOCP::setDerivativeStart, var, val, normalized);
+  }
+
+  void SymbolicOCP::generateFunctionHeader(std::ostream &stream, const std::string& fname,
+                                           bool fwd, bool adj, bool foa) {
+    stream << "void " << fname << "_nwork(int *ni, int *nr);" << endl;
+    stream << "int " << fname
+           << "(const double* const* arg, double* const* res, int* iw, double* w);" << endl;
+
+    // Codegen derivative information
+    if (fwd) generateFunctionHeader(stream, fname+"_fwd");
+    if (adj) generateFunctionHeader(stream, fname+"_adj");
+    if (foa) generateFunctionHeader(stream, fname+"_foa");
+  }
+
+  void SymbolicOCP::generateHeader(const std::string& filename, const std::string& prefix) {
+    // Create header file
+    ofstream s;
+    s.open(filename.c_str());
+
+    // Print header
+    s << "/* This file was automatically generated by CasADi */" << endl << endl;
+
+    // Include guards
+    s << "#ifndef " << prefix << "OCP_HEADER_FILE" << endl;
+    s << "#define "<< prefix << "OCP_HEADER_FILE" << endl << endl;
+
+    // C linkage
+    s << "#ifdef __cplusplus" << endl;
+    s << "extern \"C\" {" << endl;
+    s << "#endif" << endl << endl;
+
+    // Typedef input enum corresponding to generated format
+    s << "/* Input convension */" << endl;
+    s << "typedef enum {"
+      << "OCP_T, "
+      << "OCP_X, "
+      << "OCP_S, "
+      << "OCP_SDOT, "
+      << "OCP_Z, "
+      << "OCP_U, "
+      << "OCP_Q, "
+      << "OCP_I, "
+      << "OCP_Y, "
+      << "OCP_P, "
+      << "OCP_NUM_IN} " << prefix << "ocp_input_t;" << endl << endl;
+
+    // Typedef input enum corresponding to generated format
+    s << "/* Output convension */" << endl;
+    s << "typedef enum {"
+      << "OCP_ODE, "
+      << "OCP_DAE, "
+      << "OCP_ALG, "
+      << "OCP_QUAD, "
+      << "OCP_IDEF, "
+      << "OCP_YDEF, "
+      << "OCP_NUM_OUT} " << prefix << "ocp_output_t;" << endl << endl;
+
+    // Input dimensions and offset
+    s << "/* Input dimensions and offsets */" << endl
+      << "void " << prefix
+      << "input_dims(const int **dims, const int **offset, const int **inv_offset);" << endl
+      << endl;
+
+    // Output dimensions and offset
+    s << "/* Output dimensions and offsets */" << endl
+      << "void " << prefix
+      << "output_dims(const int **dims, const int **offset, const int **inv_offset);" << endl
+      << endl;
+
+    s << "/* Function declarations */" << endl;
+    generateFunctionHeader(s, prefix+"eval_ode");
+    generateFunctionHeader(s, prefix+"eval_dae");
+    generateFunctionHeader(s, prefix+"eval_alg");
+    generateFunctionHeader(s, prefix+"eval_quad");
+    generateFunctionHeader(s, prefix+"eval_idef");
+    generateFunctionHeader(s, prefix+"eval_ydef");
+    generateFunctionHeader(s, prefix+"eval", true, true, true);
+    s << endl;
+
+    s << "/* Jacobian of all outputs w.r.t. all inputs */" << endl;
+    generateFunctionHeader(s, prefix+"eval_jac");
+    s << "void " << prefix <<
+      "jac_sparsity(int *nrow, int *ncol, const int **colind, const int **row);" << endl;
+    s << endl;
+
+    s << "/* Hessian of all outputs w.r.t. all inputs */" << endl;
+    generateFunctionHeader(s, prefix+"eval_hes");
+    s << "void " << prefix <<
+      "hes_sparsity(int *nrow, int *ncol, const int **colind, const int **row);" << endl;
+    s << endl;
+
+    // C linkage
+    s << "#ifdef __cplusplus" << endl;
+    s << "} /* extern \"C\" */" << endl;
+    s << "#endif" << endl << endl;
+
+    // Include guards
+    s << "#endif /* " << prefix << "OCP_HEADER_FILE */" << endl << endl;
+
+    s.close();
+  }
+
+  void SymbolicOCP::generateFunction(std::ostream &stream, const std::string& fname,
+                                     const std::vector<SX>& f_in,
+                                     const std::vector<SX>& f_out,
+                                     CodeGenerator& gen,
+                                     bool fwd, bool adj, bool foa) {
+    SXFunction f(f_in, f_out);
+    f.setOption("name", fname);
+    f.init();
+    f.generateFunction(stream, fname, "double", gen);
+
+    // No work vector needed for now (SXFunction)
+    stream << "void " << fname << "_nwork(int *ni, int *nr) {" << endl;
+    stream << "  if (ni) *ni = 0;" << endl;
+    stream << "  if (nr) *nr = 0;" << endl;
+    stream << "}" << endl << endl;
+
+    // Forward mode directional derivative
+    if (fwd) {
+      SXFunction f_fwd = shared_cast<SXFunction>(f.derForward(1));
+      generateFunction(stream, fname+"_fwd",
+                       f_fwd.inputExpr(), f_fwd.outputExpr(), gen);
+    }
+
+    // Reverse mode mode directional derivative
+    if (adj || foa) {
+      SXFunction f_adj = shared_cast<SXFunction>(f.derReverse(1));
+      if (adj) {
+        generateFunction(stream, fname+"_adj",
+                         f_adj.inputExpr(), f_adj.outputExpr(), gen);
+      }
+      // Forward-over-reverse mode directional derivative
+      if (foa) {
+        SXFunction f_foa = shared_cast<SXFunction>(f_adj.derForward(1));
+        generateFunction(stream, fname+"_foa",
+                         f_foa.inputExpr(), f_foa.outputExpr(), gen);
+      }
+    }
+  }
+
+  void SymbolicOCP::generateCode(const std::string& filename,
+                                 const Dictionary& options) {
+    // Default options
+    string prefix = "";
+    string include = "";
+
+    // Read options
+    for (Dictionary::const_iterator it=options.begin(); it!=options.end(); ++it) {
+      if (it->first=="prefix") {
+        prefix = it->second.toString();
+      } else if (it->first=="include") {
+        include = it->second.toString();
+      } else {
+        casadi_error("Unrecongnized option: " << it->first);
+      }
+    }
+
+    // Create file
+    ofstream s;
+    s.open(filename.c_str());
+    s.precision(std::numeric_limits<double>::digits10+2);
+    s << std::scientific;
+
+    // Print header
+    s << "/* This file was automatically generated by CasADi */" << endl << endl;
+
+    // C linkage
+    s << "#ifdef __cplusplus" << endl;
+    s << "extern \"C\" {" << endl;
+    s << "#endif" << endl << endl;
+
+    // Create a code generator object
+    CodeGenerator gen;
+    if (!include.empty()) {
+      gen.addInclude(include, true);
+    }
+
+    // All inputs
+    vector<SX> v_in;
+    v_in.push_back(this->t);
+    v_in.push_back(this->x);
+    v_in.push_back(this->s);
+    v_in.push_back(this->sdot);
+    v_in.push_back(this->z);
+    v_in.push_back(this->u);
+    v_in.push_back(this->q);
+    v_in.push_back(this->i);
+    v_in.push_back(this->y);
+    v_in.push_back(this->p);
+
+    // Input dimensions
+    vector<int> dims(v_in.size());
+    for (int i=0; i<v_in.size(); ++i) {
+      dims[i] = v_in[i].nnz();
+    }
+    int dims_ind = gen.getConstant(dims, true);
+
+    // Corresponding offsets
+    dims.insert(dims.begin(), 0);
+    vector<int> inv_offset;
+    for (int i=0; i<v_in.size(); ++i) {
+      dims[i+1] += dims[i]; // cumsum
+      inv_offset.resize(dims[i+1], i);
+    }
+    int offset_ind = gen.getConstant(dims, true);
+    int inv_offset_ind = gen.getConstant(inv_offset, true);
+    gen.function_
+      << "void " << prefix
+      << "input_dims(const int **dims, const int **offset, const int **inv_offset) {" << endl
+      << "  if (dims) *dims = s" << dims_ind << ";" << endl
+      << "  if (offset) *offset = s" << offset_ind << ";" << endl
+      << "  if (inv_offset) *inv_offset = s" << inv_offset_ind << ";" << endl
+      << "}" << endl << endl;
+
+    // All outputs
+    vector<SX> v_out;
+    v_out.push_back(this->ode);
+    v_out.push_back(this->dae);
+    v_out.push_back(this->alg);
+    v_out.push_back(this->quad);
+    v_out.push_back(this->idef);
+    v_out.push_back(this->ydef);
+
+    // Output dimensions
+    dims.resize(v_out.size());
+    for (int i=0; i<v_out.size(); ++i) {
+      dims[i] = v_out[i].nnz();
+    }
+    dims_ind = gen.getConstant(dims, true);
+
+    // Corresponding offsets
+    dims.insert(dims.begin(), 0);
+    inv_offset.clear();
+    for (int i=0; i<v_out.size(); ++i) {
+      dims[i+1] += dims[i]; // cumsum
+      inv_offset.resize(dims[i+1], i);
+    }
+    offset_ind = gen.getConstant(dims, true);
+    inv_offset_ind = gen.getConstant(inv_offset, true);
+    gen.function_
+      << "void " << prefix
+      << "output_dims(const int **dims, const int **offset, const int **inv_offset) {" << endl
+      << "  if (dims) *dims = s" << dims_ind << ";" << endl
+      << "  if (offset) *offset = s" << offset_ind << ";" << endl
+      << "  if (inv_offset) *inv_offset = s" << inv_offset_ind << ";" << endl
+      << "}" << endl << endl;
+
+    // Basic functions individually
+    generateFunction(gen.function_, prefix+"eval_ode", v_in, vector<SX>(1, this->ode), gen);
+    generateFunction(gen.function_, prefix+"eval_dae", v_in, vector<SX>(1, this->dae), gen);
+    generateFunction(gen.function_, prefix+"eval_alg", v_in, vector<SX>(1, this->alg), gen);
+    generateFunction(gen.function_, prefix+"eval_quad", v_in, vector<SX>(1, this->quad), gen);
+    generateFunction(gen.function_, prefix+"eval_idef", v_in, vector<SX>(1, this->quad), gen);
+    generateFunction(gen.function_, prefix+"eval_ydef", v_in, vector<SX>(1, this->quad), gen);
+
+    // All functions at once, with derivatives
+    generateFunction(gen.function_, prefix+"eval", v_in, v_out, gen, true, true, true);
+
+    // Jacobian of all input w.r.t. all outputs
+    SX v_in_all = vertcat(v_in);
+    SX v_out_all = vertcat(v_out);
+    SX J = jacobian(v_out_all, v_in_all);
+
+    // Codegen it
+    generateFunction(gen.function_, prefix+"eval_jac", v_in, vector<SX>(1, J), gen);
+    int Jsp_ind = gen.addSparsity(J.sparsity());
+    gen.function_
+      << "void " << prefix
+      << "jac_sparsity(int *nrow, int *ncol, const int **colind, const int **row) {" << endl
+      << "  const int *s = s" << Jsp_ind << ";" << endl
+      << "  if (nrow) *nrow = s[0];" << endl
+      << "  if (ncol) *ncol = s[1];" << endl
+      << "  if (colind) *colind = s+2;" << endl
+      << "  if (row) *row = s+2+s[1]+1;" << endl
+      << "}" << endl << endl;
+
+    // Introduce lagrange multipliers
+    vector<SX> lam;
+    lam.push_back(SX::sym("lam_ode", this->ode.sparsity()));
+    lam.push_back(SX::sym("lam_dae", this->dae.sparsity()));
+    lam.push_back(SX::sym("lam_alg", this->alg.sparsity()));
+    lam.push_back(SX::sym("lam_quad", this->quad.sparsity()));
+    lam.push_back(SX::sym("lam_idef", this->idef.sparsity()));
+    lam.push_back(SX::sym("lam_ydef", this->ydef.sparsity()));
+
+    // Jacobian of all input w.r.t. all outputs
+    SX lam_all = vertcat(lam);
+    SX gamma = inner_prod(v_out_all, lam_all);
+    SX H = hessian(gamma, v_in_all);
+    H = triu(H); // Upper triangular half
+    v_in.insert(v_in.begin(), lam.begin(), lam.end());
+
+    // Codegen it
+    generateFunction(gen.function_, prefix+"eval_hes", v_in, vector<SX>(1, H), gen);
+    int Hsp_ind = gen.addSparsity(H.sparsity());
+    gen.function_
+      << "void " << prefix
+      << "hes_sparsity(int *nrow, int *ncol, const int **colind, const int **row) {" << endl
+      << "  const int *s = s" << Hsp_ind << ";" << endl
+      << "  if (nrow) *nrow = s[0];" << endl
+      << "  if (ncol) *ncol = s[1];" << endl
+      << "  if (colind) *colind = s+2;" << endl
+      << "  if (row) *row = s+2+s[1]+1;" << endl
+      << "}" << endl << endl;
+
+    // Flush the code generator
+    gen.flush(s);
+
+    // C linkage
+    s << "#ifdef __cplusplus" << endl;
+    s << "} /* extern \"C\" */" << endl;
+    s << "#endif" << endl;
+
+    // Finalize
+    s << endl;
+    s.close();
   }
 
 } // namespace casadi

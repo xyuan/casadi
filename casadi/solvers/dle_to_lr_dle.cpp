@@ -61,7 +61,7 @@ namespace casadi {
     // set default options
     setOption("name", "unnamed_lr_dle_to_dle"); // name of the function
 
-    Adaptor::addOptions();
+    Adaptor<DleToLrDle, LrDleInternal>::addOptions();
   }
 
   DleToLrDle::~DleToLrDle() {
@@ -87,12 +87,12 @@ namespace casadi {
                     dleOut("p", Pr[DLE_P]));
     f_.init();
 
-    Wrapper::checkDimensions();
+    Wrapper<DleToLrDle>::checkDimensions();
 
   }
 
   void DleToLrDle::evaluate() {
-    Wrapper::evaluate();
+    Wrapper<DleToLrDle>::evaluate();
   }
 
   Function DleToLrDle::getDerForward(int nfwd) {

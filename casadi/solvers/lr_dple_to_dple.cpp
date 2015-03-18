@@ -62,7 +62,7 @@ namespace casadi {
     // set default options
     setOption("name", "unnamed_lr_dple_to_dple"); // name of the function
 
-    Adaptor::addOptions();
+    Adaptor<LrDpleToDple, DpleInternal>::addOptions();
 
   }
 
@@ -123,13 +123,13 @@ namespace casadi {
                     lrdpleOut("y", horzcat(HPH)));
     f_.init();
 
-    Wrapper::checkDimensions();
+    Wrapper<LrDpleToDple>::checkDimensions();
   }
 
 
 
   void LrDpleToDple::evaluate() {
-    Wrapper::evaluate();
+    Wrapper<LrDpleToDple>::evaluate();
   }
 
   Function LrDpleToDple::getDerForward(int nfwd) {

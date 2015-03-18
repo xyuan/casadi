@@ -65,8 +65,8 @@ namespace casadi {
     /** \brief  Deep copy data members */
     virtual void deepCopyMembers(std::map<SharedObjectNode*, SharedObject>& already_copied);
 
-    /** \brief  Evaluate */
-    virtual void evaluate() = 0;
+    /** \brief  Evaluate using internal data structures */
+    virtual void evaluate();
 
     /** \brief  Obtain solver name from Adaptor */
     virtual std::string getAdaptorSolverName() const { return ""; }
@@ -91,6 +91,9 @@ namespace casadi {
 
     /** \brief  Reset the sparsity propagation */
     virtual void spInit(bool fwd) {}
+
+    /** \brief  Evaluate numerically, work vectors given */
+    virtual void evalD(const cpv_double& arg, const pv_double& res, int* itmp, double* rtmp);
 
     /** \brief  Evaluate symbolically, SXElement type, possibly nonmatching sparsity patterns */
     virtual void evalSX(const std::vector<SX>& arg, std::vector<SX>& res);
@@ -233,7 +236,6 @@ namespace casadi {
 
     /** \brief Generate code the function */
     virtual void generateFunction(std::ostream &stream, const std::string& fname,
-                                  const std::string& input_type, const std::string& output_type,
                                   const std::string& type, CodeGenerator& gen) const;
 
     /** \brief Generate code for the declarations of the C function */
@@ -358,7 +360,7 @@ namespace casadi {
     virtual void spAdj(const std::vector<bvec_t*>& arg,
                        const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp);
 
-    virtual void nTmp(MXNode* node, size_t& ni, size_t& nr);
+    virtual void nTmp(size_t& ni, size_t& nr);
     virtual void generate(std::ostream &stream, const std::vector<int>& arg,
                           const std::vector<int>& res, CodeGenerator& gen) const;
     virtual void printPart(const MXNode* node, std::ostream &stream, int part) const;
@@ -418,6 +420,12 @@ namespace casadi {
 
     /// Cache for Jacobians
     SparseStorage<WeakRef> jac_, jac_compact_;
+
+    /** \brief  Temporary vector needed for the evaluation (integer) */
+    std::vector<int> itmp_;
+
+    /** \brief  Temporary vector needed for the evaluation (real) */
+    std::vector<double> rtmp_;
 
     /// User-set field
     void* user_data_;
