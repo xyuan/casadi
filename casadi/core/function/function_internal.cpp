@@ -24,7 +24,7 @@
 
 
 #include "function_internal.hpp"
-#include "../mx/call_function.hpp"
+#include "../mx/casadi_call.hpp"
 #include <typeinfo>
 #include "../std_vector_tools.hpp"
 #include "mx_function.hpp"
@@ -1260,19 +1260,19 @@ namespace casadi {
     rtmp_.resize(nr);
 
     // Get pointers to input arguments
-    cpv_double arg(getNumInputs());
+    vector<cp_double> arg(getNumInputs());
     for (int i=0; i<arg.size(); ++i) arg[i]=input(i).ptr();
 
     // Get pointers to output arguments
-    pv_double res(getNumOutputs());
+    vector<p_double> res(getNumOutputs());
     for (int i=0; i<res.size(); ++i) res[i]=output(i).ptr();
 
     // Call memory-less
-    evalD(arg, res, getPtr(itmp_), getPtr(rtmp_));
+    evalD(getPtr(arg), getPtr(res), getPtr(itmp_), getPtr(rtmp_));
   }
 
-  void FunctionInternal::evalD(const cpv_double& arg,
-                               const pv_double& res, int* itmp, double* rtmp) {
+  void FunctionInternal::evalD(cp_double* arg,
+                               p_double* res, int* itmp, double* rtmp) {
     // Number of inputs and outputs
     int num_in = getNumInputs();
     int num_out = getNumOutputs();
@@ -1295,8 +1295,75 @@ namespace casadi {
     }
   }
 
+  void FunctionInternal::evalSX(cp_SXElement* arg, p_SXElement* res,
+                                int* itmp, SXElement* rtmp) {
+    // Number of inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
+
+    // Create input arguments
+    vector<SX> argv(num_in);
+    for (int i=0; i<num_in; ++i) {
+      argv[i] = SX::zeros(input(i).sparsity());
+      if (arg[i] != 0) {
+        std::copy(arg[i], arg[i]+argv[i].nnz(), argv[i].begin());
+      }
+    }
+
+    // Evaluate symbolically
+    vector<SX> resv;
+    evalSX(argv, resv);
+
+    // Collect the result
+    for (int i = 0; i < num_out; ++i) {
+      if (res[i] != 0) {
+        std::copy(resv[i].begin(), resv[i].end(), res[i]);
+      }
+    }
+  }
+
   void FunctionInternal::evalSX(const std::vector<SX>& arg, std::vector<SX>& res) {
-    casadi_error("FunctionInternal::evalSX not defined for class " << typeid(*this).name());
+    // Get the number of inputs and outputs
+    int num_in = getNumInputs();
+    int num_out = getNumOutputs();
+
+    // Check if matching input sparsity
+    bool matching_sparsity = true;
+    casadi_assert(arg.size()==num_in);
+    for (int i=0; matching_sparsity && i<num_in; ++i)
+      matching_sparsity = arg[i].sparsity()==input(i).sparsity();
+
+    // Correct input sparsity if needed
+    if (!matching_sparsity) {
+      vector<SX> arg2(arg);
+      for (int i=0; i<num_in; ++i)
+        if (arg2[i].sparsity()!=input(i).sparsity())
+          arg2[i] = arg2[i].setSparse(input(i).sparsity());
+      return evalSX(arg2, res);
+    }
+
+    // Allocate results
+    res.resize(num_out);
+    for (int i=0; i<num_out; ++i)
+      if (res[i].sparsity()!=output(i).sparsity())
+        res[i] = SX::zeros(output(i).sparsity());
+
+    // Allocate temporary memory if needed
+    size_t ni, nr;
+    nTmp(ni, nr);
+    itmp_.resize(ni);
+    vector<SXElement> rtmp(nr);
+
+    // Get pointers to input arguments
+    vector<cp_SXElement> argp(arg.size());
+    for (int i=0; i<argp.size(); ++i) argp[i]=getPtr(arg[i]);
+
+    // Get pointers to output arguments
+    vector<p_SXElement> resp(getNumOutputs());
+    for (int i=0; i<resp.size(); ++i) resp[i]=getPtr(res[i]);
+
+    // Call memory-less
+    evalSX(getPtr(argp), getPtr(resp), getPtr(itmp_), getPtr(rtmp));
   }
 
   void FunctionInternal::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
@@ -1306,48 +1373,32 @@ namespace casadi {
   }
 
   void FunctionInternal::spEvaluate(bool fwd) {
-    // By default, everything is assumed to depend on everything
+    // Allocate temporary memory if needed
+    size_t ni, nr;
+    nTmp(ni, nr);
+    itmp_.resize(ni);
+    rtmp_.resize(nr);
+    int *iw = getPtr(itmp_);
+    bvec_t *w = reinterpret_cast<bvec_t*>(getPtr(rtmp_));
 
-    // Variable which depends on all everything
-    bvec_t all_depend(0);
+    // Get pointers to output arguments
+    vector<p_bvec_t> res(getNumOutputs());
+    for (int i=0; i<res.size(); ++i) res[i]=reinterpret_cast<bvec_t*>(output(i).ptr());
+
     if (fwd) {
-      // Get dependency on all inputs
-      for (int iind=0; iind<getNumInputs(); ++iind) {
-        const DMatrix& m = inputNoCheck(iind);
-        const bvec_t* v = reinterpret_cast<const bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
-          all_depend |= v[i];
-        }
-      }
+      // Get pointers to input arguments
+      vector<cp_bvec_t> arg(getNumInputs());
+      for (int i=0; i<arg.size(); ++i) arg[i]=reinterpret_cast<const bvec_t*>(input(i).ptr());
 
-      // Propagate to all outputs
-      for (int oind=0; oind<getNumOutputs(); ++oind) {
-        DMatrix& m = outputNoCheck(oind);
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
-          v[i] = all_depend;
-        }
-      }
-
+      // Call memory-less
+      spFwd(getPtr(arg), getPtr(res), iw, w);
     } else {
+      // Get pointers to input arguments
+      vector<p_bvec_t> arg(getNumInputs());
+      for (int i=0; i<arg.size(); ++i) arg[i]=reinterpret_cast<bvec_t*>(input(i).ptr());
 
-      // Get dependency on all outputs
-      for (int oind=0; oind<getNumOutputs(); ++oind) {
-        const DMatrix& m = outputNoCheck(oind);
-        const bvec_t* v = reinterpret_cast<const bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
-          all_depend |= v[i];
-        }
-      }
-
-      // Propagate to all inputs
-      for (int iind=0; iind<getNumInputs(); ++iind) {
-        DMatrix& m = inputNoCheck(iind);
-        bvec_t* v = reinterpret_cast<bvec_t*>(m.ptr());
-        for (int i=0; i<m.nnz(); ++i) {
-          v[i] |= all_depend;
-        }
-      }
+      // Call memory-less
+      spAdj(getPtr(arg), getPtr(res), iw, w);
     }
   }
 
@@ -2041,6 +2092,10 @@ namespace casadi {
     // Add standard math
     gen.addInclude("math.h");
 
+    // Add auxiliaries. TODO: Only add the auxiliaries that are actually used
+    gen.addAuxiliary(CodeGenerator::AUX_SQ);
+    gen.addAuxiliary(CodeGenerator::AUX_SIGN);
+
     // Generate declarations
     generateDeclarations(stream, type, gen);
 
@@ -2214,11 +2269,17 @@ namespace casadi {
   }
 
   std::vector<MX> FunctionInternal::createCall(const std::vector<MX> &arg) {
-    return MX::createMultipleOutput(new CallFunction(shared_from_this<Function>(), arg));
+    return MX::createMultipleOutput(new Call(shared_from_this<Function>(), arg));
   }
 
-  void FunctionInternal::spFwd(const std::vector<const bvec_t*>& arg,
-                               const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp) {
+  void FunctionInternal::spFwdSwitch(cp_bvec_t* arg, p_bvec_t* res,
+                                     int* itmp, bvec_t* rtmp) {
+    // TODO(@jaeandersson) Calculate from full-Jacobian sparsity  when necessary or more efficient
+    spFwd(arg, res, itmp, rtmp);
+  }
+
+  void FunctionInternal::spFwd(cp_bvec_t* arg, p_bvec_t* res,
+                               int* itmp, bvec_t* rtmp) {
     // Number inputs and outputs
     int n_in = getNumInputs();
     int n_out = getNumOutputs();
@@ -2268,8 +2329,14 @@ namespace casadi {
     for (int i=0; i<n_out; ++i) output(i).set(0.);
   }
 
-  void FunctionInternal::spAdj(const std::vector<bvec_t*>& arg,
-                               const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp) {
+  void FunctionInternal::spAdjSwitch(p_bvec_t* arg, p_bvec_t* res,
+                                     int* itmp, bvec_t* rtmp) {
+    // TODO(@jaeandersson) Calculate from full-Jacobian sparsity  when necessary or more efficient
+    spAdj(arg, res, itmp, rtmp);
+  }
+
+  void FunctionInternal::spAdj(p_bvec_t* arg, p_bvec_t* res,
+                               int* itmp, bvec_t* rtmp) {
     // Number inputs and outputs
     int n_in = getNumInputs();
     int n_out = getNumOutputs();
@@ -2581,7 +2648,7 @@ namespace casadi {
     Function dfcn = derForward(nfwd);
 
     // Create the evaluation node
-    vector<MX> x = MX::createMultipleOutput(new CallFunction(dfcn, darg));
+    vector<MX> x = MX::createMultipleOutput(new Call(dfcn, darg));
     vector<MX>::iterator x_it = x.begin();
 
     // Retrieve sensitivities
@@ -2654,7 +2721,7 @@ namespace casadi {
     Function dfcn = derReverse(nadj);
 
     // Create the evaluation node
-    vector<MX> x = MX::createMultipleOutput(new CallFunction(dfcn, darg));
+    vector<MX> x = MX::createMultipleOutput(new Call(dfcn, darg));
     vector<MX>::iterator x_it = x.begin();
 
     // Retrieve sensitivities

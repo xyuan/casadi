@@ -68,9 +68,15 @@ namespace casadi {
     /// Create a solve node
     MX solve(const MX& A, const MX& B, bool transpose);
 
-    /// Evaluate MX, possibly transposed
-    virtual void evalSXLinsol(const cpv_SXElement& arg, const pv_SXElement& res,
+    /// Evaluate SX, possibly transposed
+    virtual void evalSXLinsol(cp_SXElement* arg, p_SXElement* res,
                               int* itmp, SXElement* rtmp, bool tr, int nrhs);
+
+    /// Evaluate SX
+    virtual void evalSX(cp_SXElement* arg, p_SXElement* res,
+                        int* itmp, SXElement* rtmp) {
+      evalSXLinsol(arg, res, itmp, rtmp, false, output(LINSOL_X).size2());
+    }
 
     /** \brief Calculate forward mode directional derivatives */
     virtual void callForwardLinsol(const std::vector<MX>& arg, const std::vector<MX>& res,
@@ -83,14 +89,12 @@ namespace casadi {
                                std::vector<std::vector<MX> >& asens, bool tr);
 
     /** \brief  Propagate sparsity forward */
-    virtual void spFwdLinsol(const std::vector<const bvec_t*>& arg,
-                             const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp,
-                             bool tr, int nrhs);
+    virtual void spFwdLinsol(cp_bvec_t* arg, p_bvec_t* res,
+                             int* itmp, bvec_t* rtmp, bool tr, int nrhs);
 
     /** \brief  Propagate sparsity backwards */
-    virtual void spAdjLinsol(const std::vector<bvec_t*>& arg,
-                             const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp,
-                             bool tr, int nrhs);
+    virtual void spAdjLinsol(p_bvec_t* arg, p_bvec_t* res,
+                             int* itmp, bvec_t* rtmp, bool tr, int nrhs);
 
     ///@{
     /// Propagate sparsity through a linear solve

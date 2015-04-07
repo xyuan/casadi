@@ -77,7 +77,7 @@ namespace casadi {
     virtual ~MXFunctionInternal();
 
     /** \brief  Evaluate numerically, work vectors given */
-    virtual void evalD(const cpv_double& arg, const pv_double& res, int* itmp, double* rtmp);
+    virtual void evalD(cp_double* arg, p_double* res, int* itmp, double* rtmp);
 
     /** \brief  Print description */
     virtual void print(std::ostream &stream) const;
@@ -101,7 +101,8 @@ namespace casadi {
     virtual Function getNumericJacobian(int iind, int oind, bool compact, bool symmetric);
 
     /** \brief Evaluate symbolically, SX type*/
-    virtual void evalSX(const std::vector<SX>& input, std::vector<SX>& output);
+    virtual void evalSX(cp_SXElement* arg, p_SXElement* res,
+                        int* itmp, SXElement* rtmp);
 
     /** \brief Evaluate symbolically, MX type */
     virtual void evalMX(const std::vector<MX>& input, std::vector<MX>& output);
@@ -123,8 +124,11 @@ namespace casadi {
     /// Get a vector of symbolic variables corresponding to the outputs
     virtual std::vector<MX> symbolicOutput(const std::vector<MX>& arg);
 
-    /// Propagate a sparsity pattern through the algorithm
-    virtual void spEvaluate(bool fwd);
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     /// Is the class able to propagate seeds through the algorithm?
     virtual bool spCanEvaluate(bool fwd) { return true;}

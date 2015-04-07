@@ -24,7 +24,6 @@
 
 
 #include "function_internal.hpp"
-#include "../mx/call_function.hpp"
 #include "../function/mx_function.hpp"
 #include <typeinfo>
 #include "../std_vector_tools.hpp"
@@ -98,7 +97,7 @@ namespace casadi {
     }
 
     // Create parallelizer object and initialize it
-    Parallelizer p(vector<Function>(x.size(), *this));
+    Parallelizer p(*this, x.size());
     p.setOption(paropt);
     p.init();
 
@@ -231,6 +230,18 @@ namespace casadi {
 
   void Function::spEvaluate(bool fwd) {
     (*this)->spEvaluate(fwd);
+  }
+
+  void Function::nTmp(size_t& ni, size_t& nr) {
+    (*this)->nTmp(ni, nr);
+  }
+
+  void Function::spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+    (*this)->spFwdSwitch(arg, res, itmp, rtmp);
+  }
+
+  void Function::spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+    (*this)->spAdjSwitch(arg, res, itmp, rtmp);
   }
 
   bool Function::spCanEvaluate(bool fwd) {

@@ -92,10 +92,11 @@ class CASADI_EXPORT SXFunctionInternal :
   virtual ~SXFunctionInternal();
 
   /** \brief  Evaluate numerically, work vectors given */
-  virtual void evalD(const cpv_double& arg, const pv_double& res, int* itmp, double* rtmp);
+  virtual void evalD(cp_double* arg, p_double* res, int* itmp, double* rtmp);
 
   /** \brief  evaluate symbolically while also propagating directional derivatives */
-  virtual void evalSX(const std::vector<SX>& arg, std::vector<SX>& res);
+  virtual void evalSX(cp_SXElement* arg, p_SXElement* res,
+                      int* itmp, SXElement* rtmp);
 
   /** \brief Calculate forward mode directional derivatives */
   virtual void evalFwd(const std::vector<std::vector<SX> >& fseed,
@@ -166,8 +167,11 @@ class CASADI_EXPORT SXFunctionInternal :
    * no symbolic evaluations are possible after this */
   void clearSymbolic();
 
-  /// Propagate a sparsity pattern through the algorithm
-  virtual void spEvaluate(bool fwd);
+  /** \brief  Propagate sparsity forward */
+  virtual void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
+
+  /** \brief  Propagate sparsity backwards */
+  virtual void spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
   /// Is the class able to propagate seeds through the algorithm?
   virtual bool spCanEvaluate(bool fwd) { return true;}

@@ -68,12 +68,12 @@ namespace casadi {
     }
   }
 
-  void Assertion::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
+  void Assertion::evalSX(cp_SXElement* input, p_SXElement* output,
                              int* itmp, SXElement* rtmp) {
     copy(input[0], input[0]+nnz(), output[0]);
   }
 
-  void Assertion::evalD(const cpv_double& input, const pv_double& output,
+  void Assertion::evalD(cp_double* input, p_double* output,
                             int* itmp, double* rtmp) {
     if (input[1][0]!=1) {
       casadi_error("Assertion error: " << fail_message_);
@@ -82,13 +82,13 @@ namespace casadi {
     copy(input[0], input[0]+nnz(), output[0]);
   }
 
-  void Assertion::spFwd(const cpv_bvec_t& arg,
-                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+  void Assertion::spFwd(cp_bvec_t* arg,
+                        p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     copy(arg[0], arg[0]+nnz(), res[0]);
   }
 
-  void Assertion::spAdj(const pv_bvec_t& arg,
-                        const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+  void Assertion::spAdj(p_bvec_t* arg,
+                        p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     bvec_t *a = arg[0];
     bvec_t *r = res[0];
     int n = nnz();

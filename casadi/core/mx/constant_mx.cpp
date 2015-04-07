@@ -40,11 +40,11 @@ namespace casadi {
   ConstantMX::~ConstantMX() {
   }
 
-  void ConstantMX::evalD(const cpv_double& input, const pv_double& output,
+  void ConstantMX::evalD(cp_double* input, p_double* output,
                              int* itmp, double* rtmp) {
   }
 
-  void ConstantMX::evalSX(const cpv_SXElement& input, const pv_SXElement& output,
+  void ConstantMX::evalSX(cp_SXElement* input, p_SXElement* output,
                               int* itmp, SXElement* rtmp) {
   }
 
@@ -69,13 +69,13 @@ namespace casadi {
     }
   }
 
-  void ConstantMX::spFwd(const cpv_bvec_t& arg,
-                         const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+  void ConstantMX::spFwd(cp_bvec_t* arg,
+                         p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     fill_n(res[0], nnz(), 0);
   }
 
-  void ConstantMX::spAdj(const pv_bvec_t& arg,
-                         const pv_bvec_t& res, int* itmp, bvec_t* rtmp) {
+  void ConstantMX::spAdj(p_bvec_t* arg,
+                         p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     fill_n(res[0], nnz(), 0);
   }
 

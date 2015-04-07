@@ -100,7 +100,7 @@ namespace casadi {
 #endif // WITH_OPENCL
   }
 
-  void SXFunctionInternal::evalD(const cpv_double& arg, const pv_double& res,
+  void SXFunctionInternal::evalD(cp_double* arg, p_double* res,
                                  int* itmp, double* rtmp) {
     double time_start=0;
     double time_stop=0;
@@ -135,17 +135,13 @@ namespace casadi {
     // Evaluate the algorithm
     for (vector<AlgEl>::iterator it=algorithm_.begin(); it!=algorithm_.end(); ++it) {
       switch (it->op) {
-        // Start by adding all of the built operations
         CASADI_MATH_FUN_BUILTIN(rtmp[it->i1], rtmp[it->i2], rtmp[it->i0])
 
-        // Constant
-        case OP_CONST: rtmp[it->i0] = it->d; break;
-
-        // Load function input to work vector
-        case OP_INPUT: rtmp[it->i0] = arg[it->i1][it->i2]; break;
-
-        // Get function output from work vector
-        case OP_OUTPUT: if (res[it->i0]) res[it->i0][it->i2] = rtmp[it->i1]; break;
+      case OP_CONST: rtmp[it->i0] = it->d; break;
+      case OP_INPUT: rtmp[it->i0] = arg[it->i1]==0 ? 0 : arg[it->i1][it->i2]; break;
+      case OP_OUTPUT: if (res[it->i0]!=0) res[it->i0][it->i2] = rtmp[it->i1]; break;
+      default:
+        casadi_error("SXFunctionInternal::evalD: Unknown operation" << it->op);
       }
     }
 
@@ -256,10 +252,6 @@ namespace casadi {
       casadi_error("Code generation is not possible since variables "
                    << free_vars_ << " are free.");
     }
-
-    // Add auxiliaries. TODO: Only add the auxiliaries that are actually used
-    gen.addAuxiliary(CodeGenerator::AUX_SQ);
-    gen.addAuxiliary(CodeGenerator::AUX_SIGN);
   }
 
   void SXFunctionInternal::generateBody(std::ostream &stream, const std::string& type,
@@ -624,42 +616,9 @@ namespace casadi {
     }
   }
 
-  void SXFunctionInternal::evalSX(const vector<SX>& arg, vector<SX>& res) {
+  void SXFunctionInternal::evalSX(cp_SXElement* arg, p_SXElement* res,
+                                  int* itmp, SXElement* rtmp) {
     if (verbose()) cout << "SXFunctionInternal::evalSXsparse begin" << endl;
-
-    // Get the number of inputs and outputs
-    int num_in = getNumInputs();
-    int num_out = getNumOutputs();
-
-    // Make sure matching sparsity of fseed
-    bool matching_sparsity = true;
-    casadi_assert(arg.size()==num_in);
-    for (int i=0; matching_sparsity && i<num_in; ++i)
-      matching_sparsity = arg[i].sparsity()==input(i).sparsity();
-
-    // Correct sparsity if needed
-    if (!matching_sparsity) {
-      vector<SX> arg2(arg);
-      for (int i=0; i<num_in; ++i)
-        if (arg2[i].sparsity()!=input(i).sparsity())
-          arg2[i] = arg2[i].setSparse(input(i).sparsity());
-      return evalSX(arg2, res);
-    }
-
-    // Allocate results
-    res.resize(num_out);
-    for (int i=0; i<num_out; ++i)
-      if (res[i].sparsity()!=output(i).sparsity())
-        res[i] = SX::zeros(output(i).sparsity());
-
-    // Copy output if known
-    bool output_given = isInput(arg);
-    if (output_given) {
-      for (int i=0; i<res.size(); ++i) {
-        copy(outputv_[i].begin(), outputv_[i].end(), res[i].begin());
-      }
-      return;
-    }
 
     // Iterator to the binary operations
     vector<SXElement>::const_iterator b_it=operations_.begin();
@@ -675,35 +634,32 @@ namespace casadi {
     for (vector<AlgEl>::const_iterator it = algorithm_.begin(); it!=algorithm_.end(); ++it) {
       switch (it->op) {
       case OP_INPUT:
-        s_work_[it->i0] = arg[it->i1].data()[it->i2]; break;
+        rtmp[it->i0] = arg[it->i1]==0 ? 0 : arg[it->i1][it->i2];
+        break;
       case OP_OUTPUT:
-        res[it->i0].data()[it->i2] = s_work_[it->i1];
+        if (res[it->i0]!=0) res[it->i0][it->i2] = rtmp[it->i1];
         break;
       case OP_CONST:
-        s_work_[it->i0] = *c_it++;
+        rtmp[it->i0] = *c_it++;
         break;
       case OP_PARAMETER:
-        s_work_[it->i0] = *p_it++; break;
+        rtmp[it->i0] = *p_it++; break;
       default:
         {
           // Evaluate the function to a temporary value
           // (as it might overwrite the children in the work vector)
           SXElement f;
-          if (output_given) {
-            f = *b_it++;
-          } else {
-            switch (it->op) {
-              CASADI_MATH_FUN_BUILTIN(s_work_[it->i1], s_work_[it->i2], f)
-            }
-
-            // If this new expression is identical to the expression used
-            // to define the algorithm, then reuse
-            const int depth = 2; // NOTE: a higher depth could possibly give more savings
-            f.assignIfDuplicate(*b_it++, depth);
+          switch (it->op) {
+            CASADI_MATH_FUN_BUILTIN(rtmp[it->i1], rtmp[it->i2], f)
           }
 
+          // If this new expression is identical to the expression used
+          // to define the algorithm, then reuse
+          const int depth = 2; // NOTE: a higher depth could possibly give more savings
+          f.assignIfDuplicate(*b_it++, depth);
+
           // Finally save the function value
-          s_work_[it->i0] = f;
+          rtmp[it->i0] = f;
         }
       }
     }
@@ -933,60 +889,57 @@ namespace casadi {
     if (!fwd) fill_n(iwork, rtmp_.size(), bvec_t(0));
   }
 
-  void SXFunctionInternal::spEvaluate(bool fwd) {
-#ifdef WITH_OPENCL
-    if (just_in_time_sparsity_) {
-      // Evaluate with OpenCL
-      spEvaluateOpenCL(fwd);
-      return; // Quick return
-    }
-#endif // WITH_OPENCL
-
-    // Get work array
-    bvec_t *iwork = get_bvec_t(rtmp_);
-
-    if (fwd) {
-      // Propagate sparsity forward
-      for (vector<AlgEl>::iterator it=algorithm_.begin(); it!=algorithm_.end(); ++it) {
-        switch (it->op) {
-        case OP_CONST:
-        case OP_PARAMETER:
-          iwork[it->i0] = bvec_t(0); break;
-        case OP_INPUT:
-          iwork[it->i0] = reinterpret_cast<bvec_t*>(&inputNoCheck(it->i1).front())[it->i2]; break;
-        case OP_OUTPUT:
-          reinterpret_cast<bvec_t*>(&outputNoCheck(it->i0).front())[it->i2] = iwork[it->i1]; break;
-        default: // Unary or binary operation
-          iwork[it->i0] = iwork[it->i1] | iwork[it->i2]; break;
-        }
+  void SXFunctionInternal::spFwd(cp_bvec_t* arg, p_bvec_t* res,
+                                 int* itmp, bvec_t* rtmp) {
+    // Propagate sparsity forward
+    for (vector<AlgEl>::iterator it=algorithm_.begin(); it!=algorithm_.end(); ++it) {
+      switch (it->op) {
+      case OP_CONST:
+      case OP_PARAMETER:
+        rtmp[it->i0] = 0; break;
+      case OP_INPUT:
+        rtmp[it->i0] = arg[it->i1]==0 ? 0 : arg[it->i1][it->i2]; break;
+      case OP_OUTPUT:
+        if (res[it->i0]!=0) res[it->i0][it->i2] = rtmp[it->i1]; break;
+      default: // Unary or binary operation
+        rtmp[it->i0] = rtmp[it->i1] | rtmp[it->i2]; break;
       }
+    }
+  }
 
-    } else { // Backward propagation
+  void SXFunctionInternal::spAdj(p_bvec_t* arg, p_bvec_t* res,
+                                 int* itmp, bvec_t* rtmp) {
 
-      // Propagate sparsity backward
-      for (vector<AlgEl>::reverse_iterator it=algorithm_.rbegin(); it!=algorithm_.rend(); ++it) {
-        // Temp seed
-        bvec_t seed;
+    size_t ni, nr;
+    nTmp(ni, nr);
+    fill_n(rtmp, nr, 0);
 
-        // Propagate seeds
-        switch (it->op) {
-        case OP_CONST:
-        case OP_PARAMETER:
-          iwork[it->i0] = 0;
-          break;
-        case OP_INPUT:
-          reinterpret_cast<bvec_t*>(&inputNoCheck(it->i1).front())[it->i2] = iwork[it->i0];
-          iwork[it->i0] = 0;
-          break;
-        case OP_OUTPUT:
-          iwork[it->i1] |= reinterpret_cast<bvec_t*>(&outputNoCheck(it->i0).front())[it->i2];
-          break;
-        default: // Unary or binary operation
-          seed = iwork[it->i0];
-          iwork[it->i0] = 0;
-          iwork[it->i1] |= seed;
-          iwork[it->i2] |= seed;
+    // Propagate sparsity backward
+    for (vector<AlgEl>::reverse_iterator it=algorithm_.rbegin(); it!=algorithm_.rend(); ++it) {
+      // Temp seed
+      bvec_t seed;
+
+      // Propagate seeds
+      switch (it->op) {
+      case OP_CONST:
+      case OP_PARAMETER:
+        rtmp[it->i0] = 0;
+        break;
+      case OP_INPUT:
+        if (arg[it->i1]!=0) arg[it->i1][it->i2] |= rtmp[it->i0];
+        rtmp[it->i0] = 0;
+        break;
+      case OP_OUTPUT:
+        if (res[it->i0]!=0) {
+          rtmp[it->i1] |= res[it->i0][it->i2];
+          res[it->i0][it->i2] = 0;
         }
+        break;
+      default: // Unary or binary operation
+        seed = rtmp[it->i0];
+        rtmp[it->i0] = 0;
+        rtmp[it->i1] |= seed;
+        rtmp[it->i2] |= seed;
       }
     }
   }

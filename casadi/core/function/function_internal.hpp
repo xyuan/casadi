@@ -93,7 +93,11 @@ namespace casadi {
     virtual void spInit(bool fwd) {}
 
     /** \brief  Evaluate numerically, work vectors given */
-    virtual void evalD(const cpv_double& arg, const pv_double& res, int* itmp, double* rtmp);
+    virtual void evalD(cp_double* arg, p_double* res, int* itmp, double* rtmp);
+
+    /** \brief  Evaluate symbolically, SXElement type, possibly nonmatching sparsity patterns */
+    virtual void evalSX(cp_SXElement* arg, p_SXElement* res,
+                        int* itmp, SXElement* rtmp);
 
     /** \brief  Evaluate symbolically, SXElement type, possibly nonmatching sparsity patterns */
     virtual void evalSX(const std::vector<SX>& arg, std::vector<SX>& res);
@@ -353,12 +357,16 @@ namespace casadi {
     /// For documentation, see the MXNode class
     ///@{
     /** \brief  Propagate sparsity forward */
-    virtual void spFwd(const std::vector<const bvec_t*>& arg,
-                       const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp);
+    virtual void spFwdSwitch(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     /** \brief  Propagate sparsity backwards */
-    virtual void spAdj(const std::vector<bvec_t*>& arg,
-                       const std::vector<bvec_t*>& res, int* itmp, bvec_t* rtmp);
+    virtual void spAdjSwitch(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity forward */
+    virtual void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    virtual void spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     virtual void nTmp(size_t& ni, size_t& nr);
     virtual void generate(std::ostream &stream, const std::vector<int>& arg,

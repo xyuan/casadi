@@ -525,6 +525,17 @@ namespace casadi {
      * derivatives forward or backward (for usage, see the example propagating_sparsity.cpp) */
     void spEvaluate(bool fwd);
 
+#ifndef SWIG
+    /// Get number of temporary variables needed
+    void nTmp(size_t& ni, size_t& nr);
+
+    /** \brief  Propagate sparsity forward */
+    void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
+
+    /** \brief  Propagate sparsity backwards */
+    void spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
+#endif // SWIG
+
     /// \endcond
 
     /** \brief Add modules to be monitored */
