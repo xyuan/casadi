@@ -16,7 +16,7 @@ install:
   - cinst -y swig
   - set PATH=%PATH%;C:\MinGW\msys\1.0\bin;C:\MinGW\bin;C:\tools\MinGW\bin
   - mingw-get install gcc g++ msys-base 
-  - "%CMD_IN_ENV% pi pip install numpy"
+  - "%CMD_IN_ENV% pip install numpy"
   
 build_script:
   - mkdir build
