@@ -138,13 +138,15 @@ namespace casadi {
                         int* itmp, SXElement* rtmp);
 
     /** \brief  Evaluate symbolically (MX) */
-    virtual void eval(const cpv_MX& arg, const pv_MX& res);
+    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res);
 
     /** \brief Calculate forward mode directional derivatives */
-    virtual void evalFwd(const std::vector<cpv_MX>& fseed, const std::vector<pv_MX>& fsens);
+    virtual void evalFwd(const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens);
 
     /** \brief Calculate reverse mode directional derivatives */
-    virtual void evalAdj(const std::vector<pv_MX>& aseed, const std::vector<pv_MX>& fsens);
+    virtual void evalAdj(const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens);
 
     /** \brief  Propagate sparsity forward */
     virtual void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
@@ -154,6 +156,27 @@ namespace casadi {
 
     /** \brief  Get the name */
     virtual const std::string& getName() const;
+
+    /** \brief  Check if valid function input */
+    virtual bool isValidInput() const { return false;}
+
+    /** \brief Get the number of symbolic primitives */
+    virtual int numPrimitives() const;
+
+    /** \brief Get symbolic primitives */
+    virtual void getPrimitives(std::vector<MX>::iterator& it) const;
+
+    /** \brief Split up an expression along symbolic primitives */
+    virtual void splitPrimitives(const MX& x, std::vector<MX>::iterator& it) const;
+
+    /** \brief Join an expression along symbolic primitives */
+    virtual MX joinPrimitives(std::vector<MX>::const_iterator& it) const;
+
+    /** \brief Detect duplicate symbolic expressions */
+    virtual bool hasDuplicates();
+
+    /** \brief Reset the marker for an input expression */
+    virtual void resetInput();
 
     /** \brief  Check if evaluation output */
     virtual bool isOutputNode() const {return false;}
@@ -369,24 +392,6 @@ namespace casadi {
 
     /** \brief  The sparsity pattern */
     Sparsity sparsity_;
-
-    /// Convert vector of const MX pointers to vector of MX
-    static std::vector<MX> getVector(const cpv_MX& v, int len);
-
-    /// Convert vector of const MX pointers to vector of MX
-    static std::vector<MX> getVector(const pv_MX& v, int len);
-
-    /// Convert vector of vectors of pointers to vector of vectors of objects
-    static std::vector<std::vector<MX> > getVector(const std::vector<pv_MX>& v, int len);
-
-    /// Convert vector of vectors of pointers to vector of vectors of objects
-    static std::vector<std::vector<MX> > getVector(const std::vector<cpv_MX>& v, int len);
-
-    /** \brief Free adjoint memory (MX) */
-    static void clearVector(const pv_MX& v, int len);
-
-    /** \brief Free adjoint memory (MX) */
-    static void clearVector(const std::vector<pv_MX>& v, int len);
 
     /** \brief Propagate sparsities forward through a copy operation */
     static void copyFwd(const bvec_t* arg, bvec_t* res, int len);

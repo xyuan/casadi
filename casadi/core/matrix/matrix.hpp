@@ -779,10 +779,23 @@ namespace casadi {
     */
     bool isSymbolic() const;
 
-    /** \brief Check if symbolic
+    /** \brief Check if matrix can be used to define function inputs.
         Sparse matrices can return true if all non-zero elements are symbolic
     */
-    bool isSymbolicSparse() const;
+    bool isValidInput() const;
+
+    /// \cond INTERNAL
+    /** \brief Detect duplicate symbolic expressions
+        If there are symbolic primitives appearing more than once, the function will return
+        true and the names of the duplicate expressions will be printed to std::cerr.
+        Note: Will mark the node using SXElement::setTemp.
+        Make sure to call resetInput() after usage.
+    */
+    bool hasDuplicates();
+
+    /** \brief Reset the marker for an input expression */
+    void resetInput();
+  /// \endcond
 
     /** \brief Check if the matrix is constant (note that false negative answers are possible)*/
     bool isConstant() const;

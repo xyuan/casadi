@@ -913,19 +913,38 @@ namespace casadi {
   template<>
   bool SX::isSymbolic() const {
     if (isDense()) {
-      return isSymbolicSparse();
+      return isValidInput();
     } else {
       return false;
     }
   }
 
   template<>
-  bool SX::isSymbolicSparse() const {
+  bool SX::isValidInput() const {
     for (int k=0; k<nnz(); ++k) // loop over non-zero elements
       if (!at(k)->isSymbolic()) // if an element is not symbolic
         return false;
 
     return true;
+  }
+
+  template<> bool SX::hasDuplicates() {
+    bool has_duplicates = false;
+    for (vector<SXElement>::iterator it = begin(); it != end(); ++it) {
+      bool is_duplicate = it->getTemp()!=0;
+      if (is_duplicate) {
+        cerr << "Duplicate expression: " << *it << endl;
+      }
+      has_duplicates = has_duplicates || is_duplicate;
+      it->setTemp(1);
+    }
+    return has_duplicates;
+  }
+
+  template<> void SX::resetInput() {
+    for (vector<SXElement>::iterator it = begin(); it != end(); ++it) {
+      it->setTemp(0);
+    }
   }
 
   template<>

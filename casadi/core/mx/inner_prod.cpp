@@ -49,22 +49,23 @@ namespace casadi {
     }
   }
 
-  void InnerProd::eval(const cpv_MX& input, const pv_MX& output) {
-    *output[0] = (*input[0])->getInnerProd(*input[1]);
+  void InnerProd::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    res[0] = arg[0]->getInnerProd(arg[1]);
   }
 
-  void InnerProd::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
-    for (int d=0; d<fwdSens.size(); ++d) {
-      *fwdSens[d][0] = dep(0)->getInnerProd(*fwdSeed[d][1])
-        + (*fwdSeed[d][0])->getInnerProd(dep(1));
+  void InnerProd::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                          std::vector<std::vector<MX> >& fsens) {
+    for (int d=0; d<fsens.size(); ++d) {
+      fsens[d][0] = dep(0)->getInnerProd(fseed[d][1])
+        + fseed[d][0]->getInnerProd(dep(1));
     }
   }
 
-  void InnerProd::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
-    for (int d=0; d<adjSeed.size(); ++d) {
-      adjSens[d][0]->addToSum(*adjSeed[d][0] * dep(1));
-      adjSens[d][1]->addToSum(*adjSeed[d][0] * dep(0));
-      *adjSeed[d][0] = MX();
+  void InnerProd::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                          std::vector<std::vector<MX> >& asens) {
+    for (int d=0; d<aseed.size(); ++d) {
+      asens[d][0] += aseed[d][0] * dep(1);
+      asens[d][1] += aseed[d][0] * dep(0);
     }
   }
 
@@ -84,8 +85,7 @@ namespace casadi {
     *res[0] = casadi_dot(dep(0).nnz(), arg[0], 1, arg[1], 1);
   }
 
-  void InnerProd::spFwd(cp_bvec_t* arg,
-                        p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+  void InnerProd::spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     const bvec_t *a0=arg[0], *a1=arg[1];
     bvec_t* r = res[0];
     const int n = dep(0).nnz();
@@ -95,8 +95,7 @@ namespace casadi {
     }
   }
 
-  void InnerProd::spAdj(p_bvec_t* arg,
-                        p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+  void InnerProd::spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     bvec_t *a0=arg[0], *a1=arg[1], *r=res[0];
     const int n = dep(0).nnz();
     for (int i=0; i<n; ++i) {

@@ -205,9 +205,37 @@ namespace casadi {
     /// Check if norm
     bool isNorm() const;
 
-    /** \brief  check if all nonzeros are symbolic
-     * (this function is currently identical to isSymbolic) */
-    bool isSymbolicSparse() const;
+    /** \brief Check if matrix can be used to define function inputs.
+        Valid inputs for MXFunctions are combinations of Reshape, concatenations and SymbolicMX
+    */
+    bool isValidInput() const;
+
+    /** \brief Get the number of symbolic primitive
+        Assumes isValidInput() returns true.
+    */
+    int numPrimitives() const;
+
+    /** \brief Get symbolic primitives */
+    std::vector<MX> getPrimitives() const;
+
+    /** \brief Split up an expression along symbolic primitives */
+    std::vector<MX> splitPrimitives(const MX& x) const;
+
+    /** \brief Join an expression along symbolic primitives */
+    MX joinPrimitives(std::vector<MX>& v) const;
+
+    /// \cond INTERNAL
+    /** \brief Detect duplicate symbolic expressions
+        If there are symbolic primitives appearing more than once, the function will return
+        true and the names of the duplicate expressions will be printed to std::cerr.
+        Note: Will mark the node using MX::setTemp.
+        Make sure to call resetInput() after usage.
+    */
+    bool hasDuplicates();
+
+    /** \brief Reset the marker for an input expression */
+    void resetInput();
+  /// \endcond
 
     /** \brief  check if identity */
     bool isIdentity() const;
@@ -436,6 +464,8 @@ namespace casadi {
     MX zz_jacobian(const MX &arg) const;
     MX zz_gradient(const MX &arg) const;
     MX zz_tangent(const MX &arg) const;
+    MX zz_hessian(const MX &arg) const;
+    void zz_hessian(const MX &arg, MX &H, MX &g) const;
     MX zz_det() const;
     MX zz_inv() const;
     std::vector<MX> zz_getSymbols() const;
@@ -471,9 +501,6 @@ namespace casadi {
 
     /// Lift an expression
     void lift(const MX& x_guess);
-
-    /// Add an expression to the expression if the expression is non-empty, otherwise assign
-    void addToSum(const MX& x);
 
     /// Transpose the matrix
     MX T() const;

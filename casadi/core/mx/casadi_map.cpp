@@ -47,24 +47,9 @@ namespace casadi {
     for (vector<vector<MX> >::const_iterator j=arg.begin(); j!=arg.end(); ++j) {
       casadi_assert(j->size()==n_);
       for (int i=0; i<n_; ++i) {
-        if (j->at(i).shape()==fcn_.input(i).shape()) {
-          // Insert sparsity projection nodes if needed
-          all_arg.push_back(j->at(i).setSparse(fcn_.input(i).sparsity()));
-        } else {
-          // Different dimensions
-          if (j->at(i).isEmpty() || fcn_.input(i).isEmpty()) { // NOTE: To permissive?
-            // Replace nulls with zeros of the right dimension
-            all_arg.push_back(MX::zeros(fcn_.input(i).sparsity()));
-          } else if (j->at(i).isScalar()) {
-            // Scalar argument means set all
-            all_arg.push_back(MX(fcn_.input(i).sparsity(), j->at(i)));
-          } else {
-            // Mismatching dimensions
-            casadi_error("Cannot create map node: Dimension mismatch for argument "
-                         << i << ". Argument has shape " << j->at(i).shape()
-                         << " but function input is " << fcn_.input(i).shape());
-          }
-        }
+        casadi_assert(j->at(i).shape()==fcn_.input(i).shape());
+        // Insert sparsity projection nodes if needed
+        all_arg.push_back(j->at(i).setSparse(fcn_.input(i).sparsity()));
       }
     }
     casadi_assert(all_arg.size() == n_ * f_num_in);
@@ -120,6 +105,26 @@ namespace casadi {
 #endif // WITH_OPENMP
   }
 
+  void Map::spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+    int f_num_in = fcn_.getNumInputs();
+    int f_num_out = fcn_.getNumOutputs();
+    for (int i=0; i<n_; ++i) {
+      fcn_->spFwd(arg, res, itmp, rtmp);
+      arg += f_num_in;
+      res += f_num_out;
+    }
+  }
+
+  void Map::spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+    int f_num_in = fcn_.getNumInputs();
+    int f_num_out = fcn_.getNumOutputs();
+    for (int i=0; i<n_; ++i) {
+      fcn_->spAdj(arg, res, itmp, rtmp);
+      arg += f_num_in;
+      res += f_num_out;
+    }
+  }
+
   int Map::nout() const {
     int f_num_out = fcn_.getNumOutputs();
     return n_ * f_num_out;
@@ -141,6 +146,81 @@ namespace casadi {
       fcn_->evalSX(arg, res, itmp, rtmp);
       arg += f_num_in;
       res += f_num_out;
+    }
+  }
+
+  void Map::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    // Collect arguments
+    int f_num_in = fcn_.getNumInputs();
+    vector<vector<MX> > v(n_);
+    vector<MX>::const_iterator arg_it = arg.begin();
+    for (int i=0; i<n_; ++i) {
+      v[i] = vector<MX>(arg_it, arg_it+f_num_in);
+      arg_it += f_num_in;
+    }
+
+    // Call in parallel
+    v = fcn_.map(v, parallelization());
+
+    // Get results
+    int f_num_out = fcn_.getNumOutputs();
+    vector<MX>::iterator res_it = res.begin();
+    for (int i=0; i<n_; ++i) {
+      copy(v[i].begin(), v[i].end(), res_it);
+      res_it += f_num_out;
+    }
+  }
+
+  void Map::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                     std::vector<std::vector<MX> >& fsens) {
+    // Derivative function
+    int nfwd = fsens.size();
+    Function dfcn = fcn_.derForward(nfwd);
+
+    // Nondifferentiated inputs and outputs
+    vector<MX> arg(ndep());
+    for (int i=0; i<arg.size(); ++i) arg[i] = dep(i);
+    vector<MX> res(nout());
+    for (int i=0; i<res.size(); ++i) res[i] = getOutput(i);
+
+    // Collect arguments
+    vector<vector<MX> > v(n_);
+    for (int i=0; i<n_; ++i) {
+      v[i].insert(v[i].end(), arg.begin(), arg.end());
+      v[i].insert(v[i].end(), res.begin(), res.end());
+      v[i].insert(v[i].end(), fseed[i].begin(), fseed[i].end());
+    }
+
+    // Call the cached function
+    fsens = dfcn.map(v, parallelization());
+  }
+
+  void Map::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                     std::vector<std::vector<MX> >& asens) {
+    // Derivative function
+    int nadj = asens.size();
+    Function dfcn = fcn_.derReverse(nadj);
+
+    // Nondifferentiated inputs and outputs
+    vector<MX> arg(ndep());
+    for (int i=0; i<arg.size(); ++i) arg[i] = dep(i);
+    vector<MX> res(nout());
+    for (int i=0; i<res.size(); ++i) res[i] = getOutput(i);
+
+    // Collect arguments
+    vector<vector<MX> > v(n_);
+    for (int i=0; i<n_; ++i) {
+      v[i].insert(v[i].end(), arg.begin(), arg.end());
+      v[i].insert(v[i].end(), res.begin(), res.end());
+      v[i].insert(v[i].end(), aseed[i].begin(), aseed[i].end());
+    }
+
+    // Call the cached function
+    v = dfcn.map(v, parallelization());
+    for (int i=0; i<v.size(); ++i) {
+      for (int j=0; j<v[i].size(); ++j) {
+        asens[i][j] += v[i][j];
+      }
     }
   }
 

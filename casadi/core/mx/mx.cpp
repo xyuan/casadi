@@ -951,18 +951,45 @@ namespace casadi {
     return MX::create(new SymbolicMX(name, sp));
   }
 
-  bool MX::isSymbolicSparse() const {
-    if (getOp()==OP_HORZCAT) {
-      // Check if the expression is a horzcat where all components are symbolic primitives
-      for (int d=0; d<getNdeps(); ++d) {
-        if (!getDep(d).isSymbolic()) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return isSymbolic();
-    }
+  bool MX::isValidInput() const {
+    return (*this)->isValidInput();
+  }
+
+  int MX::numPrimitives() const {
+    casadi_assert_message(isValidInput(), "Not a valid input expression");
+    return (*this)->numPrimitives();
+  }
+
+  std::vector<MX> MX::getPrimitives() const {
+    std::vector<MX> ret(numPrimitives());
+    std::vector<MX>::iterator it=ret.begin();
+    (*this)->getPrimitives(it);
+    casadi_assert(it==ret.end());
+    return ret;
+  }
+
+  std::vector<MX> MX::splitPrimitives(const MX& x) const {
+    std::vector<MX> ret(numPrimitives());
+    std::vector<MX>::iterator it=ret.begin();
+    (*this)->splitPrimitives(x, it);
+    casadi_assert(it==ret.end());
+    return ret;
+  }
+
+  MX MX::joinPrimitives(std::vector<MX>& v) const {
+    casadi_assert_message(v.size()==numPrimitives(), "Wrong number of primitives supplied");
+    std::vector<MX>::const_iterator it=v.begin();
+    MX ret = (*this)->joinPrimitives(it);
+    casadi_assert(it==v.end());
+    return ret;
+  }
+
+  bool MX::hasDuplicates() {
+    return (*this)->hasDuplicates();
+  }
+
+  void MX::resetInput() {
+    (*this)->resetInput();
   }
 
   bool MX::isIdentity() const {
@@ -999,16 +1026,6 @@ namespace casadi {
 
   MX MX::T() const {
     return (*this)->getTranspose();
-  }
-
-  void MX::addToSum(const MX& x) {
-    if (!x.isEmpty()) {
-      if (isEmpty()) {
-        *this = x;
-      } else {
-        *this += x;
-      }
-    }
   }
 
   bool MX::testCast(const SharedObjectNode* ptr) {
@@ -1435,8 +1452,7 @@ namespace casadi {
     // Get references to the internal data structures
     std::vector<MXAlgEl>& algorithm = f->algorithm_;
     vector<MX> work(f.getWorkSize());
-    vector<const MX*> input_p;
-    vector<MX*> output_p;
+    vector<MX> oarg, ores;
 
     for (vector<MXAlgEl>::iterator it=algorithm.begin(); it!=algorithm.end(); ++it) {
       switch (it->op) {
@@ -1456,19 +1472,22 @@ namespace casadi {
         break;
       default:
         {
-          input_p.resize(it->arg.size());
-          for (int i=0; i<input_p.size(); ++i) {
+          // Arguments of the operation
+          oarg.resize(it->arg.size());
+          for (int i=0; i<oarg.size(); ++i) {
             int el = it->arg[i];
-            input_p[i] = el<0 ? 0 : &work.at(el);
+            oarg[i] = el<0 ? MX(it->data->dep(i).shape()) : work.at(el);
           }
 
-          output_p.resize(it->res.size());
-          for (int i=0; i<output_p.size(); ++i) {
+          // Perform the operation
+          ores.resize(it->res.size());
+          it->data->evalMX(oarg, ores);
+
+          // Get the result
+          for (int i=0; i<ores.size(); ++i) {
             int el = it->res[i];
-            output_p[i] = el<0 ? 0 : &work.at(el);
+            if (el>=0) work.at(el) = ores[i];
           }
-
-          it->data->eval(input_p, output_p);
         }
       }
     }
@@ -1535,9 +1554,7 @@ namespace casadi {
 
     // Allocate output vector
     vector<MX> f_out(f.getNumOutputs());
-
-    vector<const MX*> input_p;
-    vector<MX*> output_p;
+    vector<MX> oarg, ores;
 
     // expr_lookup iterator
     std::map<const MXNode*, int>::const_iterator it_lookup;
@@ -1571,25 +1588,27 @@ namespace casadi {
         {
           bool node_tainted = false;
 
-          input_p.resize(it->arg.size());
-          for (int i=0; i<input_p.size(); ++i) {
+          // Arguments of the operation
+          oarg.resize(it->arg.size());
+          for (int i=0; i<oarg.size(); ++i) {
             int el = it->arg[i];
             if (el>=0) node_tainted =  node_tainted || tainted[el];
-            input_p[i] = el<0 ? 0 : &swork[el];
+            oarg[i] = el<0 ? MX(it->data->dep(i).shape()) : swork.at(el);
           }
 
-          output_p.resize(it->res.size());
-          for (int i=0; i<output_p.size(); ++i) {
-            int el = it->res[i];
-            output_p[i] = el<0 ? 0 : &swork[el];
-            if (el>=0) tainted[el] = node_tainted;
-          }
-
+          // Perform the operation
+          ores.resize(it->res.size());
           if (it->res.size()==1 && it->res[0]>=0 && !node_tainted) {
-            int el = it->res[0];
-            swork[el] = it->data;
+            ores.at(0) = it->data;
           } else {
-            const_cast<MX&>(it->data)->eval(input_p, output_p);
+            const_cast<MX&>(it->data)->evalMX(oarg, ores);
+          }
+
+          // Get the result
+          for (int i=0; i<ores.size(); ++i) {
+            int el = it->res[i];
+            if (el>=0) swork.at(el) = ores[i];
+            if (el>=0) tainted[el] = node_tainted;
           }
         }
       }
@@ -1686,8 +1705,7 @@ namespace casadi {
     stringstream v_name;
 
     // Arguments for calling the atomic operations
-    vector<const MX*> input_p;
-    vector<MX*> output_p;
+    vector<MX> oarg, ores;
 
     // Evaluate the algorithm
     k=0;
@@ -1698,22 +1716,22 @@ namespace casadi {
       case OP_PARAMETER:  work[it->res.front()] = it->data; break;
       default:
         {
-          // Pointers to the arguments of the evaluation
-          input_p.resize(it->arg.size());
-          for (int i=0; i<input_p.size(); ++i) {
-            int el = it->arg[i]; // index of the argument
-            input_p[i] = el<0 ? 0 : &work[el];
+          // Arguments of the operation
+          oarg.resize(it->arg.size());
+          for (int i=0; i<oarg.size(); ++i) {
+            int el = it->arg[i];
+            oarg[i] = el<0 ? MX(it->data->dep(i).shape()) : work.at(el);
           }
 
-          // Pointers to the result of the evaluation
-          output_p.resize(it->res.size());
-          for (int i=0; i<output_p.size(); ++i) {
-            int el = it->res[i]; // index of the output
-            output_p[i] = el<0 ? 0 : &work[el];
-          }
+          // Perform the operation
+          ores.resize(it->res.size());
+          const_cast<MX&>(it->data)->evalMX(oarg, ores);
 
-          // Evaluate atomic operation
-          const_cast<MX&>(it->data)->eval(input_p, output_p);
+          // Get the result
+          for (int i=0; i<ores.size(); ++i) {
+            int el = it->res[i];
+            if (el>=0) work.at(el) = ores[i];
+          }
 
           // Possibly replace results with new variables
           for (int c=0; c<it->res.size(); ++c) {
@@ -1776,6 +1794,20 @@ namespace casadi {
     temp.setOption("name", "helper_tangent_MX");
     temp.init();
     return temp.tang();
+  }
+
+  MX MX::zz_hessian(const MX &arg) const {
+    MX H, g;
+    hessian(*this, arg, H, g);
+    return H;
+  }
+
+  void MX::zz_hessian(const MX &arg, MX &H, MX &g) const {
+    g = gradient(*this, arg);
+
+    MXFunction temp(arg, g); // make a runtime
+    temp.init();
+    H = temp.jac(0, 0, false, true);
   }
 
   MX MX::zz_det() const {

@@ -70,32 +70,31 @@ namespace casadi {
     evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
-  void SetSparse::eval(const cpv_MX& input, const pv_MX& output) {
-    *output[0] = input[0]->setSparse(sparsity());
+  void SetSparse::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    res[0] = arg[0].setSparse(sparsity());
   }
 
-  void SetSparse::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
-    int nfwd = fwdSens.size();
+  void SetSparse::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                          std::vector<std::vector<MX> >& fsens) {
+    int nfwd = fsens.size();
     for (int d=0; d<nfwd; ++d) {
-      *fwdSens[d][0] = fwdSeed[d][0]->setSparse(sparsity(), true);
+      fsens[d][0] = fseed[d][0].setSparse(sparsity(), true);
     }
   }
 
-  void SetSparse::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
-    int nadj = adjSeed.size();
+  void SetSparse::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                          std::vector<std::vector<MX> >& asens) {
+    int nadj = aseed.size();
     for (int d=0; d<nadj; ++d) {
-      adjSens[d][0]->addToSum(adjSeed[d][0]->setSparse(dep().sparsity(), true));
-      *adjSeed[d][0] = MX();
+      asens[d][0] += aseed[d][0].setSparse(dep().sparsity(), true);
     }
   }
 
-  void SetSparse::spFwd(cp_bvec_t* arg,
-                        p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+  void SetSparse::spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     sparsity().set(res[0], arg[0], dep().sparsity());
   }
 
-  void SetSparse::spAdj(p_bvec_t* arg,
-                        p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+  void SetSparse::spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     dep().sparsity().bor(arg[0], res[0], sparsity());
     fill(res[0], res[0]+nnz(), 0);
   }

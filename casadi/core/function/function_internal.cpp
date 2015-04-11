@@ -25,6 +25,7 @@
 
 #include "function_internal.hpp"
 #include "../mx/casadi_call.hpp"
+#include "../mx/casadi_map.hpp"
 #include <typeinfo>
 #include "../std_vector_tools.hpp"
 #include "mx_function.hpp"
@@ -2272,6 +2273,48 @@ namespace casadi {
     return MX::createMultipleOutput(new Call(shared_from_this<Function>(), arg));
   }
 
+  std::vector<std::vector<MX> >
+  FunctionInternal::createMap(const std::vector<std::vector<MX> > &arg,
+                              const std::string& parallelization) {
+    int n = arg.size();
+    std::vector<std::vector<MX> > ret(n);
+    if (parallelization.compare("expand")==0) {
+      // Bypass the Map, call the original function n times
+      for (int i=0; i<n; ++i) {
+        call(arg[i], ret[i], false, false);
+      }
+    } else {
+      // Get type of parallelization
+      bool omp;
+      if (parallelization.compare("openmp")==0) {
+        omp = true;
+      } else if (parallelization.compare("serial")==0) {
+        omp = false;
+      } else {
+        casadi_error("Unsupported parallelization \"" << parallelization
+                     << "\": Available options are expand|serial|openmp");
+      }
+
+      // Call the map
+      std::vector<MX> v;
+      if (omp) {
+        v = MX::createMultipleOutput(new OmpMap(shared_from_this<Function>(), arg));
+      } else {
+        v = MX::createMultipleOutput(new Map(shared_from_this<Function>(), arg));
+      }
+
+      // Collect outputs
+      std::vector<MX>::const_iterator v_it = v.begin();
+      int n_out = getNumOutputs();
+      for (int i=0; i<n; ++i) {
+        ret[i] = std::vector<MX>(v_it, v_it+n_out);
+        v_it += n_out;
+      }
+      casadi_assert(v_it==v.end());
+    }
+    return ret;
+  }
+
   void FunctionInternal::spFwdSwitch(cp_bvec_t* arg, p_bvec_t* res,
                                      int* itmp, bvec_t* rtmp) {
     // TODO(@jaeandersson) Calculate from full-Jacobian sparsity  when necessary or more efficient
@@ -2631,6 +2674,9 @@ namespace casadi {
       // Collect forward sensitivities
       for (int d=0; d<nfwd; ++d) {
         fsens[d] = vertsplit(v[d], offset);
+        for (int i=0; i<n_out; ++i) {
+          fsens[d][i] = reshape(fsens[d][i], output(i).shape());
+        }
       }
       return;
     }
@@ -2703,7 +2749,15 @@ namespace casadi {
 
       // Collect adjoint sensitivities
       for (int d=0; d<nadj; ++d) {
-        asens[d] = vertsplit(v[d], offset);
+        asens[d].resize(n_in);
+        vector<MX> a = vertsplit(v[d], offset);
+        for (int i=0; i<n_in; ++i) {
+          if (asens[d][i].isEmpty(true)) {
+            asens[d][i] = reshape(a[i], input(i).shape());
+          } else {
+            asens[d][i] += reshape(a[i], input(i).shape());
+          }
+        }
       }
       return;
     }
@@ -2728,7 +2782,11 @@ namespace casadi {
     for (int d=0; d<nadj; ++d) {
       asens[d].resize(n_in);
       for (int i=0; i<n_in; ++i) {
-        asens[d][i] = *x_it++;
+        if (asens[d][i].isEmpty(true)) {
+          asens[d][i] = *x_it++;
+        } else {
+          asens[d][i] += *x_it++;
+        }
       }
     }
     casadi_assert(x_it==x.end());

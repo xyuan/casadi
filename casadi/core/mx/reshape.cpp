@@ -44,13 +44,12 @@ namespace casadi {
     return new Reshape(*this);
   }
 
-  void Reshape::evalD(cp_double* input, p_double* output,
-                          int* itmp, double* rtmp) {
+  void Reshape::evalD(cp_double* input, p_double* output, int* itmp, double* rtmp) {
     evalGen<double>(input, output, itmp, rtmp);
   }
 
   void Reshape::evalSX(cp_SXElement* input, p_SXElement* output,
-                           int* itmp, SXElement* rtmp) {
+                       int* itmp, SXElement* rtmp) {
     evalGen<SXElement>(input, output, itmp, rtmp);
   }
 
@@ -91,21 +90,21 @@ namespace casadi {
     }
   }
 
-  void Reshape::eval(const cpv_MX& input, const pv_MX& output) {
-    *output[0] = reshape(*input[0], shape());
+  void Reshape::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    res[0] = reshape(arg[0], shape());
   }
 
-  void Reshape::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
-    for (int d = 0; d<fwdSens.size(); ++d) {
-      *fwdSens[d][0] = reshape(*fwdSeed[d][0], shape());
+  void Reshape::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                        std::vector<std::vector<MX> >& fsens) {
+    for (int d = 0; d<fsens.size(); ++d) {
+      fsens[d][0] = reshape(fseed[d][0], shape());
     }
   }
 
-  void Reshape::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
-    for (int d=0; d<adjSeed.size(); ++d) {
-      MX tmp = reshape(*adjSeed[d][0], dep().shape());
-      *adjSeed[d][0] = MX();
-      adjSens[d][0]->addToSum(tmp);
+  void Reshape::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                        std::vector<std::vector<MX> >& asens) {
+    for (int d=0; d<aseed.size(); ++d) {
+      asens[d][0] += reshape(aseed[d][0], dep().shape());
     }
   }
 
@@ -126,6 +125,35 @@ namespace casadi {
     } else {
       return MXNode::getTranspose();
     }
+  }
+
+  bool Reshape::isValidInput() const {
+    if (!dep()->isValidInput()) return false;
+    return true;
+  }
+
+  int Reshape::numPrimitives() const {
+    return dep()->numPrimitives();
+  }
+
+  void Reshape::getPrimitives(std::vector<MX>::iterator& it) const {
+    dep()->getPrimitives(it);
+  }
+
+  void Reshape::splitPrimitives(const MX& x, std::vector<MX>::iterator& it) const {
+    dep()->splitPrimitives(reshape(x, dep().shape()), it);
+  }
+
+  MX Reshape::joinPrimitives(std::vector<MX>::const_iterator& it) const {
+    return reshape(dep()->joinPrimitives(it), shape());
+  }
+
+  bool Reshape::hasDuplicates() {
+    return dep()->hasDuplicates();
+  }
+
+  void Reshape::resetInput() {
+    dep()->resetInput();
   }
 
 } // namespace casadi

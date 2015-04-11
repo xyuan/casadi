@@ -78,29 +78,26 @@ namespace casadi {
                      res[0], sparsity(), rtmp);
   }
 
-  void Multiplication::evalFwd(const std::vector<cpv_MX>& fseed,
-                               const std::vector<pv_MX>& fsens) {
+  void Multiplication::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                               std::vector<std::vector<MX> >& fsens) {
     for (int d=0; d<fsens.size(); ++d) {
-      *fsens[d][0] = *fseed[d][0]
-        + mul(dep(1), *fseed[d][2], MX::zeros(dep(0).sparsity()))
-        + mul(*fseed[d][1], dep(2), MX::zeros(dep(0).sparsity()));
+      fsens[d][0] = fseed[d][0]
+        + mul(dep(1), fseed[d][2], MX::zeros(dep(0).sparsity()))
+        + mul(fseed[d][1], dep(2), MX::zeros(dep(0).sparsity()));
     }
   }
 
-  void Multiplication::evalAdj(const std::vector<pv_MX>& aseed,
-                               const std::vector<pv_MX>& asens) {
+  void Multiplication::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                               std::vector<std::vector<MX> >& asens) {
     for (int d=0; d<aseed.size(); ++d) {
-      asens[d][1]->addToSum(mul(*aseed[d][0], dep(2).T(), MX::zeros(dep(1).sparsity())));
-      asens[d][2]->addToSum(mul(dep(1).T(), *aseed[d][0], MX::zeros(dep(2).sparsity())));
-      if (aseed[d][0]!=asens[d][0]) {
-        asens[d][0]->addToSum(*aseed[d][0]);
-        *aseed[d][0] = MX();
-      }
+      asens[d][1] += mul(aseed[d][0], dep(2).T(), MX::zeros(dep(1).sparsity()));
+      asens[d][2] += mul(dep(1).T(), aseed[d][0], MX::zeros(dep(2).sparsity()));
+      asens[d][0] += aseed[d][0];
     }
   }
 
-  void Multiplication::eval(const cpv_MX& arg, const pv_MX& res) {
-    *res[0] = mul(*arg[1], *arg[2], *arg[0]);
+  void Multiplication::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    res[0] = mul(arg[1], arg[2], arg[0]);
   }
 
   void Multiplication::spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp,

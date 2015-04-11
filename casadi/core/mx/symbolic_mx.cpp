@@ -54,13 +54,15 @@ namespace casadi {
                               int* itmp, SXElement* rtmp) {
   }
 
-  void SymbolicMX::eval(const cpv_MX& input, const pv_MX& output) {
+  void SymbolicMX::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
   }
 
-  void SymbolicMX::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+  void SymbolicMX::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                           std::vector<std::vector<MX> >& fsens) {
   }
 
-  void SymbolicMX::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+  void SymbolicMX::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                           std::vector<std::vector<MX> >& asens) {
   }
 
   const std::string& SymbolicMX::getName() const {
@@ -75,6 +77,38 @@ namespace casadi {
   void SymbolicMX::spAdj(p_bvec_t* arg,
                          p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     fill_n(res[0], nnz(), 0);
+  }
+
+  void SymbolicMX::getPrimitives(std::vector<MX>::iterator& it) const {
+    *it++ = shared_from_this<MX>();
+  }
+
+  void SymbolicMX::splitPrimitives(const MX& x, std::vector<MX>::iterator& it) const {
+    *it++ = x;
+  }
+
+  MX SymbolicMX::joinPrimitives(std::vector<MX>::const_iterator& it) const {
+    MX ret = *it++;
+    if (ret.shape()==shape()) {
+      return ret;
+    } else {
+      casadi_assert(ret.isEmpty(true));
+      return MX(shape());
+    }
+  }
+
+  bool SymbolicMX::hasDuplicates() {
+    if (this->temp!=0) {
+      cerr << "Duplicate expression: " << getName() << endl;
+      return true;
+    } else {
+      this->temp = 1;
+      return false;
+    }
+  }
+
+  void SymbolicMX::resetInput() {
+    this->temp = 0;
   }
 
 } // namespace casadi

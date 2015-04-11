@@ -33,7 +33,7 @@ using namespace std;
 
 namespace casadi {
 
-  Call::Call(const Function& fcn, std::vector<MX> arg) : fcn_(fcn) {
+  Call::Call(const Function& fcn, vector<MX> arg) : fcn_(fcn) {
 
     // Number inputs and outputs
     int num_in = fcn.getNumInputs();
@@ -94,66 +94,41 @@ namespace casadi {
     return fcn_;
   }
 
-  void Call::evalSX(cp_SXElement* arg, p_SXElement* res,
-                                int* itmp, SXElement* rtmp) {
+  void Call::evalSX(cp_SXElement* arg, p_SXElement* res, int* itmp, SXElement* rtmp) {
     fcn_->evalSX(arg, res, itmp, rtmp);
   }
 
-  void Call::eval(const cpv_MX& input, const pv_MX& output) {
-    vector<MX> arg = getVector(input, ndep());
-    vector<MX> res = fcn_->createCall(arg);
-    for (int i=0; i<res.size(); ++i) {
-      if (output[i]!=0) {
-        *output[i] = res[i];
-      }
-    }
+  void Call::evalMX(const vector<MX>& arg, vector<MX>& res) {
+    res = fcn_->createCall(arg);
   }
 
-  void Call::evalFwd(const std::vector<cpv_MX>& fwdSeed,
-                             const std::vector<pv_MX>& fwdSens) {
+  void Call::evalFwd(const vector<vector<MX> >& fseed,
+                     vector<vector<MX> >& fsens) {
     // Nondifferentiated inputs and outputs
     vector<MX> arg(ndep());
     for (int i=0; i<arg.size(); ++i) arg[i] = dep(i);
     vector<MX> res(nout());
     for (int i=0; i<res.size(); ++i) res[i] = getOutput(i);
-
-    // Collect seeds
-    vector<vector<MX> > fseed(getVector(fwdSeed, ndep())), fsens;
 
     // Call the cached functions
     fcn_.callForward(arg, res, fseed, fsens);
-
-    // Store the forward sensitivities
-    for (int d=0; d<fwdSens.size(); ++d) {
-      for (int i=0; i<fwdSens[d].size(); ++i) {
-        if (fwdSens[d][i]!=0) {
-          *fwdSens[d][i] = fsens[d][i];
-        }
-      }
-    }
   }
 
-  void Call::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+  void Call::evalAdj(const vector<vector<MX> >& aseed,
+                     vector<vector<MX> >& asens) {
     // Nondifferentiated inputs and outputs
     vector<MX> arg(ndep());
     for (int i=0; i<arg.size(); ++i) arg[i] = dep(i);
     vector<MX> res(nout());
     for (int i=0; i<res.size(); ++i) res[i] = getOutput(i);
 
-    // Collect seeds
-    vector<vector<MX> > aseed(getVector(adjSeed, nout())), asens;
-
     // Call the cached functions
-    fcn_.callReverse(arg, res, aseed, asens);
-
-    // Free adjoint seeds
-    clearVector(adjSeed, nout());
-
-    // Store the adjoint sensitivities
-    for (int d=0; d<adjSens.size(); ++d) {
-      for (int i=0; i<adjSens[d].size(); ++i) {
-        if (adjSens[d][i]!=0) {
-          adjSens[d][i]->addToSum(asens[d][i]);
+    vector<vector<MX> > v;
+    fcn_.callReverse(arg, res, aseed, v);
+    for (int i=0; i<v.size(); ++i) {
+      for (int j=0; j<v[i].size(); ++j) {
+        if (!v[i][j].isEmpty()) { // TODO(@jaeandersson): Hack
+          asens[i][j] += v[i][j];
         }
       }
     }
@@ -172,8 +147,8 @@ namespace casadi {
     fcn_.spAdj(arg, res, itmp, rtmp);
   }
 
-  void Call::generate(std::ostream &stream, const std::vector<int>& arg,
-                              const std::vector<int>& res, CodeGenerator& gen) const {
+  void Call::generate(std::ostream &stream, const vector<int>& arg,
+                      const vector<int>& res, CodeGenerator& gen) const {
     fcn_->generate(stream, arg, res, gen);
   }
 

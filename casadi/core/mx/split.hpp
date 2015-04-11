@@ -65,16 +65,14 @@ namespace casadi {
                             int* itmp, SXElement* rtmp);
 
     /** \brief  Propagate sparsity forward */
-    virtual void spFwd(cp_bvec_t* arg,
-                       p_bvec_t* res, int* itmp, bvec_t* rtmp);
+    virtual void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     /** \brief  Propagate sparsity backwards */
-    virtual void spAdj(p_bvec_t* arg,
-                       p_bvec_t* res, int* itmp, bvec_t* rtmp);
+    virtual void spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     /** \brief Generate code for the operation */
     virtual void generate(std::ostream &stream, const std::vector<int>& arg,
-                                   const std::vector<int>& res, CodeGenerator& gen) const;
+                          const std::vector<int>& res, CodeGenerator& gen) const;
 
     // Sparsity pattern of the outputs
     std::vector<int> offset_;
@@ -97,14 +95,16 @@ namespace casadi {
     /// Clone function
     virtual Horzsplit* clone() const { return new Horzsplit(*this);}
 
-    /// Evaluate the function symbolically (MX)
-    virtual void eval(const cpv_MX& input, const pv_MX& output);
+    /** \brief  Evaluate symbolically (MX) */
+    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res);
 
     /** \brief Calculate forward mode directional derivatives */
-    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+    virtual void evalFwd(const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens);
 
     /** \brief Calculate reverse mode directional derivatives */
-    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
+    virtual void evalAdj(const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
@@ -132,14 +132,16 @@ namespace casadi {
     /// Clone function
     virtual Diagsplit* clone() const { return new Diagsplit(*this);}
 
-    /// Evaluate the function symbolically (MX)
-    virtual void eval(const cpv_MX& input, const pv_MX& output);
+    /** \brief  Evaluate symbolically (MX) */
+    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res);
 
     /** \brief Calculate forward mode directional derivatives */
-    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+    virtual void evalFwd(const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens);
 
     /** \brief Calculate reverse mode directional derivatives */
-    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
+    virtual void evalAdj(const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;
@@ -167,14 +169,16 @@ namespace casadi {
     /// Clone function
     virtual Vertsplit* clone() const { return new Vertsplit(*this);}
 
-    /// Evaluate the function symbolically (MX)
-    virtual void eval(const cpv_MX& input, const pv_MX& output);
+    /** \brief  Evaluate symbolically (MX) */
+    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res);
 
     /** \brief Calculate forward mode directional derivatives */
-    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+    virtual void evalFwd(const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens);
 
     /** \brief Calculate reverse mode directional derivatives */
-    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
+    virtual void evalAdj(const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens);
 
     /// Print a part of the expression */
     virtual void printPart(std::ostream &stream, int part) const;

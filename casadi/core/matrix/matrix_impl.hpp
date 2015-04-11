@@ -1774,8 +1774,18 @@ namespace casadi {
   }
 
   template<typename DataType>
-  bool Matrix<DataType>::isSymbolicSparse() const {
+  bool Matrix<DataType>::isValidInput() const {
     return false;
+  }
+
+  template<typename DataType>
+  bool Matrix<DataType>::hasDuplicates() {
+    throw CasadiException("\"hasDuplicates\" not defined for instantiation");
+  }
+
+  template<typename DataType>
+  void Matrix<DataType>::resetInput() {
+    throw CasadiException("\"resetInput\" not defined for instantiation");
   }
 
   template<typename DataType>

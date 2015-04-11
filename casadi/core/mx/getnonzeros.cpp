@@ -188,7 +188,7 @@ namespace casadi {
     }
   }
 
-  void GetNonzeros::eval(const cpv_MX& input, const pv_MX& output) {
+  void GetNonzeros::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
     // Get all the nonzeros
     vector<int> nz = getAll();
 
@@ -209,14 +209,10 @@ namespace casadi {
     // Sparsity pattern being formed and corresponding nonzero mapping
     vector<int> r_colind, r_row, r_nz, r_ind;
 
-    // Get references to arguments and results
-    const MX& arg = *input[0];
-    MX& res = *output[0];
-
     // Get the matching nonzeros
     r_ind.resize(el_input.size());
     copy(el_input.begin(), el_input.end(), r_ind.begin());
-    arg.sparsity().getNZ(r_ind);
+    arg[0].sparsity().getNZ(r_ind);
 
     // Sparsity pattern for the result
     r_colind.resize(osp.size2()+1); // Col count
@@ -255,19 +251,20 @@ namespace casadi {
 
     // Create a sparsity pattern from vectors
     if (r_nz.size()==0) {
-      res = MX(osp.shape());
+      res[0] = MX(osp.shape());
     } else {
       Sparsity f_sp(osp.size1(), osp.size2(), r_colind, r_row);
-      res = arg->getGetNonzeros(f_sp, r_nz);
+      res[0] = arg[0]->getGetNonzeros(f_sp, r_nz);
     }
   }
 
-  void GetNonzeros::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+  void GetNonzeros::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                            std::vector<std::vector<MX> >& fsens) {
     // Get all the nonzeros
     vector<int> nz = getAll();
 
     // Number of derivative directions
-    int nfwd = fwdSens.size();
+    int nfwd = fsens.size();
 
     // Output sparsity
     const Sparsity& osp = sparsity();
@@ -290,8 +287,8 @@ namespace casadi {
     for (int d=0; d<nfwd; ++d) {
 
       // Get references to arguments and results
-      const MX& arg = *fwdSeed[d][0];
-      MX& res = *fwdSens[d][0];
+      const MX& arg = fseed[d][0];
+      MX& res = fsens[d][0];
 
       // Get the matching nonzeros
       r_ind.resize(el_input.size());
@@ -341,15 +338,15 @@ namespace casadi {
         res = arg->getGetNonzeros(f_sp, r_nz);
       }
     }
-
   }
 
-  void GetNonzeros::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+  void GetNonzeros::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                            std::vector<std::vector<MX> >& asens) {
     // Get all the nonzeros
     vector<int> nz = getAll();
 
     // Number of derivative directions
-    int nadj = adjSeed.size();
+    int nadj = aseed.size();
 
     // Output sparsity
     const Sparsity& osp = sparsity();
@@ -372,13 +369,11 @@ namespace casadi {
 
       // Get an owning references to the seeds and sensitivities
       // and clear the seeds for the next run
-      MX aseed = *adjSeed[d][0];
-      *adjSeed[d][0] = MX();
-      MX& asens = *adjSens[d][0]; // Sensitivity after addition
-      MX asens0 = asens; // Sensitivity before addition
+      MX aseed0 = aseed[d][0];
+      MX asens0 = asens[d][0]; // Sensitivity before addition
 
       // Get the corresponding nz locations in the output sparsity pattern
-      aseed.sparsity().find(r_nz);
+      aseed0.sparsity().find(r_nz);
       osp.getNZ(r_nz);
 
       // Filter out ignored entries and check if there is anything to add at all
@@ -425,7 +420,7 @@ namespace casadi {
       }
 
       // Add to the element to the sensitivity
-      asens = aseed->getAddNonzeros(asens0, r_nz);
+      asens[d][0] = aseed0->getAddNonzeros(asens0, r_nz);
     }
   }
 

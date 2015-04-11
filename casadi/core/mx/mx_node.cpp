@@ -119,6 +119,36 @@ namespace casadi {
     }
   }
 
+  int MXNode::numPrimitives() const {
+    throw CasadiException(string("MXNode::numPrimitives() not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  bool MXNode::hasDuplicates() {
+    throw CasadiException(string("MXNode::hasDuplicates() not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  void MXNode::resetInput() {
+    throw CasadiException(string("MXNode::resetInput() not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  void MXNode::getPrimitives(std::vector<MX>::iterator& it) const {
+    throw CasadiException(string("MXNode::getPrimitives() not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  void MXNode::splitPrimitives(const MX& x, std::vector<MX>::iterator& it) const {
+    throw CasadiException(string("MXNode::splitPrimitives() not defined for class ")
+                          + typeid(*this).name());
+  }
+
+  MX MXNode::joinPrimitives(std::vector<MX>::const_iterator& it) const {
+    throw CasadiException(string("MXNode::joinPrimitives() not defined for class ")
+                          + typeid(*this).name());
+  }
+
   const string& MXNode::getName() const {
     throw CasadiException(string("MXNode::getName() not defined for class ")
                           + typeid(*this).name());
@@ -243,23 +273,24 @@ namespace casadi {
                           + typeid(*this).name());
   }
 
-  void MXNode::eval(const cpv_MX& input, const pv_MX& output) {
-    throw CasadiException(string("MXNode::eval not defined for class ")
+  void MXNode::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    throw CasadiException(string("MXNode::evalMX not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
+  void MXNode::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                       std::vector<std::vector<MX> >& fsens) {
     throw CasadiException(string("MXNode::evalFwd not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
+  void MXNode::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                       std::vector<std::vector<MX> >& asens) {
     throw CasadiException(string("MXNode::evalAdj not defined for class ")
                           + typeid(*this).name());
   }
 
-  void MXNode::spFwd(cp_bvec_t* arg,
-                     p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+  void MXNode::spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     // By default, everything depends on everything
     bvec_t all_depend(0);
 
@@ -280,8 +311,7 @@ namespace casadi {
     }
   }
 
-  void MXNode::spAdj(p_bvec_t* arg,
-                     p_bvec_t* res, int* itmp, bvec_t* rtmp) {
+  void MXNode::spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp) {
     // By default, everything depends on everything
     bvec_t all_depend(0);
 
@@ -814,52 +844,6 @@ namespace casadi {
           }
         }
       }
-    }
-    return ret;
-  }
-
-  void MXNode::clearVector(const pv_MX& v, int len) {
-    for (int j=0; j<len; ++j) {
-      if (v[j]!= 0) *v[j] = MX();
-    }
-  }
-
-  void MXNode::clearVector(const std::vector<pv_MX>& v, int len) {
-    for (int i=0; i<v.size(); ++i) {
-      clearVector(v[i], len);
-    }
-  }
-
-  std::vector<MX> MXNode::getVector(const cpv_MX& v, int len) {
-    casadi_assert(v.size()>=len);
-    std::vector<MX> ret(len);
-    for (int i=0; i<len; i++) {
-      if (v[i]!=0) ret[i] = *v[i];
-    }
-    return ret;
-  }
-
-  std::vector<MX> MXNode::getVector(const pv_MX& v, int len) {
-    casadi_assert(v.size()>=len);
-    std::vector<MX> ret(len);
-    for (int i=0; i<len; i++) {
-      if (v[i]!=0) ret[i] = *v[i];
-    }
-    return ret;
-  }
-
-  std::vector<std::vector<MX> > MXNode::getVector(const std::vector<pv_MX>& v, int len) {
-    std::vector<std::vector<MX> > ret(v.size());
-    for (int i=0; i<v.size(); i++) {
-      ret[i] = getVector(v[i], len);
-    }
-    return ret;
-  }
-
-  std::vector<std::vector<MX> > MXNode::getVector(const std::vector<cpv_MX>& v, int len) {
-    std::vector<std::vector<MX> > ret(v.size());
-    for (int i=0; i<v.size(); i++) {
-      ret[i] = getVector(v[i], len);
     }
     return ret;
   }

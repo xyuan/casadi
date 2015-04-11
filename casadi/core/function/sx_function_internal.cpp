@@ -52,34 +52,6 @@ namespace casadi {
     addOption("just_in_time_opencl", OT_BOOLEAN, false,
               "Just-in-time compilation for numeric evaluation using OpenCL (experimental)");
 
-    // Check for duplicate entries among the input expressions
-    bool has_duplicates = false;
-    for (vector<SX >::iterator it = inputv_.begin(); it != inputv_.end(); ++it) {
-      for (vector<SXElement>::iterator itc = it->begin(); itc != it->end(); ++itc) {
-        bool is_duplicate = itc->getTemp()!=0;
-        if (is_duplicate) {
-          cerr << "Duplicate expression: " << *itc << endl;
-        }
-        has_duplicates = has_duplicates || is_duplicate;
-        itc->setTemp(1);
-      }
-    }
-
-    // Reset temporaries
-    for (vector<SX >::iterator it = inputv_.begin(); it != inputv_.end(); ++it) {
-      for (vector<SXElement>::iterator itc = it->begin(); itc != it->end(); ++itc) {
-        itc->setTemp(0);
-      }
-    }
-
-    if (has_duplicates) {
-      cout << "Input expressions:" << endl;
-      for (int iind=0; iind<inputv_.size(); ++iind) {
-        cout << iind << ": " << inputv_[iind] << endl;
-      }
-      casadi_error("The input expressions are not independent (or were not reset properly).");
-    }
-
     casadi_assert(!outputv_.empty()); // NOTE: Remove?
 
     // Reset OpenCL memory
@@ -323,15 +295,6 @@ namespace casadi {
 
         // A null pointer means an output instruction
         nodes.push_back(static_cast<SXNode*>(0));
-      }
-    }
-
-    // Make sure that all inputs have been added also // TODO REMOVE THIS
-    for (vector<SX >::iterator it = inputv_.begin(); it != inputv_.end(); ++it) {
-      for (vector<SXElement>::iterator itc = it->begin(); itc != it->end(); ++itc) {
-        if (!itc->getTemp()) {
-          nodes.push_back(itc->get());
-        }
       }
     }
 
@@ -792,9 +755,13 @@ namespace casadi {
     // Allocate results if needed
     for (int d=0; d<nadj; ++d) {
       asens[d].resize(num_in);
-      for (int i=0; i<asens[d].size(); ++i)
-        if (asens[d][i].sparsity()!=input(i).sparsity())
+      for (int i=0; i<asens[d].size(); ++i) {
+        if (asens[d][i].sparsity()!=input(i).sparsity()) {
           asens[d][i] = SX::zeros(input(i).sparsity());
+        } else {
+          fill(asens[d][i].begin(), asens[d][i].end(), 0);
+        }
+      }
     }
 
     // Iterator to the binary operations

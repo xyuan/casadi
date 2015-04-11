@@ -69,22 +69,22 @@ namespace casadi {
     virtual void evalSX(cp_SXElement* input, p_SXElement* output,
                             int* itmp, SXElement* rtmp);
 
-    /** \brief  Evaluate the function symbolically (MX) */
-    virtual void eval(const cpv_MX& input, const pv_MX& output);
+    /** \brief  Evaluate symbolically (MX) */
+    virtual void evalMX(const std::vector<MX>& arg, std::vector<MX>& res);
 
     /** \brief Calculate forward mode directional derivatives */
-    virtual void evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens);
+    virtual void evalFwd(const std::vector<std::vector<MX> >& fseed,
+                         std::vector<std::vector<MX> >& fsens);
 
     /** \brief Calculate reverse mode directional derivatives */
-    virtual void evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens);
+    virtual void evalAdj(const std::vector<std::vector<MX> >& aseed,
+                         std::vector<std::vector<MX> >& asens);
 
     /** \brief  Propagate sparsity forward */
-    virtual void spFwd(cp_bvec_t* arg,
-                       p_bvec_t* res, int* itmp, bvec_t* rtmp);
+    virtual void spFwd(cp_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     /** \brief  Propagate sparsity backwards */
-    virtual void spAdj(p_bvec_t* arg,
-                       p_bvec_t* res, int* itmp, bvec_t* rtmp);
+    virtual void spAdj(p_bvec_t* arg, p_bvec_t* res, int* itmp, bvec_t* rtmp);
 
     /** \brief Get the operation */
     virtual int getOp() const { return OP_CONST;}
@@ -224,6 +224,33 @@ namespace casadi {
 
     /// Reshape
     virtual MX getReshape(const Sparsity& sp) const;
+
+    /** \brief  Check if valid function input */
+    virtual bool isValidInput() const { return true;}
+
+    /** \brief Get the number of symbolic primitives */
+    virtual int numPrimitives() const { return 0;}
+
+    /** \brief Get symbolic primitives */
+    virtual void getPrimitives(std::vector<MX>::iterator& it) const {}
+
+    /** \brief Split up an expression along symbolic primitives */
+    virtual void splitPrimitives(const MX& x, std::vector<MX>::iterator& it) const {}
+
+    /** \brief Join an expression along symbolic primitives */
+    virtual MX joinPrimitives(std::vector<MX>::const_iterator& it) const { return MX();}
+
+    /** \brief Detect duplicate symbolic expressions */
+    virtual bool hasDuplicates() { return false;}
+
+    /** \brief Reset the marker for an input expression */
+    virtual void resetInput() {}
+
+    /** \brief  Get the name */
+    virtual const std::string& getName() const {
+      static std::string dummyname;
+      return dummyname;
+    }
   };
 
   /** \brief Constant known at runtime */

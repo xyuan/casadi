@@ -172,20 +172,21 @@ namespace casadi {
     }
   }
 
-  void Transpose::eval(const cpv_MX& arg, const pv_MX& res) {
-    *res[0] = arg[0]->T();
+  void Transpose::evalMX(const std::vector<MX>& arg, std::vector<MX>& res) {
+    res[0] = arg[0].T();
   }
 
-  void Transpose::evalFwd(const std::vector<cpv_MX>& fwdSeed, const std::vector<pv_MX>& fwdSens) {
-    for (int d=0; d<fwdSens.size(); ++d) {
-      *fwdSens[d][0] = fwdSeed[d][0]->T();
+  void Transpose::evalFwd(const std::vector<std::vector<MX> >& fseed,
+                          std::vector<std::vector<MX> >& fsens) {
+    for (int d=0; d<fsens.size(); ++d) {
+      fsens[d][0] = fseed[d][0].T();
     }
   }
 
-  void Transpose::evalAdj(const std::vector<pv_MX>& adjSeed, const std::vector<pv_MX>& adjSens) {
-    for (int d=0; d<adjSeed.size(); ++d) {
-      adjSens[d][0]->addToSum(adjSeed[d][0]->T());
-      *adjSeed[d][0] = MX();
+  void Transpose::evalAdj(const std::vector<std::vector<MX> >& aseed,
+                          std::vector<std::vector<MX> >& asens) {
+    for (int d=0; d<aseed.size(); ++d) {
+      asens[d][0] += aseed[d][0].T();
     }
   }
 
