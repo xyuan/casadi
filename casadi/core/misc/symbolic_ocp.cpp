@@ -48,12 +48,6 @@ namespace casadi {
     tf = tf_guess = numeric_limits<double>::quiet_NaN();
     t0_free = false;
     tf_free = false;
-
-    // Start with vectors of zero length
-    this->init=
-      this->u=
-      this->p=
-      SX::zeros(0, 1);
   }
 
   void SymbolicOCP::parseFMI(const std::string& filename) {
@@ -190,7 +184,7 @@ namespace casadi {
             break;
           case CAT_INDEPENDENT_PARAMETER:
             if (var.free) {
-              this->p.append(var.v);
+              this->pREM.push_back(var.v);
             } else {
               // Skip
             }
@@ -200,7 +194,7 @@ namespace casadi {
               this->sREM.push_back(var.v);
               this->sdotREM.push_back(var.d);
             } else if (var.causality == INPUT) {
-              this->u.append(var.v);
+              this->uREM.push_back(var.v);
             }
             break;
           default:
@@ -258,7 +252,7 @@ namespace casadi {
 
         // Add the differential equations
         for (int i=0; i<inode.size(); ++i) {
-          this->init.append(readExpr(inode[i]));
+          this->initREM.push_back(readExpr(inode[i]));
         }
       }
     }
@@ -479,8 +473,8 @@ namespace casadi {
     stream << "#q = " << this->qREM.size() << ", ";
     stream << "#i = " << this->iREM.size() << ", ";
     stream << "#y = " << this->yREM.size() << ", ";
-    stream << "#u = " << this->u.nnz() << ", ";
-    stream << "#p = " << this->p.nnz() << ", ";
+    stream << "#u = " << this->uREM.size() << ", ";
+    stream << "#p = " << this->pREM.size() << ", ";
     stream << endl << endl;
 
     // Variables in the class hierarchy
@@ -495,8 +489,8 @@ namespace casadi {
     stream << "  q =  " << this->qREM << endl;
     stream << "  i =  " << this->iREM << endl;
     stream << "  y =  " << this->yREM << endl;
-    stream << "  u =  " << str(this->u) << endl;
-    stream << "  p =  " << str(this->p) << endl;
+    stream << "  u =  " << this->uREM << endl;
+    stream << "  p =  " << this->pREM << endl;
     stream << "}" << endl;
 
     if (!this->daeREM.empty()) {
@@ -531,10 +525,10 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->init.isEmpty()) {
+    if (!this->initREM.empty()) {
       stream << "Initial equations" << endl;
-      for (SX::const_iterator it=this->init.begin(); it!=this->init.end(); it++) {
-        stream << "0 == " << *it << endl;
+      for (int k=0; k<this->initREM.size(); ++k) {
+        stream << "0 == " << str(this->initREM[k]) << endl;
       }
       stream << endl;
     }
@@ -647,7 +641,7 @@ namespace casadi {
     ex.push_back(vertcat(this->quadREM));
     ex.push_back(vertcat(this->idefREM));
     ex.push_back(vertcat(this->ydefREM));
-    ex.push_back(this->init);
+    ex.push_back(vertcat(this->initREM));
     ex.push_back(this->mterm);
     ex.push_back(this->lterm);
 
@@ -662,7 +656,7 @@ namespace casadi {
     this->quadREM = vertsplit(*it++ / nominal(vertcat(this->qREM)));
     this->idefREM = vertsplit(*it++ / nominal(vertcat(this->iREM)));
     this->ydefREM = vertsplit(*it++ / nominal(vertcat(this->yREM)));
-    this->init = *it++;
+    this->initREM = vertsplit(*it++);
     this->mterm = *it++;
     this->lterm = *it++;
     casadi_assert(it==ex.end());
@@ -731,7 +725,7 @@ namespace casadi {
     ex.push_back(vertcat(this->algREM));
     ex.push_back(vertcat(this->quadREM));
     ex.push_back(vertcat(this->ydefREM));
-    ex.push_back(this->init);
+    ex.push_back(vertcat(this->initREM));
     ex.push_back(this->mterm);
     ex.push_back(this->lterm);
 
@@ -745,7 +739,7 @@ namespace casadi {
     this->algREM = vertsplit(*it++);
     this->quadREM = vertsplit(*it++);
     this->ydefREM = vertsplit(*it++);
-    this->init = *it++;
+    this->initREM = vertsplit(*it++);
     this->mterm = *it++;
     this->lterm = *it++;
     casadi_assert(it==ex.end());
@@ -1152,13 +1146,13 @@ namespace casadi {
 
   SX SymbolicOCP::add_p(const std::string& name) {
     SX new_p = addVariable(name);
-    this->p.append(new_p);
+    this->pREM.push_back(new_p);
     return new_p;
   }
 
   SX SymbolicOCP::add_u(const std::string& name) {
     SX new_u = addVariable(name);
-    this->u.append(new_u);
+    this->uREM.push_back(new_u);
     return new_u;
   }
 
@@ -1238,10 +1232,14 @@ namespace casadi {
     }
 
     // Control
-    casadi_assert_message(this->u.isSymbolic(), "Non-symbolic control u");
+    for (int i=0; i<this->uREM.size(); ++i) {
+      casadi_assert_message(this->uREM[i].isSymbolic(), "Non-symbolic control u");
+    }
 
     // Parameter
-    casadi_assert_message(this->p.isSymbolic(), "Non-symbolic parameter p");
+    for (int i=0; i<this->pREM.size(); ++i) {
+      casadi_assert_message(this->pREM[i].isSymbolic(), "Non-symbolic parameter p");
+    }
   }
 
   std::string SymbolicOCP::qualifiedName(const XmlNode& nn) {
@@ -1355,47 +1353,47 @@ namespace casadi {
     datfile << endl;
 
     // Parameter properties
-    if (!this->p.isEmpty()) {
+    if (!this->pREM.empty()) {
       datfile << "*  global model parameter start values, scale factors, and bounds" << endl;
       datfile << "p" << endl;
-      for (int k=0; k<p.nnz(); ++k) {
-        datfile << k << ": " << start(this->p[k]) << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << start(this->pREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_sca" << endl;
-      for (int k=0; k<this->p.nnz(); ++k) {
-        datfile << k << ": " << nominal(this->p[k]) << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << nominal(this->pREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_min" << endl;
-      for (int k=0; k<this->p.nnz(); ++k) {
-        datfile << k << ": " << min(this->p[k]) << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << min(this->pREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_max" << endl;
-      for (int k=0; k<this->p.nnz(); ++k) {
-        datfile << k << ": " << max(this->p[k]) << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << max(this->pREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "p_fix" << endl;
-      for (int k=0; k<this->p.nnz(); ++k) {
-        datfile << k << ": " << (min(this->p[k])==max(this->p[k])) << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << (min(this->pREM[k])==max(this->pREM[k])) << endl;
       }
       datfile << endl;
 
       datfile << "p_name" << endl;
-      for (int k=0; k<this->p.nnz(); ++k) {
-        datfile << k << ": " << this->p[k].getName() << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << this->pREM[k].getName() << endl;
       }
       datfile << endl;
 
       datfile << "p_unit" << endl;
-      for (int k=0; k<this->p.nnz(); ++k) {
-        datfile << k << ": " << unit(this->p[k]) << endl;
+      for (int k=0; k<this->pREM.size(); ++k) {
+        datfile << k << ": " << unit(this->pREM[k]) << endl;
       }
       datfile << endl;
     }
@@ -1493,47 +1491,47 @@ namespace casadi {
     }
 
     // Control properties
-    if (!this->u.isEmpty()) {
+    if (!this->uREM.empty()) {
       datfile << "* control start values, scale factors, and bounds" << endl;
       datfile << "u(*,*)" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << start(this->u[k]) << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << start(this->uREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "u_sca(*,*)" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << nominal(this->u[k]) << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << nominal(this->uREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "u_min(*,*)" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << min(this->u[k]) << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << min(this->uREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "u_max(*,*)" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << max(this->u[k]) << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << max(this->uREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "u_fix(*,*)" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << (min(this->u[k])==max(this->u[k])) << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << (min(this->uREM[k])==max(this->uREM[k])) << endl;
       }
       datfile << endl;
 
       datfile << "u_name" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << this->u[k].getName() << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << this->uREM[k].getName() << endl;
       }
       datfile << endl;
 
       datfile << "u_unit" << endl;
-      for (int k=0; k<this->u.nnz(); ++k) {
-        datfile << k << ": " << unit(this->u[k]) << endl;
+      for (int k=0; k<this->uREM.size(); ++k) {
+        datfile << k << ": " << unit(this->uREM[k]) << endl;
       }
       datfile << endl;
     }
@@ -1999,11 +1997,11 @@ namespace casadi {
     v_in.push_back(vertcat(this->sREM));
     v_in.push_back(vertcat(this->sdotREM));
     v_in.push_back(vertcat(this->zREM));
-    v_in.push_back(this->u);
+    v_in.push_back(vertcat(this->uREM));
     v_in.push_back(vertcat(this->qREM));
     v_in.push_back(vertcat(this->iREM));
     v_in.push_back(vertcat(this->yREM));
-    v_in.push_back(this->p);
+    v_in.push_back(vertcat(this->pREM));
 
     // Input dimensions
     vector<int> dims(v_in.size());

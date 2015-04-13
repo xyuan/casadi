@@ -47,10 +47,10 @@ print ocp
 ocp.makeExplicit()
 #! Let us extract variables for the states, the control and equations
 x = vertcat(ocp.xREM)
-u = ocp.u
+u = vertcat(ocp.uREM)
 f = vertcat(ocp.odeREM)
 L = ocp.lterm
-I = ocp.init
+I = vertcat(ocp.initREM)
 #$ These are expressions that can be visualized or manipulated using CasADi's 
 #$ symbolic framework:
 print 5*sin(f[0])

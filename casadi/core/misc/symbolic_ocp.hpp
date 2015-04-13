@@ -125,20 +125,20 @@ namespace casadi {
      * The trajectories of the free controls are decision variables of the optimal control problem.
      * They are chosen by the optimization algorithm in order to minimize the cost functional.
      */
-    SX u;
+    std::vector<SX> uREM;
 
     /** \brief Free parameters
      * A free parameter is variables which is constant over time, but whose value is chosen by the
      * optimization algorithm in order to minimize the cost functional.
      */
-    SX p;
+    std::vector<SX> pREM;
     ///@}
 
     /** \brief Initial conditions
      * At <tt>t==0</tt>, <tt>0 == init(sdot, s, ...)</tt> holds in addition to
      * the ode and/or dae.
      */
-    SX init;
+    std::vector<SX> initREM;
 
     /// Interval start time
     double t0;
