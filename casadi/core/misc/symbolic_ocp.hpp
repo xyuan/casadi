@@ -105,7 +105,7 @@ namespace casadi {
      * \a alg and \a z have matching dimensions and
      * <tt>0 == alg(z, ...)</tt> implicitly defines \a z.
      */
-    SX z, alg;
+    std::vector<SX> zREM, algREM;
 
     /** \brief Quadrature states
      * Quadrature states are defined by ODEs whose state does not enter in the right-hand-side.
