@@ -99,7 +99,7 @@ namespace casadi {
     /** \brief Differential-algebraic equation (DAE) with corresponding state vector,
      * state derivatives.
      */
-    SX s, sdot, dae;
+    std::vector<SX> sREM, sdotREM, daeREM;
 
     /** \brief Algebraic equations and corresponding algebraic variables
      * \a alg and \a z have matching dimensions and
