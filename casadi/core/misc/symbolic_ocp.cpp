@@ -313,7 +313,7 @@ namespace casadi {
 
               // Read expression
               SX v = readExpr(var);
-              mterm.append(v);
+              this->mtermREM.push_back(v);
             }
           } catch(exception& ex) {
             throw CasadiException(std::string("addObjectiveFunction failed: ") + ex.what());
@@ -329,7 +329,7 @@ namespace casadi {
 
               // Read expression
               SX v = readExpr(var);
-              lterm.append(v);
+              this->ltermREM.push_back(v);
             }
           } catch(exception& ex) {
             throw CasadiException(std::string("addIntegrandObjectiveFunction failed: ")
@@ -547,17 +547,17 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->mterm.isEmpty()) {
+    if (!this->mtermREM.empty()) {
       stream << "Mayer objective terms" << endl;
-      for (int i=0; i<this->mterm.nnz(); ++i)
-        stream << this->mterm.at(i) << endl;
+      for (int i=0; i<this->mtermREM.size(); ++i)
+        stream << this->mtermREM[i] << endl;
       stream << endl;
     }
 
-    if (!this->lterm.isEmpty()) {
+    if (!this->ltermREM.empty()) {
       stream << "Lagrange objective terms" << endl;
-      for (int i=0; i<this->lterm.nnz(); ++i)
-        stream << this->lterm.at(i) << endl;
+      for (int i=0; i<this->ltermREM.size(); ++i)
+        stream << this->ltermREM[i] << endl;
       stream << endl;
     }
 
@@ -570,14 +570,12 @@ namespace casadi {
   }
 
   void SymbolicOCP::eliminate_lterm() {
-    // Index for the names
-    int ind = 0;
     // For every integral term in the objective function
-    for (SX::iterator it=this->lterm.begin(); it!=this->lterm.end(); ++it) {
+    for (int i=0; i<this->ltermREM.size(); ++i) {
 
       // Give a name to the quadrature state
       stringstream q_name;
-      q_name << "q_" << ind++;
+      q_name << "q_" << i;
 
       // Create a new quadrature state
       Variable qv(q_name.str());
@@ -595,14 +593,14 @@ namespace casadi {
       this->qREM.push_back(qv.v);
 
       // Add the Lagrange term to the list of quadratures
-      this->quadREM.push_back(qv.v);
+      this->quadREM.push_back(this->ltermREM[i]);
 
       // Add to the list of Mayer terms
-      this->mterm.append(qv.v);
+      this->mtermREM.push_back(qv.v);
     }
 
     // Remove the Lagrange terms
-    this->lterm.clear();
+    this->ltermREM.clear();
   }
 
   void SymbolicOCP::eliminate_quad() {
@@ -642,8 +640,8 @@ namespace casadi {
     ex.push_back(vertcat(this->idefREM));
     ex.push_back(vertcat(this->ydefREM));
     ex.push_back(vertcat(this->initREM));
-    ex.push_back(this->mterm);
-    ex.push_back(this->lterm);
+    ex.push_back(vertcat(this->mtermREM));
+    ex.push_back(vertcat(this->ltermREM));
 
     // Substitute all at once (more efficient since they may have common subexpressions)
     ex = substitute(ex, vector<SX>(1, v_id), vector<SX>(1, v_rep));
@@ -657,8 +655,8 @@ namespace casadi {
     this->idefREM = vertsplit(*it++ / nominal(vertcat(this->iREM)));
     this->ydefREM = vertsplit(*it++ / nominal(vertcat(this->yREM)));
     this->initREM = vertsplit(*it++);
-    this->mterm = *it++;
-    this->lterm = *it++;
+    this->mtermREM = vertsplit(*it++);
+    this->ltermREM = vertsplit(*it++);
     casadi_assert(it==ex.end());
 
     // Save the substituted expressions
@@ -726,8 +724,8 @@ namespace casadi {
     ex.push_back(vertcat(this->quadREM));
     ex.push_back(vertcat(this->ydefREM));
     ex.push_back(vertcat(this->initREM));
-    ex.push_back(this->mterm);
-    ex.push_back(this->lterm);
+    ex.push_back(vertcat(this->mtermREM));
+    ex.push_back(vertcat(this->ltermREM));
 
     // Substitute all at once (since they may have common subexpressions)
     substituteInPlace(this->iREM, this->idefREM, ex);
@@ -740,8 +738,8 @@ namespace casadi {
     this->quadREM = vertsplit(*it++);
     this->ydefREM = vertsplit(*it++);
     this->initREM = vertsplit(*it++);
-    this->mterm = *it++;
-    this->lterm = *it++;
+    this->mtermREM = vertsplit(*it++);
+    this->ltermREM = vertsplit(*it++);
     casadi_assert(it==ex.end());
   }
 

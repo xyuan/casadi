@@ -169,10 +169,10 @@ namespace casadi {
     ///@{
 
     /// Mayer terms in the objective (point terms)
-    SX mterm;
+    std::vector<SX> mtermREM;
 
     /// Lagrange terms in the objective (integral terms)
-    SX lterm;
+    std::vector<SX> ltermREM;
     ///@}
 
     /** @name Symbolic modeling

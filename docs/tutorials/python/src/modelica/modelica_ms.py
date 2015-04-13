@@ -49,7 +49,7 @@ ocp.makeExplicit()
 x = vertcat(ocp.xREM)
 u = vertcat(ocp.uREM)
 f = vertcat(ocp.odeREM)
-L = ocp.lterm
+L = vertcat(ocp.ltermREM)
 I = vertcat(ocp.initREM)
 #$ These are expressions that can be visualized or manipulated using CasADi's 
 #$ symbolic framework:
