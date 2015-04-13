@@ -51,7 +51,6 @@ namespace casadi {
 
     // Start with vectors of zero length
     this->init=
-      this->y=this->ydef=
       this->u=
       this->p=
       SX::zeros(0, 1);
@@ -479,7 +478,7 @@ namespace casadi {
     stream << "#z = " << this->zREM.size() << ", ";
     stream << "#q = " << this->qREM.size() << ", ";
     stream << "#i = " << this->iREM.size() << ", ";
-    stream << "#y = " << this->y.nnz() << ", ";
+    stream << "#y = " << this->yREM.size() << ", ";
     stream << "#u = " << this->u.nnz() << ", ";
     stream << "#p = " << this->p.nnz() << ", ";
     stream << endl << endl;
@@ -495,7 +494,7 @@ namespace casadi {
     stream << "  z =  " << this->zREM << endl;
     stream << "  q =  " << this->qREM << endl;
     stream << "  i =  " << this->iREM << endl;
-    stream << "  y =  " << str(this->y) << endl;
+    stream << "  y =  " << this->yREM << endl;
     stream << "  u =  " << str(this->u) << endl;
     stream << "  p =  " << str(this->p) << endl;
     stream << "}" << endl;
@@ -547,10 +546,10 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->y.isEmpty()) {
+    if (!this->yREM.empty()) {
       stream << "Output variables" << endl;
-      for (int i=0; i<this->y.nnz(); ++i)
-        stream << this->y.at(i) << " == " << str(this->ydef.at(i)) << endl;
+      for (int i=0; i<this->yREM.size(); ++i)
+        stream << this->yREM[i] << " == " << str(this->ydefREM[i]) << endl;
       stream << endl;
     }
 
@@ -647,7 +646,7 @@ namespace casadi {
     ex.push_back(vertcat(this->algREM));
     ex.push_back(vertcat(this->quadREM));
     ex.push_back(vertcat(this->idefREM));
-    ex.push_back(this->ydef);
+    ex.push_back(vertcat(this->ydefREM));
     ex.push_back(this->init);
     ex.push_back(this->mterm);
     ex.push_back(this->lterm);
@@ -662,7 +661,7 @@ namespace casadi {
     this->algREM = vertsplit(*it++);
     this->quadREM = vertsplit(*it++ / nominal(vertcat(this->qREM)));
     this->idefREM = vertsplit(*it++ / nominal(vertcat(this->iREM)));
-    this->ydef = *it++ / nominal(this->y);
+    this->ydefREM = vertsplit(*it++ / nominal(vertcat(this->yREM)));
     this->init = *it++;
     this->mterm = *it++;
     this->lterm = *it++;
@@ -731,7 +730,7 @@ namespace casadi {
     ex.push_back(vertcat(this->odeREM));
     ex.push_back(vertcat(this->algREM));
     ex.push_back(vertcat(this->quadREM));
-    ex.push_back(this->ydef);
+    ex.push_back(vertcat(this->ydefREM));
     ex.push_back(this->init);
     ex.push_back(this->mterm);
     ex.push_back(this->lterm);
@@ -745,7 +744,7 @@ namespace casadi {
     this->odeREM = vertsplit(*it++);
     this->algREM = vertsplit(*it++);
     this->quadREM = vertsplit(*it++);
-    this->ydef = *it++;
+    this->ydefREM = vertsplit(*it++);
     this->init = *it++;
     this->mterm = *it++;
     this->lterm = *it++;
@@ -1230,8 +1229,13 @@ namespace casadi {
     }
 
     // Output equations
-    casadi_assert_message(this->y.isSymbolic(), "Non-symbolic output y");
-    casadi_assert_message(this->y.shape()==this->ydef.shape(), "ydef has wrong dimensions");
+    casadi_assert_message(this->yREM.size()==this->ydefREM.size(),
+                          "y and ydef have different lengths");
+    for (int i=0; i<this->iREM.size(); ++i) {
+      casadi_assert_message(this->yREM[i].isSymbolic(), "Non-symbolic output y");
+      casadi_assert_message(this->yREM[i].shape()==this->ydefREM[i].shape(),
+                            "ydef has wrong dimensions");
+    }
 
     // Control
     casadi_assert_message(this->u.isSymbolic(), "Non-symbolic control u");
@@ -1998,7 +2002,7 @@ namespace casadi {
     v_in.push_back(this->u);
     v_in.push_back(vertcat(this->qREM));
     v_in.push_back(vertcat(this->iREM));
-    v_in.push_back(this->y);
+    v_in.push_back(vertcat(this->yREM));
     v_in.push_back(this->p);
 
     // Input dimensions
@@ -2032,7 +2036,7 @@ namespace casadi {
     v_out.push_back(vertcat(this->algREM));
     v_out.push_back(vertcat(this->quadREM));
     v_out.push_back(vertcat(this->idefREM));
-    v_out.push_back(this->ydef);
+    v_out.push_back(vertcat(this->ydefREM));
 
     // Output dimensions
     dims.resize(v_out.size());
@@ -2069,7 +2073,8 @@ namespace casadi {
                      vector<SX>(1, vertcat(this->quadREM)), gen);
     generateFunction(gen.function_, prefix+"eval_idef", v_in,
                      vector<SX>(1, vertcat(this->idefREM)), gen);
-    generateFunction(gen.function_, prefix+"eval_ydef", v_in, vector<SX>(1, this->ydef), gen);
+    generateFunction(gen.function_, prefix+"eval_ydef", v_in,
+                     vector<SX>(1, vertcat(this->ydefREM)), gen);
 
     // All functions at once, with derivatives
     generateFunction(gen.function_, prefix+"eval", v_in, v_out, gen, true, true, true);
@@ -2099,7 +2104,7 @@ namespace casadi {
     lam.push_back(SX::sym("lam_alg", vertcat(this->algREM).sparsity()));
     lam.push_back(SX::sym("lam_quad", vertcat(this->quadREM).sparsity()));
     lam.push_back(SX::sym("lam_idef", vertcat(this->idefREM).sparsity()));
-    lam.push_back(SX::sym("lam_ydef", this->ydef.sparsity()));
+    lam.push_back(SX::sym("lam_ydef", vertcat(this->ydefREM).sparsity()));
 
     // Jacobian of all input w.r.t. all outputs
     SX lam_all = vertcat(lam);

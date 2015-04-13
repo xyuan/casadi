@@ -119,7 +119,7 @@ namespace casadi {
 
     /** \brief Output variables and corresponding definitions
      */
-    SX y, ydef;
+    std::vector<SX> yREM, ydefREM;
 
     /** \brief Free controls
      * The trajectories of the free controls are decision variables of the optimal control problem.
