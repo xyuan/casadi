@@ -94,51 +94,51 @@ namespace casadi {
 
     /** \brief Differential states defined by ordinary differential equations (ODE)
      */
-    std::vector<SX> xREM, odeREM;
+    std::vector<SX> x, ode;
 
     /** \brief Differential-algebraic equation (DAE) with corresponding state vector,
      * state derivatives.
      */
-    std::vector<SX> sREM, sdotREM, daeREM;
+    std::vector<SX> s, sdot, dae;
 
     /** \brief Algebraic equations and corresponding algebraic variables
      * \a alg and \a z have matching dimensions and
      * <tt>0 == alg(z, ...)</tt> implicitly defines \a z.
      */
-    std::vector<SX> zREM, algREM;
+    std::vector<SX> z, alg;
 
     /** \brief Quadrature states
      * Quadrature states are defined by ODEs whose state does not enter in the right-hand-side.
      */
-    std::vector<SX> qREM, quadREM;
+    std::vector<SX> q, quad;
 
     /** \brief Intermediate variables and definitions definitions
      * Interdependencies are allowed but must be non-cyclic.
      */
-    std::vector<SX> iREM, idefREM;
+    std::vector<SX> i, idef;
 
     /** \brief Output variables and corresponding definitions
      */
-    std::vector<SX> yREM, ydefREM;
+    std::vector<SX> y, ydef;
 
     /** \brief Free controls
      * The trajectories of the free controls are decision variables of the optimal control problem.
      * They are chosen by the optimization algorithm in order to minimize the cost functional.
      */
-    std::vector<SX> uREM;
+    std::vector<SX> u;
 
     /** \brief Free parameters
      * A free parameter is variables which is constant over time, but whose value is chosen by the
      * optimization algorithm in order to minimize the cost functional.
      */
-    std::vector<SX> pREM;
+    std::vector<SX> p;
     ///@}
 
     /** \brief Initial conditions
      * At <tt>t==0</tt>, <tt>0 == init(sdot, s, ...)</tt> holds in addition to
      * the ode and/or dae.
      */
-    std::vector<SX> initREM;
+    std::vector<SX> init;
 
     /// Interval start time
     double t0;
@@ -169,10 +169,10 @@ namespace casadi {
     ///@{
 
     /// Mayer terms in the objective (point terms)
-    std::vector<SX> mtermREM;
+    std::vector<SX> mterm;
 
     /// Lagrange terms in the objective (integral terms)
-    std::vector<SX> ltermREM;
+    std::vector<SX> lterm;
     ///@}
 
     /** @name Symbolic modeling
