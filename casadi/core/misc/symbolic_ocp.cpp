@@ -51,7 +51,6 @@ namespace casadi {
 
     // Start with vectors of zero length
     this->s=this->sdot=this->dae=this->init=
-      this->x=this->ode=
       this->z=this->alg=
       this->q=this->quad=
       this->i=this->idef=
@@ -479,7 +478,7 @@ namespace casadi {
   void SymbolicOCP::print(ostream &stream, bool trailing_newline) const {
     stream << "Dimensions: ";
     stream << "#s = " << this->s.nnz() << ", ";
-    stream << "#x = " << this->x.nnz() << ", ";
+    stream << "#x = " << this->xREM.size() << ", ";
     stream << "#z = " << this->z.nnz() << ", ";
     stream << "#q = " << this->q.nnz() << ", ";
     stream << "#i = " << this->i.nnz() << ", ";
@@ -495,7 +494,7 @@ namespace casadi {
     stream << "{" << endl;
     stream << "  t = " << str(this->t) << endl;
     stream << "  s = " << str(this->s) << endl;
-    stream << "  x = " << str(this->x) << endl;
+    stream << "  x = " << this->xREM << endl;
     stream << "  z =  " << str(this->z) << endl;
     stream << "  q =  " << str(this->q) << endl;
     stream << "  i =  " << str(this->i) << endl;
@@ -512,10 +511,10 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->x.isEmpty()) {
+    if (!this->xREM.empty()) {
       stream << "Differential equations" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        stream << str(der(this->x[k])) << " == " << str(this->ode[k]) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        stream << str(der(this->xREM[k])) << " == " << str(this->odeREM[k]) << endl;
       }
       stream << endl;
     }
@@ -618,7 +617,8 @@ namespace casadi {
 
   void SymbolicOCP::eliminate_quad() {
     // Move all the quadratures to the list of differential states
-    this->x.append(this->q);
+    vector<SX> qREM = vertsplit(this->q);
+    this->xREM.insert(this->xREM.end(),qREM.begin(), qREM.end());
     this->q = SX::zeros(0, 1);
   }
 
@@ -646,7 +646,7 @@ namespace casadi {
 
     // Collect all expressions to be replaced
     vector<SX> ex;
-    ex.push_back(this->ode);
+    ex.push_back(vertcat(this->odeREM));
     ex.push_back(this->dae);
     ex.push_back(this->alg);
     ex.push_back(this->quad);
@@ -661,7 +661,7 @@ namespace casadi {
 
     // Get the modified expressions
     vector<SX>::const_iterator it=ex.begin();
-    this->ode = *it++ / nominal(this->x);
+    this->odeREM = vertsplit(*it++ / nominal(vertcat(this->xREM)));
     this->dae = *it++;
     this->alg = *it++;
     this->quad = *it++ / nominal(this->q);
@@ -722,7 +722,7 @@ namespace casadi {
     // Collect all expressions to be replaced
     vector<SX> ex;
     ex.push_back(this->dae);
-    ex.push_back(this->ode);
+    ex.push_back(vertcat(this->odeREM));
     ex.push_back(this->alg);
     ex.push_back(this->quad);
     ex.push_back(this->ydef);
@@ -736,7 +736,7 @@ namespace casadi {
     // Get the modified expressions
     vector<SX>::const_iterator it=ex.begin();
     this->dae = *it++;
-    this->ode = *it++;
+    this->odeREM = vertsplit(*it++);
     this->alg = *it++;
     this->quad = *it++;
     this->ydef = *it++;
@@ -748,7 +748,7 @@ namespace casadi {
 
   void SymbolicOCP::scaleEquations() {
     casadi_error("SymbolicOCP::scaleEquations broken");
-
+#if 0
     cout << "Scaling equations ..." << endl;
     double time1 = clock();
 
@@ -811,11 +811,12 @@ namespace casadi {
     double time2 = clock();
     double dt = (time2-time1)/CLOCKS_PER_SEC;
     cout << "... equation scaling complete after " << dt << " seconds." << endl;
+#endif
   }
 
   void SymbolicOCP::sort_dae() {
     // Quick return if no differential states
-    if (this->x.isEmpty()) return;
+    if (this->xREM.empty()) return;
 
     // Find out which differential equation depends on which differential state
     SXFunction f(this->sdot, this->dae);
@@ -892,7 +893,7 @@ namespace casadi {
     SX J = f.jac();
 
     // Explicit ODE
-    SX new_ode;
+    vector<SX> new_ode;
 
     // Loop over blocks
     for (int b=0; b<nb; ++b) {
@@ -917,27 +918,29 @@ namespace casadi {
       // Divide fb into a part which depends on vb and a part which doesn't according to
       // "fb == mul(Jb, vb) + fb_res"
       SX fb_res = substitute(fb, der(xb), SX::zeros(xb.sparsity()));
-      SX fb_exp;
+      vector<SX> fb_exp;
 
       // Solve for vb
       if (bs <= 3) {
         // Calculate inverse and multiply for very small matrices
-        fb_exp = mul(inv(Jb), -fb_res);
+        fb_exp = vertsplit(mul(inv(Jb), -fb_res));
       } else {
         // QR factorization
-        fb_exp = solve(Jb, -fb_res);
+        fb_exp = vertsplit(solve(Jb, -fb_res));
       }
 
       // Add to explicitly determined equations and variables
-      new_ode.append(fb_exp);
+      new_ode.insert(new_ode.end(), fb_exp.begin(), fb_exp.end());
     }
 
     // Eliminate inter-dependencies
-    substituteInPlace(this->sdot, new_ode, false);
+    vector<SX> ex;
+    substituteInPlace(vertsplit(this->sdot), new_ode, ex, false);
 
     // Add to explicit differential states and ODE
-    this->x.append(this->s);
-    this->ode.append(new_ode);
+    vector<SX> sREM = vertsplit(this->s);
+    this->xREM.insert(this->xREM.end(), sREM.begin(), sREM.end());
+    this->odeREM.insert(this->odeREM.end(), new_ode.begin(), new_ode.end());
     this->dae = this->s = this->sdot = SX::zeros(0, 1);
   }
 
@@ -1090,7 +1093,7 @@ namespace casadi {
 
   SX SymbolicOCP::add_x(const std::string& name) {
     SX new_x = addVariable(name);
-    this->x.append(new_x);
+    this->xREM.push_back(new_x);
     return new_x;
   }
 
@@ -1121,7 +1124,7 @@ namespace casadi {
   }
 
   void SymbolicOCP::add_ode(const SX& new_ode) {
-    this->ode.append(new_ode);
+    this->odeREM.push_back(new_ode);
   }
 
   void SymbolicOCP::add_dae(const SX& new_dae) {
@@ -1138,11 +1141,14 @@ namespace casadi {
     casadi_assert_message(this->t.isScalar(), "Non-scalar time t");
 
     // Differential states
-    casadi_assert_message(this->x.isSymbolic(), "Non-symbolic state x");
-    casadi_assert_message(this->x.shape()==this->ode.shape(), "ode has wrong dimensions");
+    casadi_assert_message(this->xREM.size()==this->odeREM.size(), "ode has wrong dimensions");
+    for (int i=0; i<this->xREM.size(); ++i) {
+      casadi_assert_message(this->xREM[i].shape()==this->odeREM[i].shape(), "ode has wrong dimensions");
+      casadi_assert_message(this->xREM[i].isSymbolic(), "Non-symbolic state x");
+    }
 
     // DAE
-    casadi_assert_message(this->s.isSymbolic(), "Non-symbolic state x");
+    casadi_assert_message(this->s.isSymbolic(), "Non-symbolic state s");
     casadi_assert_message(this->s.shape()==this->sdot.shape(), "sdot has wrong dimensions");
     casadi_assert_message(this->s.shape()==this->dae.shape(), "dae has wrong dimensions");
 
@@ -1326,47 +1332,47 @@ namespace casadi {
     }
 
     // Differential state properties
-    if (!this->x.isEmpty()) {
+    if (!this->xREM.empty()) {
       datfile << "*  differential state start values, scale factors, and bounds" << endl;
       datfile << "sd(*,*)" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << start(this->x[k]) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << start(this->xREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "sd_sca(*,*)" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << nominal(this->x[k]) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << nominal(this->xREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "sd_min(*,*)" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << min(this->x[k]) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << min(this->xREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "sd_max(*,*)" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << max(this->x[k]) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << max(this->xREM[k]) << endl;
       }
       datfile << endl;
 
       datfile << "sd_fix(*,*)" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << (min(this->x[k])==max(this->x[k])) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << (min(this->xREM[k])==max(this->xREM[k])) << endl;
       }
       datfile << endl;
 
       datfile << "xd_name" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << this->x[k].getName() << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << this->xREM[k].getName() << endl;
       }
       datfile << endl;
 
       datfile << "xd_unit" << endl;
-      for (int k=0; k<this->x.nnz(); ++k) {
-        datfile << k << ": " << unit(this->x[k]) << endl;
+      for (int k=0; k<this->xREM.size(); ++k) {
+        datfile << k << ": " << unit(this->xREM[k]) << endl;
       }
       datfile << endl;
     }
@@ -1920,7 +1926,7 @@ namespace casadi {
     // All inputs
     vector<SX> v_in;
     v_in.push_back(this->t);
-    v_in.push_back(this->x);
+    v_in.push_back(vertcat(this->xREM));
     v_in.push_back(this->s);
     v_in.push_back(this->sdot);
     v_in.push_back(this->z);
@@ -1956,7 +1962,7 @@ namespace casadi {
 
     // All outputs
     vector<SX> v_out;
-    v_out.push_back(this->ode);
+    v_out.push_back(vertcat(this->odeREM));
     v_out.push_back(this->dae);
     v_out.push_back(this->alg);
     v_out.push_back(this->quad);
@@ -1988,7 +1994,7 @@ namespace casadi {
       << "}" << endl << endl;
 
     // Basic functions individually
-    generateFunction(gen.function_, prefix+"eval_ode", v_in, vector<SX>(1, this->ode), gen);
+    generateFunction(gen.function_, prefix+"eval_ode", v_in, vector<SX>(1, vertcat(this->odeREM)), gen);
     generateFunction(gen.function_, prefix+"eval_dae", v_in, vector<SX>(1, this->dae), gen);
     generateFunction(gen.function_, prefix+"eval_alg", v_in, vector<SX>(1, this->alg), gen);
     generateFunction(gen.function_, prefix+"eval_quad", v_in, vector<SX>(1, this->quad), gen);
@@ -2018,7 +2024,7 @@ namespace casadi {
 
     // Introduce lagrange multipliers
     vector<SX> lam;
-    lam.push_back(SX::sym("lam_ode", this->ode.sparsity()));
+    lam.push_back(SX::sym("lam_ode", vertcat(this->odeREM).sparsity()));
     lam.push_back(SX::sym("lam_dae", this->dae.sparsity()));
     lam.push_back(SX::sym("lam_alg", this->alg.sparsity()));
     lam.push_back(SX::sym("lam_quad", this->quad.sparsity()));

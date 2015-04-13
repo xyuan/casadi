@@ -94,7 +94,7 @@ namespace casadi {
 
     /** \brief Differential states defined by ordinary differential equations (ODE)
      */
-    SX x, ode;
+    std::vector<SX> xREM, odeREM;
 
     /** \brief Differential-algebraic equation (DAE) with corresponding state vector,
      * state derivatives.
