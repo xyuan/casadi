@@ -115,7 +115,7 @@ namespace casadi {
     /** \brief Intermediate variables and definitions definitions
      * Interdependencies are allowed but must be non-cyclic.
      */
-    SX i, idef;
+    std::vector<SX> iREM, idefREM;
 
     /** \brief Output variables and corresponding definitions
      */

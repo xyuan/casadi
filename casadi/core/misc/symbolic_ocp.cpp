@@ -51,7 +51,6 @@ namespace casadi {
 
     // Start with vectors of zero length
     this->init=
-      this->i=this->idef=
       this->y=this->ydef=
       this->u=
       this->p=
@@ -225,8 +224,8 @@ namespace casadi {
         // Get the variable and binding expression
         Variable& var = readVariable(beq[0]);
         SX bexpr = readExpr(beq[1][0]);
-        this->i.append(var.v);
-        this->idef.append(bexpr);
+        this->iREM.push_back(var.v);
+        this->idefREM.push_back(bexpr);
       }
     }
 
@@ -260,7 +259,7 @@ namespace casadi {
 
         // Add the differential equations
         for (int i=0; i<inode.size(); ++i) {
-          init.append(readExpr(inode[i]));
+          this->init.append(readExpr(inode[i]));
         }
       }
     }
@@ -479,7 +478,7 @@ namespace casadi {
     stream << "#x = " << this->xREM.size() << ", ";
     stream << "#z = " << this->zREM.size() << ", ";
     stream << "#q = " << this->qREM.size() << ", ";
-    stream << "#i = " << this->i.nnz() << ", ";
+    stream << "#i = " << this->iREM.size() << ", ";
     stream << "#y = " << this->y.nnz() << ", ";
     stream << "#u = " << this->u.nnz() << ", ";
     stream << "#p = " << this->p.nnz() << ", ";
@@ -495,7 +494,7 @@ namespace casadi {
     stream << "  x = " << this->xREM << endl;
     stream << "  z =  " << this->zREM << endl;
     stream << "  q =  " << this->qREM << endl;
-    stream << "  i =  " << str(this->i) << endl;
+    stream << "  i =  " << this->iREM << endl;
     stream << "  y =  " << str(this->y) << endl;
     stream << "  u =  " << str(this->u) << endl;
     stream << "  p =  " << str(this->p) << endl;
@@ -541,10 +540,10 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->i.isEmpty()) {
+    if (!this->iREM.empty()) {
       stream << "Intermediate variables" << endl;
-      for (int i=0; i<this->i.nnz(); ++i)
-        stream << this->i.at(i) << " == " << str(this->idef.at(i)) << endl;
+      for (int i=0; i<this->iREM.size(); ++i)
+        stream << this->iREM[i] << " == " << str(this->idefREM[i]) << endl;
       stream << endl;
     }
 
@@ -647,7 +646,7 @@ namespace casadi {
     ex.push_back(vertcat(this->daeREM));
     ex.push_back(vertcat(this->algREM));
     ex.push_back(vertcat(this->quadREM));
-    ex.push_back(this->idef);
+    ex.push_back(vertcat(this->idefREM));
     ex.push_back(this->ydef);
     ex.push_back(this->init);
     ex.push_back(this->mterm);
@@ -662,7 +661,7 @@ namespace casadi {
     this->daeREM = vertsplit(*it++);
     this->algREM = vertsplit(*it++);
     this->quadREM = vertsplit(*it++ / nominal(vertcat(this->qREM)));
-    this->idef = *it++ / nominal(this->i);
+    this->idefREM = vertsplit(*it++ / nominal(vertcat(this->iREM)));
     this->ydef = *it++ / nominal(this->y);
     this->init = *it++;
     this->mterm = *it++;
@@ -679,39 +678,49 @@ namespace casadi {
 
   void SymbolicOCP::sort_i() {
     // Quick return if no intermediates
-    if (this->i.isEmpty()) return;
+    if (this->iREM.empty()) return;
 
     // Find out which intermediates depends on which other
-    SXFunction f(this->i, this->i - this->idef);
+    SXFunction f(vertcat(this->iREM), vertcat(this->iREM) - vertcat(this->idefREM));
     f.init();
     Sparsity sp = f.jacSparsity();
+    casadi_assert(sp.isSquare());
 
     // BLT transformation
     vector<int> rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock;
     sp.dulmageMendelsohn(rowperm, colperm, rowblock, colblock, coarse_rowblock, coarse_colblock);
 
-    // Permute variables
-    this->i = this->i(colperm);
-    this->idef = this->idef(colperm);
+    // Resort equations and variables
+    vector<SX> idefnew(this->iREM.size()), inew(this->iREM.size());
+    for (int i=0; i<colperm.size(); ++i) {
+      // Permute equations
+      idefnew[i] = this->idefREM[colperm[i]];
+
+      // Permute variables
+      inew[i] = this->iREM[colperm[i]];
+    }
+    this->idefREM = idefnew;
+    this->iREM = inew;
   }
 
   void SymbolicOCP::split_i() {
     // Quick return if no intermediates
-    if (this->i.isEmpty()) return;
+    if (this->iREM.empty()) return;
 
     // Begin by sorting the intermediate
     sort_i();
 
     // Sort the equations by causality
-    substituteInPlace(this->i, this->idef);
+    vector<SX> ex;
+    substituteInPlace(this->iREM, this->idefREM, ex);
 
     // Make sure that the interdependencies have been properly eliminated
-    casadi_assert(!dependsOn(this->idef, this->i));
+    casadi_assert(!dependsOn(vertcat(this->idefREM), vertcat(this->iREM)));
   }
 
   void SymbolicOCP::eliminate_i() {
     // Quick return if possible
-    if (this->i.isEmpty()) return;
+    if (this->iREM.empty()) return;
 
     // Begin by sorting the intermediate
     sort_i();
@@ -728,7 +737,7 @@ namespace casadi {
     ex.push_back(this->lterm);
 
     // Substitute all at once (since they may have common subexpressions)
-    substituteInPlace(this->i, this->idef, ex);
+    substituteInPlace(this->iREM, this->idefREM, ex);
 
     // Get the modified expressions
     vector<SX>::const_iterator it=ex.begin();
@@ -1065,8 +1074,8 @@ namespace casadi {
 
     // Add to the beginning of the dependent variables
     // (since the other dependent variable might depend on them)
-    this->i = vertcat(vertcat(z_exp), this->i);
-    this->idef = vertcat(vertcat(f_exp), this->idef);
+    this->iREM.insert(this->iREM.begin(), z_exp.begin(), z_exp.end());
+    this->idefREM.insert(this->idefREM.begin(), f_exp.begin(), f_exp.end());
 
     // Save new algebraic equations
     this->zREM = z_imp;
@@ -1212,8 +1221,13 @@ namespace casadi {
     }
 
     // Intermediate variables
-    casadi_assert_message(this->i.isSymbolic(), "Non-symbolic intermediate variable i");
-    casadi_assert_message(this->i.shape()==this->idef.shape(), "idef has wrong dimensions");
+    casadi_assert_message(this->iREM.size()==this->idefREM.size(),
+                          "i and idef have different lengths");
+    for (int i=0; i<this->iREM.size(); ++i) {
+      casadi_assert_message(this->iREM[i].isSymbolic(), "Non-symbolic intermediate variable i");
+      casadi_assert_message(this->iREM[i].shape()==this->idefREM[i].shape(),
+                            "idef has wrong dimensions");
+    }
 
     // Output equations
     casadi_assert_message(this->y.isSymbolic(), "Non-symbolic output y");
@@ -1983,7 +1997,7 @@ namespace casadi {
     v_in.push_back(vertcat(this->zREM));
     v_in.push_back(this->u);
     v_in.push_back(vertcat(this->qREM));
-    v_in.push_back(this->i);
+    v_in.push_back(vertcat(this->iREM));
     v_in.push_back(this->y);
     v_in.push_back(this->p);
 
@@ -2017,7 +2031,7 @@ namespace casadi {
     v_out.push_back(vertcat(this->daeREM));
     v_out.push_back(vertcat(this->algREM));
     v_out.push_back(vertcat(this->quadREM));
-    v_out.push_back(this->idef);
+    v_out.push_back(vertcat(this->idefREM));
     v_out.push_back(this->ydef);
 
     // Output dimensions
@@ -2053,7 +2067,8 @@ namespace casadi {
                      vector<SX>(1, vertcat(this->algREM)), gen);
     generateFunction(gen.function_, prefix+"eval_quad", v_in,
                      vector<SX>(1, vertcat(this->quadREM)), gen);
-    generateFunction(gen.function_, prefix+"eval_idef", v_in, vector<SX>(1, this->idef), gen);
+    generateFunction(gen.function_, prefix+"eval_idef", v_in,
+                     vector<SX>(1, vertcat(this->idefREM)), gen);
     generateFunction(gen.function_, prefix+"eval_ydef", v_in, vector<SX>(1, this->ydef), gen);
 
     // All functions at once, with derivatives
@@ -2083,7 +2098,7 @@ namespace casadi {
     lam.push_back(SX::sym("lam_dae", vertcat(this->daeREM).sparsity()));
     lam.push_back(SX::sym("lam_alg", vertcat(this->algREM).sparsity()));
     lam.push_back(SX::sym("lam_quad", vertcat(this->quadREM).sparsity()));
-    lam.push_back(SX::sym("lam_idef", this->idef.sparsity()));
+    lam.push_back(SX::sym("lam_idef", vertcat(this->idefREM).sparsity()));
     lam.push_back(SX::sym("lam_ydef", this->ydef.sparsity()));
 
     // Jacobian of all input w.r.t. all outputs
