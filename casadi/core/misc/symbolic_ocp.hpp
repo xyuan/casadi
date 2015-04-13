@@ -110,7 +110,7 @@ namespace casadi {
     /** \brief Quadrature states
      * Quadrature states are defined by ODEs whose state does not enter in the right-hand-side.
      */
-    SX q, quad;
+    std::vector<SX> qREM, quadREM;
 
     /** \brief Intermediate variables and definitions definitions
      * Interdependencies are allowed but must be non-cyclic.

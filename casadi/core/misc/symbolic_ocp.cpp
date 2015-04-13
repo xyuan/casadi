@@ -52,7 +52,6 @@ namespace casadi {
     // Start with vectors of zero length
     this->s=this->sdot=this->dae=this->init=
       this->z=this->alg=
-      this->q=this->quad=
       this->i=this->idef=
       this->y=this->ydef=
       this->u=
@@ -480,7 +479,7 @@ namespace casadi {
     stream << "#s = " << this->s.nnz() << ", ";
     stream << "#x = " << this->xREM.size() << ", ";
     stream << "#z = " << this->z.nnz() << ", ";
-    stream << "#q = " << this->q.nnz() << ", ";
+    stream << "#q = " << this->qREM.size() << ", ";
     stream << "#i = " << this->i.nnz() << ", ";
     stream << "#y = " << this->y.nnz() << ", ";
     stream << "#u = " << this->u.nnz() << ", ";
@@ -496,7 +495,7 @@ namespace casadi {
     stream << "  s = " << str(this->s) << endl;
     stream << "  x = " << this->xREM << endl;
     stream << "  z =  " << str(this->z) << endl;
-    stream << "  q =  " << str(this->q) << endl;
+    stream << "  q =  " << this->qREM << endl;
     stream << "  i =  " << str(this->i) << endl;
     stream << "  y =  " << str(this->y) << endl;
     stream << "  u =  " << str(this->u) << endl;
@@ -527,10 +526,10 @@ namespace casadi {
       stream << endl;
     }
 
-    if (!this->q.isEmpty()) {
+    if (!this->qREM.empty()) {
       stream << "Quadrature equations" << endl;
-      for (int k=0; k<this->q.nnz(); ++k) {
-        stream << str(der(this->q[k])) << " == " << str(this->quad[k]) << endl;
+      for (int k=0; k<this->qREM.size(); ++k) {
+        stream << str(der(this->qREM[k])) << " == " << str(this->quadREM[k]) << endl;
       }
       stream << endl;
     }
@@ -602,10 +601,10 @@ namespace casadi {
       addVariable(q_name.str(), qv);
 
       // Add to the quadrature states
-      this->q.append(qv.v);
+      this->qREM.push_back(qv.v);
 
       // Add the Lagrange term to the list of quadratures
-      this->quad.append(qv.v);
+      this->quadREM.push_back(qv.v);
 
       // Add to the list of Mayer terms
       this->mterm.append(qv.v);
@@ -617,9 +616,8 @@ namespace casadi {
 
   void SymbolicOCP::eliminate_quad() {
     // Move all the quadratures to the list of differential states
-    vector<SX> qREM = vertsplit(this->q);
-    this->xREM.insert(this->xREM.end(),qREM.begin(), qREM.end());
-    this->q = SX::zeros(0, 1);
+    this->xREM.insert(this->xREM.end(),this->qREM.begin(), this->qREM.end());
+    this->qREM.clear();
   }
 
   void SymbolicOCP::scaleVariables() {
@@ -649,7 +647,7 @@ namespace casadi {
     ex.push_back(vertcat(this->odeREM));
     ex.push_back(this->dae);
     ex.push_back(this->alg);
-    ex.push_back(this->quad);
+    ex.push_back(vertcat(this->quadREM));
     ex.push_back(this->idef);
     ex.push_back(this->ydef);
     ex.push_back(this->init);
@@ -664,7 +662,7 @@ namespace casadi {
     this->odeREM = vertsplit(*it++ / nominal(vertcat(this->xREM)));
     this->dae = *it++;
     this->alg = *it++;
-    this->quad = *it++ / nominal(this->q);
+    this->quadREM = vertsplit(*it++ / nominal(vertcat(this->qREM)));
     this->idef = *it++ / nominal(this->i);
     this->ydef = *it++ / nominal(this->y);
     this->init = *it++;
@@ -724,7 +722,7 @@ namespace casadi {
     ex.push_back(this->dae);
     ex.push_back(vertcat(this->odeREM));
     ex.push_back(this->alg);
-    ex.push_back(this->quad);
+    ex.push_back(vertcat(this->quadREM));
     ex.push_back(this->ydef);
     ex.push_back(this->init);
     ex.push_back(this->mterm);
@@ -738,7 +736,7 @@ namespace casadi {
     this->dae = *it++;
     this->odeREM = vertsplit(*it++);
     this->alg = *it++;
-    this->quad = *it++;
+    this->quadREM = vertsplit(*it++);
     this->ydef = *it++;
     this->init = *it++;
     this->mterm = *it++;
@@ -1157,8 +1155,11 @@ namespace casadi {
     casadi_assert_message(this->z.shape()==this->alg.shape(), "alg has wrong dimensions");
 
     // Quadrature states/equations
-    casadi_assert_message(this->q.isSymbolic(), "Non-symbolic quadrature state q");
-    casadi_assert_message(this->q.shape()==this->quad.shape(), "quad has wrong dimensions");
+    casadi_assert_message(this->qREM.size()==this->quadREM.size(), "quad has wrong dimensions");
+    for (int i=0; i<this->qREM.size(); ++i) {
+      casadi_assert_message(this->qREM[i].isSymbolic(), "Non-symbolic quadrature state q");
+      casadi_assert_message(this->qREM[i].shape()==this->quadREM[i].shape(), "quad has wrong dimensions");
+    }
 
     // Intermediate variables
     casadi_assert_message(this->i.isSymbolic(), "Non-symbolic intermediate variable i");
@@ -1931,7 +1932,7 @@ namespace casadi {
     v_in.push_back(this->sdot);
     v_in.push_back(this->z);
     v_in.push_back(this->u);
-    v_in.push_back(this->q);
+    v_in.push_back(vertcat(this->qREM));
     v_in.push_back(this->i);
     v_in.push_back(this->y);
     v_in.push_back(this->p);
@@ -1965,7 +1966,7 @@ namespace casadi {
     v_out.push_back(vertcat(this->odeREM));
     v_out.push_back(this->dae);
     v_out.push_back(this->alg);
-    v_out.push_back(this->quad);
+    v_out.push_back(vertcat(this->quadREM));
     v_out.push_back(this->idef);
     v_out.push_back(this->ydef);
 
@@ -1997,9 +1998,9 @@ namespace casadi {
     generateFunction(gen.function_, prefix+"eval_ode", v_in, vector<SX>(1, vertcat(this->odeREM)), gen);
     generateFunction(gen.function_, prefix+"eval_dae", v_in, vector<SX>(1, this->dae), gen);
     generateFunction(gen.function_, prefix+"eval_alg", v_in, vector<SX>(1, this->alg), gen);
-    generateFunction(gen.function_, prefix+"eval_quad", v_in, vector<SX>(1, this->quad), gen);
-    generateFunction(gen.function_, prefix+"eval_idef", v_in, vector<SX>(1, this->quad), gen);
-    generateFunction(gen.function_, prefix+"eval_ydef", v_in, vector<SX>(1, this->quad), gen);
+    generateFunction(gen.function_, prefix+"eval_quad", v_in, vector<SX>(1, vertcat(this->quadREM)), gen);
+    generateFunction(gen.function_, prefix+"eval_idef", v_in, vector<SX>(1, this->idef), gen);
+    generateFunction(gen.function_, prefix+"eval_ydef", v_in, vector<SX>(1, this->ydef), gen);
 
     // All functions at once, with derivatives
     generateFunction(gen.function_, prefix+"eval", v_in, v_out, gen, true, true, true);
@@ -2027,7 +2028,7 @@ namespace casadi {
     lam.push_back(SX::sym("lam_ode", vertcat(this->odeREM).sparsity()));
     lam.push_back(SX::sym("lam_dae", this->dae.sparsity()));
     lam.push_back(SX::sym("lam_alg", this->alg.sparsity()));
-    lam.push_back(SX::sym("lam_quad", this->quad.sparsity()));
+    lam.push_back(SX::sym("lam_quad", vertcat(this->quadREM).sparsity()));
     lam.push_back(SX::sym("lam_idef", this->idef.sparsity()));
     lam.push_back(SX::sym("lam_ydef", this->ydef.sparsity()));
 
