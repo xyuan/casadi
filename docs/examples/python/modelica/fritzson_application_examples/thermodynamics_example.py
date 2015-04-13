@@ -73,21 +73,21 @@ ocp.makeExplicit()
 # Inputs to the integrator
 dae_fcn_in = daeIn(
   t = ocp.t,
-  x = ocp.x,
-  p = ocp.p
+  x = vertcat(ocp.xREM),
+  p = vertcat(ocp.pREM)
 )
 
 # Create an integrator
-dae = SXFunction(dae_fcn_in,daeOut(ode=ocp.ode))
+dae = SXFunction(dae_fcn_in,daeOut(ode=vertcat(ocp.odeREM)))
 integrator = Integrator("cvodes", dae)
 
 # Output function
-output_fcn_out = substitute([ocp("m"),ocp("P")], [ocp.i], [ocp.idef])
+output_fcn_out = substitute([ocp("m"),ocp("P")], ocp.iREM, ocp.idefREM)
 output_fcn_in = daeIn(
   t=ocp.t,
-  x = ocp.x,
-  z = ocp.z,
-  p = vertcat((ocp.p,ocp.u))
+  x = vertcat(ocp.xREM),
+  z = vertcat(ocp.zREM),
+  p = vertcat(ocp.pREM + ocp.uREM)
 )
 output_fcn = SXFunction(output_fcn_in,output_fcn_out)
 
@@ -97,7 +97,7 @@ simulator = Simulator(integrator,output_fcn,grid)
 simulator.init()
 
 # Pass initial conditions
-x0 = ocp.start(ocp.x)
+x0 = ocp.start(vertcat(ocp.xREM))
 simulator.setInput(x0,"x0")
 
 # Simulate
@@ -132,21 +132,21 @@ ocp.makeExplicit()
 # Inputs to the integrator
 dae_fcn_in = daeIn(
   t = ocp.t,
-  x = ocp.x,
-  p = ocp.p
+  x = vertcat(ocp.xREM),
+  p = vertcat(ocp.pREM)
 )
 
 # Create an integrator
-dae = SXFunction(dae_fcn_in,daeOut(ode=ocp.ode))
+dae = SXFunction(dae_fcn_in,daeOut(ode=vertcat(ocp.odeREM)))
 integrator = Integrator("cvodes", dae)
 
 # Output function
-output_fcn_out = substitute([ocp("T")], [ocp.i], [ocp.idef])
+output_fcn_out = substitute([ocp("T")], ocp.iREM, ocp.idefREM)
 output_fcn_in = daeIn(
   t=ocp.t,
-  x = ocp.x,
-  z = ocp.z,
-  p = vertcat((ocp.p,ocp.u))
+  x = vertcat(ocp.xREM),
+  z = vertcat(ocp.zREM),
+  p = vertcat(ocp.pREM + ocp.uREM)
 )
 output_fcn = SXFunction(output_fcn_in,output_fcn_out)
 
@@ -156,7 +156,7 @@ simulator = Simulator(integrator,output_fcn,grid)
 simulator.init()
 
 # Pass initial conditions
-x0 = ocp.start(ocp.x)
+x0 = ocp.start(vertcat(ocp.xREM))
 simulator.setInput(x0,"x0")
 
 # Simulate
@@ -184,21 +184,21 @@ ocp.makeExplicit()
 # Inputs to the integrator
 dae_fcn_in = daeIn(
   t = ocp.t,
-  x = ocp.x,
-  p = ocp.p
+  x = vertcat(ocp.xREM),
+  p = vertcat(ocp.pREM)
 )
 
 # Create an integrator
-dae = SXFunction(dae_fcn_in,daeOut(ode=ocp.ode))
+dae = SXFunction(dae_fcn_in,daeOut(ode=vertcat(ocp.odeREM)))
 integrator = Integrator("cvodes", dae)
 
 # Output function
-output_fcn_out = substitute([ocp("T"),ocp("U"),ocp("V")], [ocp.i], [ocp.idef])
+output_fcn_out = substitute([ocp("T"),ocp("U"),ocp("V")], ocp.iREM, ocp.idefREM)
 output_fcn_in = daeIn(
   t=ocp.t,
-  x = ocp.x,
-  z = ocp.z,
-  p = vertcat((ocp.p,ocp.u))
+  x = vertcat(ocp.xREM),
+  z = vertcat(ocp.zREM),
+  p = vertcat(ocp.pREM + ocp.uREM)
 )
 output_fcn = SXFunction(output_fcn_in,output_fcn_out)
 
@@ -208,7 +208,7 @@ simulator = Simulator(integrator,output_fcn,grid)
 simulator.init()
 
 # Pass initial conditions
-x0 = ocp.start(ocp.x)
+x0 = ocp.start(vertcat(ocp.xREM))
 simulator.setInput(x0,"x0")
 
 # Simulate
