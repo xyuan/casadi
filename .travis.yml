@@ -31,7 +31,7 @@ matrix:
         - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
         - pushd test && make unittests_py examples_code_py && popd
         - ls -al /home/travis/build/testbot/
-        - python /home/travis/build/testbot/helpers/publish_build.py
+        - python /home/travis/build/testbot/helpers/publish_builds.py
         
 branches:
   except:
