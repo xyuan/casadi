@@ -18,5 +18,3 @@ build_script:
   - cmake "-GMSYS Makefiles" -DWITH_PYTHON=ON ..
   - make
   - make install
-  #- cmake "-GVisual Studio 12 Win64" -H. -B_builds
-  #- cmake --build _builds --config "Debug"
