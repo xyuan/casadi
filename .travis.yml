@@ -48,7 +48,7 @@ before_install:
   - sudo pip install github3.py
   
 script:
-  - exit 1
+  - sadsad
   
 language: cpp
 
