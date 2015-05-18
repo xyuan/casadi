@@ -109,8 +109,8 @@ matrix:
         - sudo apt-get install python-lxml python-ipdb python-docutils texlive-science latex2html doxygen texlive-font-utils texlive-latex-recommended texlive-fonts-recommended etoolbox graphviz -y
         - "mkdir -p ~/.matplotlib && echo 'backend : Agg' > ~/.matplotlib/matplotlibrc"
         - pushd docs/api && make full | grep -v "file loc from" && popd
-        #- if [[ $TRAVIS_BRANCH == 'develop' ]]; then pushd docs/api; python /home/travis/build/casadi/testbot/helpers/publish_doc.py; popd; git pull; sh /home/travis/build/casadi/testbot/helpers/acommit.sh "automatic documentation update" ; python /home/travis/build/casadi/testbot/helpers/publish_builds.py ; fi
-
+        - if [[ $TRAVIS_BRANCH == 'travis-extend' ]]; then pushd docs/api; python /home/travis/build/casadi/testbot/helpers/publish_doc.py; popd; git pull; sh /home/travis/build/casadi/testbot/helpers/acommit.sh "automatic documentation update" ; python /home/travis/build/casadi/testbot/helpers/publish_builds.py ; fi
+        - if [[ $TRAVIS_BRANCH == 'travis-extend' ]]; then pushd build; python /home/travis/build/casadi/testbot/helpers/publish_builds.py ; popd; fi
     - compiler: clang
       os: linux
       env: TESTMODE=minimal
@@ -138,7 +138,7 @@ matrix:
         - export languagetool="$mypwd/LanguageTool-2.7"
         - mkdir build
         - pushd build
-        - cmake  ..
+        - cmake -DWITH_WERROR=ON -DWITH_EXTRA_WARNINGS=ON ..
         - make lint
         - export languagetool="$mypwd/LanguageTool-2.7" make spell
         - popd && pushd misc && python autogencode.py && popd
