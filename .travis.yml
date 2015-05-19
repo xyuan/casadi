@@ -41,7 +41,7 @@ matrix:
         - pushd docs/api && patch -u Doxyfile.in publish.patch -o - && ls && ls html && ls html/search && popd
         - if [[ $TRAVIS_BRANCH == 'travis-extend' ]]; then pushd docs; python /home/travis/build/testbot/helpers/publish_doc.py; popd; git pull; sh /home/travis/build/testbot/helpers/acommit.sh "automatic documentation update" ; git push ; fi
         - if [[ $TRAVIS_BRANCH == 'travis-extend' ]]; then pushd build; python /home/travis/build/testbot/helpers/publish_builds.py ; popd; fi
-    
+
 branches:
   except:
     - /.*appveyor.*/
