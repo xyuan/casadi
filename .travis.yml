@@ -16,182 +16,39 @@ env:
 before_script:
   - set -e
 
-matrix:
-  include:
-    - compiler: gcc
-      os: linux
-      env: TESTMODE=full_valgrind
-      script:
-        - sudo add-apt-repository ppa:nodakai/valgrind -y
-        - sudo apt-get update -q
-        - sudo apt-get install valgrind
-        - mkdir build
-        - pushd build
-        - cmake -DWITH_PYTHON=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_OOQP=ON -DWITH_PROFILING=ON -DWITH_DOC=ON -DWITH_EXAMPLES=ON -DWITH_COVERAGE=ON -DWITH_EXTRA_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make -j2
-        - sudo make -j2 install
-        - sed -n '5382, 5582p' swig/casadiPYTHON_wrap.cxx
-        - sed -n '5482, 5482p' swig/casadiPYTHON_wrap.cxx
-        - popd
-        - sudo apt-get install valgrind -y
-        - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
-        - pushd test/python && ls -1 [n-z]*.py | grep -v helpers.py | xargs rm && popd
-        - pushd test && make unittests_py_valgrind && popd
-    - compiler: gcc
-      os: linux
-      env: TESTMODE=full_valgrind
-      script:
-        - sudo add-apt-repository ppa:nodakai/valgrind -y
-        - sudo apt-get update -q
-        - sudo apt-get install valgrind
-        - mkdir build
-        - pushd build
-        - cmake -DWITH_PYTHON=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_OOQP=ON -DWITH_PROFILING=ON -DWITH_DOC=ON -DWITH_EXAMPLES=ON -DWITH_COVERAGE=ON -DWITH_EXTRA_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make -j2
-        - sudo make -j2 install
-        - popd
-        - sudo apt-get install valgrind -y
-        - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
-        - pushd test/python && ls -1 [m-z]*.py | grep -v helpers.py | xargs rm && popd
-        - pushd test && make unittests_py_valgrind && popd
-    - compiler: gcc
-      os: linux
-      env: TESTMODE=full_remainder
-      script:
-        - mkdir build
-        - pushd build
-        - cmake -DWITH_PYTHON=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_OOQP=ON -DWITH_PROFILING=ON -DWITH_DOC=ON -DWITH_EXAMPLES=ON -DWITH_COVERAGE=ON -DWITH_EXTRA_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make -j2
-        - sudo make -j2 install
-        - popd
-        - git clone https://github.com/jgillis/pyreport.git
-        - pushd pyreport && sudo python setup.py install && popd
-        - sudo pip install texttable
-        - sudo pip install --allow-unverified pydot pydot==1.0.28
-        - sudo apt-get install python-lxml valgrind graphviz texlive-science texlive-latex-base texlive-latex-recommended texlive-latex-extra latex2html doxygen python-ipdb -y
-        - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
-        - pushd test && make trunktesterbot_no_unittests_py && popd
-        - pushd build && travis_wait make json VERBOSE=1 && popd
-
-    - compiler: gcc
-      os: linux
-      env: TESTMODE=full_slow
-      script:
-        - mkdir build
-        - pushd build
-        - cmake -DWITH_PYTHON=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_OOQP=ON -DWITH_PROFILING=ON -DWITH_DOC=ON -DWITH_EXAMPLES=ON -DWITH_COVERAGE=ON -DWITH_EXTRA_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make -j2
-        - sudo make -j2 install
-        - popd
-        - git clone https://github.com/jgillis/pyreport.git
-        - pushd pyreport && sudo python setup.py install && popd
-        - sudo apt-get install python-lxml valgrind -y
-        - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
-        - pushd test && make unittests_py_slow && popd
-        - pushd build && travis_wait make json VERBOSE=1 && popd
-    - compiler: gcc
-      os: linux
-      env: TESTMODE=docs
-      script:
-        - set -e
-        - mkdir build
-        - pushd build
-        - cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_PYTHON=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_OOQP=ON -DWITH_PROFILING=ON -DWITH_DOC=ON -DWITH_EXAMPLES=ON -DWITH_COVERAGE=ON -DWITH_EXTRA_WARNINGS=ON ..
-        - make -j2
-        - sudo make -j2 install
-        - popd
-        - sudo add-apt-repository ppa:kedazo/doxygen-updates-precise -y
-        - sudo apt-get update -q
-        - git clone https://github.com/jgillis/pyreport.git
-        - pushd pyreport && sudo python setup.py install && popd
-        - sudo pip install texttable
-        - sudo pip install --allow-unverified pydot pydot==1.0.28
-        - sudo apt-get install python-lxml python-ipdb python-docutils texlive-science latex2html doxygen texlive-font-utils texlive-latex-recommended texlive-fonts-recommended etoolbox graphviz -y
-        - "mkdir -p ~/.matplotlib && echo 'backend : Agg' > ~/.matplotlib/matplotlibrc"
-        - pushd docs/api && make full | grep -v "file loc from" && popd
-        #- if [[ $TRAVIS_BRANCH == 'develop' ]]; then pushd docs/api; python /home/travis/build/casadi/testbot/helpers/publish_doc.py; popd; git pull; sh /home/travis/build/casadi/testbot/helpers/acommit.sh "automatic documentation update" ; python /home/travis/build/casadi/testbot/helpers/publish_builds.py ; fi
-
-    - compiler: clang
-      os: linux
-      env: TESTMODE=minimal
-      script:
-        - mkdir build
-        - pushd build
-        - cmake -DWITH_PYTHON=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make
-        - sudo make install
-        - popd
-        - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
-        - pushd test && make unittests_py examples_code_py && popd
-    - compiler: gcc
-      os: linux
-      env: TESTMODE=quick
-      script:
-        - sudo add-apt-repository ppa:webupd8team/java -y
-        - sudo apt-get update -q
-        - sudo echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
-        - sudo apt-get install python-pyparsing libhunspell-dev oracle-java7-installer -y
-        - sudo pip install hunspell
-        - wget https://www.languagetool.org/download/LanguageTool-2.7.zip
-        - unzip LanguageTool-2.7.zip
-        - mypwd=`pwd`
-        - export languagetool="$mypwd/LanguageTool-2.7"
-        - mkdir build
-        - pushd build
-        - cmake  ..
-        - make lint
-        - export languagetool="$mypwd/LanguageTool-2.7" make spell
-        - popd && pushd misc && python autogencode.py && popd
-        - sh /home/travis/build/testbot/helpers/acommit.sh "automatic code generation"
-        - git pull
-        - git config --global push.default simple
-        - git remote set-url origin git@github.com:casadi/casadi.git
-        - ssh-agent bash -c 'ssh-add /home/travis/build/testbot/id_rsa_travis; git push origin HEAD:$TRAVIS_BRANCH'
-    - os: osx
-      env: TESTMODE=minimal
-      compiler: clang
-      before_install:
-        - brew update
-        - brew tap homebrew/science
-        - brew install swig pkg-config
-        #- brew doctor
-        - sudo easy_install pip
-        - sudo pip install ipython matplotlib numpy scipy
-      script:
-        - mkdir build
-        - pushd build
-        - cmake -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make
-        - sudo make install
-        - popd
-        - python -c "from casadi.tools import *;loadAllCompiledPlugins()"
-        - pushd test && make unittests_py && popd
-
-    - compiler: gcc
-      os: linux
-      script:
-        - pushd /home/travis/build/
-        - testbot/recipes/fetch.sh matlab2014b.tar.gz
-        - mkdir matlab && tar -xvf matlab2014b.tar.gz -C matlab > /dev/null
-        - testbot/recipes/fetch.sh toolbox-matlab.tar.gz
-        - tar -xvf toolbox-matlab.tar.gz -C matlab > /dev/null
-        - ls -al /home/travis/build/
-        - popd
-        - mkdir build
-        - pushd build
-        - PATH=/home/travis/build/swig_matlab/bin:/home/travis/build/swig_matlab/share:$PATH cmake -DCMAKE_INSTALL_PREFIX=/home/travis/build/matlab-install -DWITH_MATLAB=ON -DWITH_WORHP=ON -DWITH_SLICOT=ON -DWITH_OOQP=ON -DWITH_PROFILING=ON -DWITH_DOC=ON -DWITH_EXAMPLES=ON -DWITH_COVERAGE=ON -DWITH_EXTRA_WARNINGS=ON -DWITH_PYTHON=ON -DWITH_JSON=ON ..
-        - make -j2
-        - sudo make -j2 install
-        - popd
-        - source /home/travis/build/testbot/restricted/env.sh
-        - sudo bash -c "echo '127.0.0.1	$FLEX_SERVER' >> /etc/hosts;echo '127.0.0.1	$FLEX_HOSTNAME' >> /etc/hosts"
-        - sudo hostname $FLEX_HOSTNAME
-        - mkdir -p ~/.matlab/R2014b_licenses/
-        - echo -e "SERVER $FLEX_SERVER ANY 1715\nUSE_SERVER" > ~/.matlab/R2014b_licenses/license.lic
-        - ssh-keyscan $GATE_SERVER >> ~/.ssh/known_hosts
-        - ssh -i /home/travis/build/testbot/id_rsa_travis $USER_GATE@$GATE_SERVER -L 1701:$FLEX_SERVER:1701 -L 1719:$FLEX_SERVER:1719 -L 1718:$FLEX_SERVER:1718 -L 2015:$FLEX_SERVER:2015 -L 1815:$FLEX_SERVER:1815 -L 1715:$FLEX_SERVER:1715 -N &
-        - sleep 3
-        - pushd test && PATH=/home/travis/build/matlab/bin/:$PATH make unittests_matlab && popd
+script:
+  - mkdir build
+  - pushd build
+  - |
+    cat <<EOF >toolchain.cmake
+    # this one is important
+    SET(CMAKE_SYSTEM_NAME Windows)
+    #this one not so much
+    SET(CMAKE_SYSTEM_VERSION 1)
+    
+    # x86_64
+    SET(PREFIX i686-w64-mingw32)
+    
+    # specify the cross compiler
+    SET(CMAKE_C_COMPILER   ${PREFIX}-gcc)
+    SET(CMAKE_CXX_COMPILER ${PREFIX}-g++)
+    SET(CMAKE_Fortran_COMPILER ${PREFIX}-gfortran)
+    set(CMAKE_RC_COMPILER ${PREFIX}-windres)
+    
+    #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -target=--${PREFIX}" )
+    #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -target=--target=${PREFIX}" )
+    # where is the target environment 
+    SET(CMAKE_FIND_ROOT_PATH  /usr/${PREFIX})
+    
+    # search for programs in the build host directories
+    SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+    # for libraries and headers in the target directories
+    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+    EOF
+  - cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake -DWITH_PYTHON=ON ..
+  - make -j2
+        
 branches:
   except:
     - /.*appveyor.*/
@@ -215,5 +72,5 @@ before_install:
   - sudo add-apt-repository ppa:baltix-members/ppa -y #  for libslicot-dev
   - sudo apt-get update -qq
   - sudo apt-get install -y binutils gcc g++ gfortran git cmake liblapack-dev ipython python-dev python-numpy python-scipy python-matplotlib coinor-libipopt-dev libmumps-seq-dev libblas-dev liblapack-dev libslicot-dev libxml2-dev
-
+  - sudo apt-get install mingw-w64
 language: cpp
