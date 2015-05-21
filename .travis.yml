@@ -46,7 +46,28 @@ script:
     SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
     SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
     EOF
-  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_CPLEX=OFF ..
+  - |
+    cat <<EOF >>../CMakeLists.txt
+    find_library(PYTHON_LIBRARY
+      NAMES
+        python27
+      PATHS
+        /home/travis/.wine/drive_c/Python27/libs
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    
+    find_path(PYTHON_INCLUDE_DIR
+        NAMES Python.h
+    PATHS
+       /home/travis/.wine/drive_c/Python27/include
+      NO_SYSTEM_ENVIRONMENT_PATH
+    )
+    
+    set(PYTHON_EXECUTABLE /home/travis/.wine/drive_c/Python27/python.exe)
+    set(NUMPY_INCLUDE_DIR /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include)
+    EOF
+
+  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF ..
   - make -j2
         
 branches:
@@ -54,13 +75,6 @@ branches:
     - /.*appveyor.*/
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get remove -qq -y mingw32
-  - sudo apt-get install -q -y mingw-w64 g++-mingw-w64 gcc-mingw-w64 gfortran-mingw-w64
-  - wget https://raw.githubusercontent.com/WineAsCI/python-lib-template/master/.travis-setup.sh && chmod +x .travis-setup.sh
-  - "./.travis-setup.sh"
-  - wget -O numpy.exe https://github.com/casadi/testbot/releases/download/perpetual/numpy-1.9.1-sse2.exe
-  - /opt/wine-staging/bin/wine C:/Python27/Scripts/easy_install.exe numpy.exe
   - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
   - sudo apt-get install p7zip-full -y
@@ -79,5 +93,11 @@ before_install:
   - sudo add-apt-repository ppa:baltix-members/ppa -y #  for libslicot-dev
   - sudo apt-get update -qq
   - sudo apt-get install -y binutils gcc g++ gfortran git cmake liblapack-dev ipython python-dev python-numpy python-scipy python-matplotlib coinor-libipopt-dev libmumps-seq-dev libblas-dev liblapack-dev libslicot-dev libxml2-dev
-
+  - sudo apt-get remove -qq -y mingw32
+  - sudo apt-get install -q -y mingw-w64 g++-mingw-w64 gcc-mingw-w64 gfortran-mingw-w64
+  - wget https://raw.githubusercontent.com/WineAsCI/python-lib-template/master/.travis-setup.sh && chmod +x .travis-setup.sh
+  - "./.travis-setup.sh"
+  - wget -O numpy.exe https://github.com/casadi/testbot/releases/download/perpetual/numpy-1.9.1-sse2.exe
+  - /opt/wine-staging/bin/wine C:/Python27/Scripts/easy_install.exe numpy.exe
+  
 language: cpp
