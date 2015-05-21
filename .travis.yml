@@ -69,7 +69,7 @@ script:
     EOF
   - cat patch.txt ../swig/python/CMakeLists.txt > CMakeLists.txt
   - mv CMakeLists.txt ../swig/python/CMakeLists.txt
-  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF ..
+  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF -DPYTHON_PREFIX=../python-install ..
   - make -j2
         
 branches:
@@ -101,7 +101,5 @@ before_install:
   - "./.travis-setup.sh"
   - wget -O numpy.exe https://github.com/casadi/testbot/releases/download/perpetual/numpy-1.9.1-sse2.exe
   - /opt/wine-staging/bin/wine C:/Python27/Scripts/easy_install.exe numpy.exe
-  - ls /home/travis/.wine/drive_c/Python27/Lib/
-  - ls /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy-1.9.1-py2.7-win32.egg
 
 language: cpp
