@@ -65,6 +65,7 @@ script:
     
     set(PYTHON_EXECUTABLE /home/travis/.wine/drive_c/Python27/python.exe)
     set(NUMPY_INCLUDE_DIR /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include)
+    set(NUMPY_PATH /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include)
     EOF
   - cat patch.txt ../swig/python/CMakeLists.txt > CMakeLists.txt
   - mv CMakeLists.txt ../swig/python/CMakeLists.txt
