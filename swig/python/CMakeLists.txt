@@ -25,7 +25,6 @@ endif()
 
 # Find packages
 find_package(PythonLibs REQUIRED)
-find_package(PythonInterp REQUIRED)
 find_package(NUMPY REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -72,6 +71,7 @@ add_custom_command(
 )
 
 if(NOT DEFINED PYTHON_PREFIX)
+  find_package(PythonInterp)
   if(PYTHONINTERP_FOUND)
     #determining the installation path for python libraries
     execute_process(COMMAND "${PYTHON_EXECUTABLE}"
