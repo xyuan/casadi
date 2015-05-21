@@ -61,9 +61,9 @@ before_install:
   - "./.travis-setup.sh"
   - wget https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
   - /opt/wine-staging/bin/wine msiexec /i python-2.7.9.msi /qn
-  - /opt/wine-staging/bin/wine -O numpy.exe http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2/numpy-1.9.2-win32-superpack-python2.7.exe?r=&ts=1432204777
-  #- wine C:/Python27/Scripts/easy_install.exe numpy.exe
-  #- pushd ../../ && git clone https://github.com/casadi/testbot.git
+  - wget -O numpy.exe http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2/numpy-1.9.2-win32-superpack-python2.7.exe?r=&ts=1432204777
+  - wine C:/Python27/Scripts/easy_install.exe numpy.exe
+  - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
   - sudo apt-get install p7zip-full -y
   - travis_retry testbot/recipes/fetch.sh libhsl.tar.gz && mkdir libhsl && tar -xvf libhsl.tar.gz -C libhsl
