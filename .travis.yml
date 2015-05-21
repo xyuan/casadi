@@ -54,6 +54,7 @@ branches:
     - /.*appveyor.*/
 
 before_install:
+  - sudo apt-get update
   - sudo apt-get -u dist-upgrade
   - sudo apt-get dist-upgrade
   - sudo apt-get install mingw-w64
