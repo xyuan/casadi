@@ -13,6 +13,9 @@ env:
     - MATLABPATH=/home/travis/build/matlab-install
     - MATLAB_ROOT=/home/travis/build/matlab
 
+compiler:
+  - i686-w64-mingw32-gcc
+
 before_script:
   - set -e
 
@@ -54,9 +57,9 @@ branches:
     - /.*appveyor.*/
 
 before_install:
-  - sudo apt-get update
-  - DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical sudo apt-get -u -q -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
-  - sudo apt-get install mingw-w64
+ - sudo apt-get update -qq
+  - sudo apt-get remove -qq -y mingw32
+  - sudo apt-get install -q -y mingw-w64
   - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
   - sudo apt-get install p7zip-full -y
