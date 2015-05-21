@@ -55,11 +55,11 @@ branches:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get remove -qq -y mingw32
-  - sudo apt-get install -q -y mingw-w64 g++-mingw-w64 gcc-mingw-w64 gfortran-mingw-w64 #wine
-  #- wget https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
-  #- wine msiexec /i /qn python-2.7.9.msi
-  #- wget -O numpy.exe http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2/numpy-1.9.2-win32-superpack-python2.7.exe?r=&ts=1432204777
-  #- wine numpy.exe
+  - sudo apt-get install -q -y mingw-w64 g++-mingw-w64 gcc-mingw-w64 gfortran-mingw-w64 wine
+  - wget https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
+  - wine msiexec /i /qn python-2.7.9.msi
+  - wget -O numpy.exe http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2/numpy-1.9.2-win32-superpack-python2.7.exe?r=&ts=1432204777
+  - wine C:/Python27/Scripts/easy_install.exe numpy.exe
   - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
   - sudo apt-get install p7zip-full -y
