@@ -101,7 +101,11 @@ before_install:
   - "./.travis-setup.sh"
   - wget -O numpy.exe https://github.com/casadi/testbot/releases/download/perpetual/numpy-1.9.1-sse2.exe
   - /opt/wine-staging/bin/wine C:/Python27/Scripts/easy_install.exe numpy.exe
-  - ls /home/jgillis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include
-  - ls /home/jgillis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include/numpy
+  - ls /home/travis/.wine/drive_c/Python27/Lib/
+  - ls /home/travis/.wine/drive_c/Python27/Lib/site-packages
+  - ls /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy
+  - ls /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core
+  - ls /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include
+  - ls /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include/numpy
   
 language: cpp
