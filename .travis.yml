@@ -69,8 +69,9 @@ script:
     EOF
   - cat patch.txt ../swig/python/CMakeLists.txt > CMakeLists.txt
   - mv CMakeLists.txt ../swig/python/CMakeLists.txt
-  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF -DPYTHON_PREFIX=../python-install ..
+  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF -DCMAKE_INSTALL_PREFIX=../python-install -DPYTHON_PREFIX=../python-install ..
   - make -j2
+  - make install
         
 branches:
   except:
