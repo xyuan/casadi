@@ -67,7 +67,7 @@ script:
     set(NUMPY_INCLUDE_DIR /home/travis/.wine/drive_c/Python27/Lib/site-packages/numpy/core/include)
     EOF
   - cat patch.txt ../CMakeLists.txt CMakeLists.txt
-  - mv CMakeLists.txt ../CMakeLists.txt
+  - mv CMakeLists.txt > ../CMakeLists.txt
   - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF ..
   - make -j2
         
