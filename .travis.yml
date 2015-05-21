@@ -12,6 +12,7 @@ env:
     - SNOPT=/home/travis/build/snopt7
     - MATLABPATH=/home/travis/build/matlab-install
     - MATLAB_ROOT=/home/travis/build/matlab
+    - compilerprefix=i686-w64-mingw32
 
 compiler:
   - i686-w64-mingw32-gcc
@@ -28,26 +29,21 @@ script:
     SET(CMAKE_SYSTEM_NAME Windows)
     #this one not so much
     SET(CMAKE_SYSTEM_VERSION 1)
-    
-    # x86_64
-    SET(PREFIX i686-w64-mingw32)
-    
+
     # specify the cross compiler
-    SET(CMAKE_C_COMPILER   ${PREFIX}-gcc)
-    SET(CMAKE_CXX_COMPILER ${PREFIX}-g++)
-    SET(CMAKE_Fortran_COMPILER ${PREFIX}-gfortran)
-    set(CMAKE_RC_COMPILER ${PREFIX}-windres)
+    SET(CMAKE_C_COMPILER   $compilerprefix-gcc)
+    SET(CMAKE_CXX_COMPILER $compilerprefix-g++)
+    SET(CMAKE_Fortran_COMPILER $compilerprefix-gfortran)
+    set(CMAKE_RC_COMPILER $compilerprefix-windres)
     
-    #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -target=--${PREFIX}" )
-    #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -target=--target=${PREFIX}" )
     # where is the target environment 
-    SET(CMAKE_FIND_ROOT_PATH  /usr/${PREFIX})
+    SET(CMAKE_FIND_ROOT_PATH  /usr/$compilerprefix)
     
     # search for programs in the build host directories
     SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
     # for libraries and headers in the target directories
-    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
     EOF
   - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON ..
   - make -j2
@@ -59,7 +55,11 @@ branches:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get remove -qq -y mingw32
-  - sudo apt-get install -q -y mingw-w64
+  - sudo apt-get install -q -y mingw-w64 wine
+  #- wget https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
+  #- wine msiexec /i python-2.7.9.msi
+  #- wget -O numpy.exe http://downloads.sourceforge.net/project/numpy/NumPy/1.9.2/numpy-1.9.2-win32-superpack-python2.7.exe?r=&ts=1432204777
+  #- wine numpy.exe
   - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
   - sudo apt-get install p7zip-full -y
