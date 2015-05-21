@@ -18,9 +18,9 @@ if(NOT NUMPY_PATH)
 endif()
 
 # Joel: What is the purpose of this??
-find_path(NUMPY_PATH_DEP1
-endian.h
-)
+#find_path(NUMPY_PATH_DEP1
+#endian.h
+#)
 
 string(REGEX REPLACE "include" "lib" NUMPY_LIBS_INTERMEDIATE "${NUMPY_PATH}")
 string(REGEX REPLACE "numpy$" "" NUMPY_LIBS_BASE "${NUMPY_LIBS_INTERMEDIATE}")
