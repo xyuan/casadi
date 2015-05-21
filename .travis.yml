@@ -43,8 +43,8 @@ script:
     # search for programs in the build host directories
     SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
     # for libraries and headers in the target directories
-    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
-    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
+    SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
     EOF
   - |
     cat <<EOF >>patch.txt
