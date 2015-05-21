@@ -13,7 +13,6 @@ env:
     - MATLABPATH=/home/travis/build/matlab-install
     - MATLAB_ROOT=/home/travis/build/matlab
     - compilerprefix=i686-w64-mingw32
-    - WINEENV=py27
 
 compiler:
   - i686-w64-mingw32-gcc
@@ -54,13 +53,6 @@ branches:
     - /.*appveyor.*/
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get remove -qq -y mingw32
-  - sudo apt-get install -q -y mingw-w64 g++-mingw-w64 gcc-mingw-w64 gfortran-mingw-w64
-  - wget https://raw.githubusercontent.com/WineAsCI/python-lib-template/master/.travis-setup.sh && chmod +x .travis-setup.sh
-  - "./.travis-setup.sh"
-  - wget -O numpy.exe https://github.com/casadi/testbot/releases/download/perpetual/numpy-1.9.1-sse2.exe
-  - /opt/wine-staging/bin/wine C:/Python27/Scripts/easy_install.exe numpy.exe
   - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
   - sudo apt-get install p7zip-full -y
@@ -79,5 +71,11 @@ before_install:
   - sudo add-apt-repository ppa:baltix-members/ppa -y #  for libslicot-dev
   - sudo apt-get update -qq
   - sudo apt-get install -y binutils gcc g++ gfortran git cmake liblapack-dev ipython python-dev python-numpy python-scipy python-matplotlib coinor-libipopt-dev libmumps-seq-dev libblas-dev liblapack-dev libslicot-dev libxml2-dev
-
+  - sudo apt-get remove -qq -y mingw32
+  - sudo apt-get install -q -y mingw-w64 g++-mingw-w64 gcc-mingw-w64 gfortran-mingw-w64
+  - wget https://raw.githubusercontent.com/WineAsCI/python-lib-template/master/.travis-setup.sh && chmod +x .travis-setup.sh
+  - "WINEENV=py27 ./.travis-setup.sh"
+  - wget -O numpy.exe https://github.com/casadi/testbot/releases/download/perpetual/numpy-1.9.1-sse2.exe
+  - /opt/wine-staging/bin/wine C:/Python27/Scripts/easy_install.exe numpy.exe
+  
 language: cpp
