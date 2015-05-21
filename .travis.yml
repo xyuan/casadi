@@ -74,7 +74,7 @@ script:
   - make install
   - popd
   - cp  /home/travis/build/testbot/id_rsa_travis ../../casadibot.key
-  - python /home/travis/build/testbot/helpers/publish_builds_win64.py `git describe --first-parent HEAD`
+  - PYTHONPATH=$PYTHONPATH:/home/travis/build/testbot/ python /home/travis/build/testbot/helpers/publish_builds_win64.py `git describe --first-parent HEAD`
         
 branches:
   except:
