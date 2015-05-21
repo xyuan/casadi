@@ -72,6 +72,8 @@ script:
   - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON -DWITH_IPOPT=OFF -DWITH_SNOPT=OFF -DWITH_CPLEX=OFF -DCMAKE_INSTALL_PREFIX=../python_install -DPYTHON_PREFIX=../python_install ..
   - make -j2
   - make install
+  - popd
+  - python /home/travis/build/testbot/helpers/publish_builds_win64.py `git describe --first-parent HEAD`
         
 branches:
   except:
