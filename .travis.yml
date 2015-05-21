@@ -49,7 +49,7 @@ script:
     SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
     SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
     EOF
-  - cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake -DWITH_PYTHON=ON ..
+  - cmake -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DWITH_PYTHON=ON ..
   - make -j2
         
 branches:
