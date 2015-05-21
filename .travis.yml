@@ -55,7 +55,7 @@ branches:
 
 before_install:
   - sudo apt-get update
-  - DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -u -q -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
+  - DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical sudo apt-get -u -q -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
   - sudo apt-get install mingw-w64
   - pushd ../../ && git clone https://github.com/casadi/testbot.git
   - pushd testbot && recipes/setup.sh && popd
