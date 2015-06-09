@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.6)
 project(casadi C CXX)
 set(PACKAGE_NAME "CasADi")
-set(PACKAGE_VERSION "2.3.0-rc1")
+set(PACKAGE_VERSION "2.3.0-rc2")
 set(PACKAGE_SO_VERSION "2.3")
 set(PACKAGE_DESCRIPTION "CasADi is a symbolic framework for automatic differentation and numeric optimization")
 set(PACKAGE_AUTHOR "Joel Andersson")
@@ -479,10 +479,10 @@ endif()
 add_feature_info(slicot-interface SLICOT_FOUND "Interface to the controls library SLICOT.")
 
 
-if(WITH_WORHP AND LIBXML2_FOUND  AND WSMP_FOUND AND METIS_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
+if(WITH_WORHP)
   find_package(WORHP)
 endif()
-add_feature_info(worhp-inteface WORHP_FOUND "Interface to the NLP solver Worhp (requires LibXml2, wsmp, metis, blas, lapack).")
+add_feature_info(worhp-interface WORHP_FOUND "Interface to the NLP solver Worhp (requires gfortran, gomp).")
 
 
 if(WITH_PROFILING)
