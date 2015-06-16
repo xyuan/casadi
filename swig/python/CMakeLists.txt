@@ -103,17 +103,6 @@ The idea is to supply a directory that python knows about (included in PYTHONPAT
   endif()
 endif()
 
-# Construct a dynamic loader for python 
-# NOTE(@jaeandersson): Needed?
-file(WRITE "${PROJECT_BINARY_DIR}/python/casadi/casadi_loader.py" "failed_modules={}\nloaded_modules=[]\n")
-file(APPEND "${PROJECT_BINARY_DIR}/python/casadi/casadi_loader.py"
-"try:\n"
-"  from casadi import *\n"
-"  loaded_modules.append('casadi')\n"
-"except Exception as e:\n"
-"  failed_modules['casadi'] = str(e)\n"
-)
-
 # NOTE(@jaeandersson): What is this?
 install(DIRECTORY ${PROJECT_BINARY_DIR}/python/casadi
   DESTINATION "${PYTHON_PREFIX}"
@@ -156,14 +145,6 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tools
 
 # Install Python package initialization
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-  DESTINATION "${PYTHON_PREFIX}/casadi"
-  COMPONENT install_python
-)
-
-# For DLL-based systems, rpath is not available,
-# so copy the dlls to the same directory as the .pyd files
-file(GLOB dlls "${PROJECT_BINARY_DIR}/lib/*.dll")
-install(FILES ${dlls}
   DESTINATION "${PYTHON_PREFIX}/casadi"
   COMPONENT install_python
 )

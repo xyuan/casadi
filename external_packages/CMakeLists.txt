@@ -16,15 +16,30 @@ macro(casadi_external_library name)
   endif()
   generate_export_header(${name})
   set(CASADI_MODULES ${CASADI_MODULES} ${name} PARENT_SCOPE)
-  install(TARGETS ${name}
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-  )
-  set_target_properties(
-    ${name}
-  PROPERTIES
-    SOVERSION ${PACKAGE_SO_VERSION}
-  )
+  if(WITH_SELFCONTAINED)
+    if (WITH_PYTHON)
+      install(TARGETS ${name}
+        LIBRARY DESTINATION casadi
+        ARCHIVE DESTINATION casadi
+      )
+    endif()
+    if (WITH_MATLAB)
+      install(TARGETS ${name}
+        LIBRARY DESTINATION .
+        ARCHIVE DESTINATION .
+      )
+    endif()
+  else()
+    install(TARGETS ${name}
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib
+    )
+    set_target_properties(
+      ${name}
+    PROPERTIES
+      SOVERSION ${PACKAGE_SO_VERSION}
+    )
+  endif()
 endmacro()
 
 if(WITH_BUILD_TINYXML)

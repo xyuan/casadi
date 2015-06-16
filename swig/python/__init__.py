@@ -29,22 +29,10 @@ import numpy as np
 
 import ctypes
 
-# add to PATH to make dlopen find the libraries
-if "PATH" in os.environ:
-  os.environ["PATH"] = os.path.dirname(__file__) + os.pathsep +  os.environ["PATH"]
-else:
-  os.environ["PATH"] = os.path.dirname(__file__)
-
-if "LD_LIBRARY_PATH" in os.environ:
-  os.environ["LD_LIBRARY_PATH"] = os.path.dirname(__file__) + os.pathsep + os.environ["LD_LIBRARY_PATH"]
-else:
-  os.environ["LD_LIBRARY_PATH"] = os.path.dirname(__file__)
-
-from casadi_loader import *    # import everything
-import casadi_loader as casadi # import everything
-  
-if 'casadi' in failed_modules:
-    raise Exception("Error while loading casadi: %s" % str(failed_modules["casadi"]))
+try:
+  from casadi import *
+except Exception as e:
+  raise Exception("Error while loading casadi: %s" % str(e))
 
 import os
 import types

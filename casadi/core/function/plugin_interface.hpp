@@ -211,7 +211,7 @@ namespace casadi {
     errors << "PluginInterface::loadPlugin: Cannot load shared library '"
            << lib << "': " << std::endl;
     errors << "   (You may set CASADIPATH env variable with locations"
-           << "to search for plugin libraries.)";
+           << " to search for plugin libraries.)";
 
     // Alocate a handle pointer
 #ifdef _WIN32
@@ -234,7 +234,7 @@ namespace casadi {
     for (int i=0;i<search_paths.size();++i) {
       searchpath = search_paths[i];
 #ifdef _WIN32
-      handle = LoadLibrary(TEXT(searchpath.c_str()));
+      handle = LoadLibraryEx(TEXT(searchpath.c_str()), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_DEFAULT_DIRS);
 #else // _WIN32
       handle = dlopen(searchpath.c_str(), flag);
 #endif // _WIN32
