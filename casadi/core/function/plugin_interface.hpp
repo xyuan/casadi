@@ -234,7 +234,7 @@ namespace casadi {
     for (int i=0;i<search_paths.size();++i) {
       searchpath = search_paths[i];
 #ifdef _WIN32
-      handle = LoadLibraryEx(TEXT(searchpath.c_str()), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_DEFAULT_DIRS);
+      handle = LoadLibraryEx(TEXT(searchpath.c_str()), NULL, 0x100 | 0x1000);
 #else // _WIN32
       handle = dlopen(searchpath.c_str(), flag);
 #endif // _WIN32
