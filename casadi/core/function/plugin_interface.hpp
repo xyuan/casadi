@@ -190,21 +190,21 @@ namespace casadi {
       std::stringstream casadipaths(pLIBDIR);
       std::string casadipath;
       while (std::getline(casadipaths, casadipath, pathsep)) {
-        search_paths.push_back(casadipath + filesep + lib);
+        search_paths.push_back(casadipath);
       }
     }
 
     // Search path: bare
-    search_paths.push_back(lib);
+    search_paths.push_back("");
 
     // Search path : PLUGIN_EXTRA_SEARCH_PATH
     #ifdef PLUGIN_EXTRA_SEARCH_PATH
     search_paths.push_back(
-      std::string("") + PLUGIN_EXTRA_SEARCH_PATH + filesep + lib);
+      std::string("") + PLUGIN_EXTRA_SEARCH_PATH);
     #endif // PLUGIN_EXTRA_SEARCH_PATH
 
     // Search path : current directory
-    search_paths.push_back("." + filesep + lib);
+    search_paths.push_back(".");
 
     // Prepare error string
     std::stringstream errors;
@@ -228,15 +228,23 @@ namespace casadi {
 #endif
 #endif
 
+    // Modify LoadLibrary behaviour: look into current directory
     std::string searchpath;
 
     // Try getting a handle
     for (int i=0;i<search_paths.size();++i) {
       searchpath = search_paths[i];
 #ifdef _WIN32
-      handle = LoadLibraryEx(TEXT(searchpath.c_str()), NULL, 0x100 | 0x1000);
+      std::cout << "Lets try this" << searchpath.c_str() << std::endl;
+      std::cout << SetDllDirectory(TEXT(searchpath.c_str())) << std::endl;
+      std::cout << STRING(GetLastError()) << std::endl;
+      handle = LoadLibrary(TEXT(lib.c_str()));
+      std::cout << "handle:" << handle << std::endl;      
+      std::cout << "err:" << STRING(GetLastError()) << std::endl;
+      SetDllDirectory(NULL);
 #else // _WIN32
-      handle = dlopen(searchpath.c_str(), flag);
+      std::string name = searchpath + pathsep + lib;
+      handle = dlopen(name.c_str(), flag);
 #endif // _WIN32
       if (handle) {
         break;
@@ -249,10 +257,12 @@ namespace casadi {
 #endif // _WIN32
       }
     }
-
+    
+    std::cout << "here1" << std::endl; 
     casadi_assert_message(handle!=0, errors.str());
 
 #ifdef _WIN32
+    std::cout << "here1" << std::endl;
     reg = (RegFcn)GetProcAddress(handle, TEXT(regName.c_str()));
 #else // _WIN32
     // Reset error
@@ -261,16 +271,18 @@ namespace casadi {
     // Load creator
     reg = (RegFcn)dlsym(handle, regName.c_str());
 #endif // _WIN32
+    std::cout << "here1" << std::endl;
     casadi_assert_message(reg!=0,
       "PluginInterface::loadPlugin: no \"" + regName + "\" found in " + searchpath + ".");
 
     // Create a temporary struct
     Plugin plugin = pluginFromRegFcn(reg);
-
+    std::cout << "here1" << std::endl;
     // Register the plugin
     if (register_plugin) {
       registerPlugin(plugin);
     }
+    std::cout << "here1" << std::endl;
 
     return plugin;
 
