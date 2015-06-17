@@ -117,6 +117,11 @@ def _swig_repr(self):
 #ifdef SWIGMATLAB
 %matlabsetup %{
 
+disect_path = strsplit(mfilename('fullpath'),filesep);
+libpath = strjoin(disect_path(1:end-1),filesep);
+
+CasadiOptions.setCasadiPath(libpath);
+
 %}
 #endif
 

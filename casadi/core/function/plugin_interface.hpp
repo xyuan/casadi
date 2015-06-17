@@ -24,6 +24,7 @@
 #define CASADI_PLUGIN_INTERFACE_HPP
 
 #include "../function/function_internal.hpp"
+#include "../casadi_options.hpp"
 #include "wrapper.hpp"
 #include "adaptor.hpp"
 
@@ -182,6 +183,13 @@ namespace casadi {
     const std::string filesep("/");
     #endif
 
+    // Search path: global casadipath option
+    std::stringstream casadipaths(CasadiOptions::getCasadiPath());
+    std::string casadipath;
+    while (std::getline(casadipaths, casadipath, pathsep)) {
+      search_paths.push_back(casadipath);
+    }
+
     // Search path: CASADIPATH env variable
     char* pLIBDIR;
     pLIBDIR = getenv("CASADIPATH");
@@ -210,8 +218,15 @@ namespace casadi {
     std::stringstream errors;
     errors << "PluginInterface::loadPlugin: Cannot load shared library '"
            << lib << "': " << std::endl;
-    errors << "   (You may set CASADIPATH env variable with locations"
-           << " to search for plugin libraries.)";
+    errors << "   (\n"
+           << "    Searched directories: 1. casadipath from CasadiOptions\n"
+           << "                          2. CASADIPATH env var\n"
+           << "                          3. PATH env var (Windows)\n"
+           << "                          4. LD_LIBRARY_PATH env var (Linux)\n"
+           << "    A library may be 'not found' even if the file exists:\n"
+           << "          * library is not compatible (different compiler/bitness)\n"
+           << "          * the dependencies are not found\n"
+           << "   )";
 
     // Alocate a handle pointer
 #ifdef _WIN32
@@ -228,19 +243,14 @@ namespace casadi {
 #endif
 #endif
 
-    // Modify LoadLibrary behaviour: look into current directory
     std::string searchpath;
 
     // Try getting a handle
     for (int i=0;i<search_paths.size();++i) {
       searchpath = search_paths[i];
 #ifdef _WIN32
-      std::cout << "Lets try this" << searchpath.c_str() << std::endl;
-      std::cout << SetDllDirectory(TEXT(searchpath.c_str())) << std::endl;
-      std::cout << STRING(GetLastError()) << std::endl;
+      SetDllDirectory(TEXT(searchpath.c_str()));
       handle = LoadLibrary(TEXT(lib.c_str()));
-      std::cout << "handle:" << handle << std::endl;      
-      std::cout << "err:" << STRING(GetLastError()) << std::endl;
       SetDllDirectory(NULL);
 #else // _WIN32
       std::string name = searchpath + pathsep + lib;
@@ -257,12 +267,10 @@ namespace casadi {
 #endif // _WIN32
       }
     }
-    
-    std::cout << "here1" << std::endl; 
+
     casadi_assert_message(handle!=0, errors.str());
 
 #ifdef _WIN32
-    std::cout << "here1" << std::endl;
     reg = (RegFcn)GetProcAddress(handle, TEXT(regName.c_str()));
 #else // _WIN32
     // Reset error
@@ -271,18 +279,15 @@ namespace casadi {
     // Load creator
     reg = (RegFcn)dlsym(handle, regName.c_str());
 #endif // _WIN32
-    std::cout << "here1" << std::endl;
     casadi_assert_message(reg!=0,
       "PluginInterface::loadPlugin: no \"" + regName + "\" found in " + searchpath + ".");
 
     // Create a temporary struct
     Plugin plugin = pluginFromRegFcn(reg);
-    std::cout << "here1" << std::endl;
     // Register the plugin
     if (register_plugin) {
       registerPlugin(plugin);
     }
-    std::cout << "here1" << std::endl;
 
     return plugin;
 

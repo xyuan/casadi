@@ -27,14 +27,14 @@ import warnings
 import os
 import numpy as np
 
-import ctypes
-
 try:
   from casadi import *
 except Exception as e:
   raise Exception("Error while loading casadi: %s" % str(e))
 
-import os
+# For plugin loading
+CasadiOptions.setCasadiPath(os.path.dirname(__file__))
+
 import types
   
 def wrapper(f, warning,error=False):
